@@ -1,16 +1,19 @@
 package api
 
 import (
+	"encoding/json"
 	"fc-deal-making-service/core"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/xerrors"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 var (
@@ -35,11 +38,17 @@ type HttpErrorResponse struct {
 	Error HttpError `json:"error"`
 }
 
+type AuthResponse struct {
+	Result struct {
+		Validated bool   `json:"validated"`
+		Details   string `json:"details"`
+	} `json:"result"`
+}
+
 // RouterConfig configures the API node
 func InitializeEchoRouterConfig(ln *core.LightNode) {
 	// Echo instance
 	e := echo.New()
-	e.File("/", "templates/index.html")
 
 	// Middleware
 	e.Use(middleware.Logger())
@@ -49,15 +58,85 @@ func InitializeEchoRouterConfig(ln *core.LightNode) {
 
 	defaultGatewayRoute := e.Group("")
 	ConfigureGatewayRouter(defaultGatewayRoute, ln) // access to light node
+	//ConfigureStatsRouter(defaultGatewayRoute, ln)
 
-	apiGroup := e.Group("/api/v1")       // no protection for now
-	ConfigureGatewayRouter(apiGroup, ln) // access to light node
-	ConfigurePinningRouter(apiGroup, ln) // store
+	apiGroup := e.Group("/api/v1")
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			authorizationString := c.Request().Header.Get("Authorization")
+			authParts := strings.Split(authorizationString, " ")
 
-	ConfigMetricsRouter(apiGroup) // metrics
+			response, err := http.Post(
+				"https://estuary-auth-api.onrender.com/check-api-key",
+				"application/json",
+				strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
+			)
+
+			if err != nil {
+				log.Errorf("handler error: %s", err)
+				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusInternalServerError,
+						Reason:  http.StatusText(http.StatusInternalServerError),
+						Details: err.Error(),
+					},
+				})
+			}
+
+			authResp, err := GetAuthResponse(response)
+			if err != nil {
+				log.Errorf("handler error: %s", err)
+				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusInternalServerError,
+						Reason:  http.StatusText(http.StatusInternalServerError),
+						Details: err.Error(),
+					},
+				})
+			}
+
+			if authResp.Result.Validated == false {
+				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusUnauthorized,
+						Reason:  http.StatusText(http.StatusUnauthorized),
+						Details: authResp.Result.Details,
+					},
+				})
+			}
+			if authResp.Result.Validated == true {
+				return next(c)
+			}
+			return next(c)
+		}
+	})
+	//ConfigureRetrieveRouter(apiGroup, ln)
+	ConfigurePinningRouter(apiGroup, ln)
+	//ConfigureStatusCheckRouter(apiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1313")) // configuration
+}
+
+func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
+
+	jsonBody := AuthResponse{}
+	err := json.NewDecoder(resp.Body).Decode(&jsonBody)
+	if err != nil {
+
+		log.Error("empty json body")
+		return AuthResponse{
+			Result: struct {
+				Validated bool   `json:"validated"`
+				Details   string `json:"details"`
+			}{
+				Validated: false,
+				Details:   "empty json body",
+			},
+		}, nil
+	}
+
+	return jsonBody, nil
 }
 
 func ErrorHandler(err error, c echo.Context) {
