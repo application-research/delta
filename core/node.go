@@ -29,13 +29,14 @@ import (
 )
 
 type LightNode struct {
-	Node      *whypfs.Node
-	Api       url.URL
-	Gw        *GatewayHandler
-	DB        *gorm.DB
-	Wallet    LocalWallet
-	Filclient *fc.FilClient
-	Config    *Configuration
+	Node       *whypfs.Node
+	Api        url.URL
+	Gw         *GatewayHandler
+	DB         *gorm.DB
+	Wallet     LocalWallet
+	Filclient  *fc.FilClient
+	Config     *Configuration
+	Dispatcher *Dispatcher
 }
 
 type LocalWallet struct {
@@ -116,7 +117,7 @@ func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 	whypfsPeer.BootstrapPeers(BootstrapEstuaryPeers())
 
 	//	Filclient
-	api, _, err := LotusConnection("https://api.node.glif.io")
+	api, _, err := LotusConnection("http://api.chain.love")
 	addr, err := api.WalletDefaultAddress(ctx)
 
 	fmt.Println(addr)
@@ -133,11 +134,14 @@ func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 		panic(err)
 	}
 
+	// job dispatcher
+	dispatcher := CreateNewDispatcher()
 	// create the global light node.
 	return &LightNode{
-		Node:      whypfsPeer,
-		DB:        db,
-		Filclient: fc,
+		Node:       whypfsPeer,
+		DB:         db,
+		Filclient:  fc,
+		Dispatcher: dispatcher,
 	}, nil
 }
 

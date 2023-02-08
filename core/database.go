@@ -26,7 +26,7 @@ func OpenDatabase() (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{})
 }
 
 type ContentSplitRequest struct {
@@ -85,19 +85,18 @@ type ContentStatus struct {
 
 type ContentDeal struct {
 	gorm.Model
-	Content          int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
-	PropCid          string    `json:"propCid"`
-	DealUUID         string    `json:"dealUuid"`
-	Miner            string    `json:"miner"`
-	DealID           int64     `json:"dealId"`
-	Failed           bool      `json:"failed"`
-	Verified         bool      `json:"verified"`
-	Slashed          bool      `json:"slashed"`
-	FailedAt         time.Time `json:"failedAt,omitempty"`
-	DTChan           string    `json:"dtChan" gorm:"index"`
-	TransferStarted  time.Time `json:"transferStarted"`
-	TransferFinished time.Time `json:"transferFinished"`
-
+	Content             int64       `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	PropCid             string      `json:"propCid"`
+	DealUUID            string      `json:"dealUuid"`
+	Miner               string      `json:"miner"`
+	DealID              int64       `json:"dealId"`
+	Failed              bool        `json:"failed"`
+	Verified            bool        `json:"verified"`
+	Slashed             bool        `json:"slashed"`
+	FailedAt            time.Time   `json:"failedAt,omitempty"`
+	DTChan              string      `json:"dtChan" gorm:"index"`
+	TransferStarted     time.Time   `json:"transferStarted"`
+	TransferFinished    time.Time   `json:"transferFinished"`
 	OnChainAt           time.Time   `json:"onChainAt"`
 	SealedAt            time.Time   `json:"sealedAt"`
 	DealProtocolVersion protocol.ID `json:"deal_protocol_version"`
@@ -126,4 +125,24 @@ type PieceCommitment struct {
 	Status          string `json:"status"` // open, in-progress, completed (closed).
 	Created_at      time.Time
 	Updated_at      time.Time
+}
+
+type MinerInfo struct {
+	ID              int64  `gorm:"primaryKey"`
+	Addr            string `json:"addr"` // same as Miner from MinerPrice
+	Name            string `json:"name"`
+	Suspended       bool   `json:"suspended"`
+	Version         string `json:"version"`
+	ChainInfo       string `json:"chain_info"`
+	SuspendedReason string `json:"suspendedReason,omitempty"`
+}
+
+type MinerPrice struct {
+	ID            int64  `gorm:"primaryKey"`
+	Miner         string `json:"miner"`
+	Price         string `json:"price"`
+	VerifiedPrice string `json:"verifiedPrice"`
+	MinPieceSize  int64  `json:"minPieceSize"`
+	MaxPieceSize  int64  `json:"maxPieceSize"`
+	MinerVersion  string `json:"miner_version"`
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multiaddr"
 	"golang.org/x/xerrors"
+	"strings"
 )
 
 type StorageDealMakerProcessor struct {
@@ -55,7 +56,7 @@ func NewStorageDealMakerProcessor(ln *core.LightNode) IProcessor {
 func (r *StorageDealMakerProcessor) Run() error {
 
 	// get all piece comm record that are replication-assigned
-	dispatcher := CreateNewDispatcher()
+	dispatcher := core.CreateNewDispatcher()
 	var contents []core.Content
 	r.LightNode.DB.Model(&core.Content{}).Where("status = ?", "piece-assigned").Find(&contents)
 
@@ -68,8 +69,8 @@ func (r *StorageDealMakerProcessor) Run() error {
 			item := NewItemReplicationProcessor(r.LightNode, content, pieceCommitment)
 			dispatcher.AddJob(item)
 		}
-		dispatcher.Start(10)
 	}
+	dispatcher.Start(10)
 	return nil
 }
 
@@ -102,6 +103,8 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 	prop, err := r.LightNode.Filclient.MakeDeal(r.Context, r.GetStorageProviders()[0].Address, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
 	fmt.Println(prop)
 	if err != nil {
+		fmt.Println("Prop", err)
+		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 		return err
 	}
 
@@ -135,6 +138,7 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 		//MinerVersion:        ask.MinerVersion,
 	}
 	if err := r.LightNode.DB.Create(deal).Error; err != nil {
+		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 		return xerrors.Errorf("failed to create database entry for deal: %w", err)
 	}
 
@@ -142,13 +146,18 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 	propPhase, err := r.sendProposalV120(r.Context, *prop, propnd.Cid(), dealUUID, deal.ID)
 	if err != nil {
 		fmt.Println("PropPhase", err)
+		// get this request back to the queue
+		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 		return err
 	}
+	fmt.Println("propPhase", propPhase)
 	if propPhase == true {
 		pieceComm.Status = "complete"
 		content.Status = "replication-complete"
 		r.LightNode.DB.Save(&pieceComm)
 		r.LightNode.DB.Save(&content)
+	} else {
+		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 	}
 
 	return nil
@@ -208,5 +217,16 @@ func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop
 
 	// Send the deal proposal to the storage provider
 	propPhase, err := r.LightNode.Filclient.SendProposalV120(ctx, dbid, netprop, dealUUID, announceAddr, authToken)
+
+	if err != nil {
+		//  deal proposal is identical
+		// if err includes message  deal proposal is identical
+		if strings.ContainsAny(err.Error(), "deal proposal is identical") { // don't put it back on the queue
+			fmt.Println("identical!!!", err)
+			return true, err
+		}
+
+		r.LightNode.Filclient.Libp2pTransferMgr.CleanupPreparedRequest(r.Context, dbid, authToken)
+	}
 	return propPhase, err
 }

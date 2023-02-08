@@ -39,7 +39,7 @@ func DaemonCmd() []*cli.Command {
 
 			//	launch the jobs
 			go runProcessors(ln)
-
+			go runRequeue(ln)
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
 			api.LoopForever()
@@ -58,30 +58,58 @@ func DaemonCmd() []*cli.Command {
 func runProcessors(ln *core.LightNode) {
 
 	// run the job every 10 seconds.
-	pieceCommpJobFreq, err := strconv.Atoi(viper.Get("PIECE_COMMP_JOB_FREQ").(string))
-	replicationJobFreq, err := strconv.Atoi(viper.Get("REPLICATION_JOB_FREQ").(string))
+	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
+	//pieceCommpJobFreq, err := strconv.Atoi(viper.Get("PIECE_COMMP_JOB_FREQ").(string))
+	//replicationJobFreq, err := strconv.Atoi(viper.Get("REPLICATION_JOB_FREQ").(string))
+	//minerCheckJobFreq, err := strconv.Atoi(viper.Get("MINER_INFO_UPDATE_JOB_FREQ").(string))
 
 	if err != nil {
-		pieceCommpJobFreq = 10
-		replicationJobFreq = 10
+		jobDispatch = 10
 	}
 
-	pieceCommpJobFreqTick := time.NewTicker(time.Duration(pieceCommpJobFreq) * time.Second)
-	replicationJobFreqTick := time.NewTicker(time.Duration(replicationJobFreq) * time.Second)
+	jobDispatchTick := time.NewTicker(time.Duration(jobDispatch) * time.Second)
+	//pieceCommpJobFreqTick := time.NewTicker(time.Duration(pieceCommpJobFreq) * time.Second)
+	//replicationJobFreqTick := time.NewTicker(time.Duration(replicationJobFreq) * time.Second)
+	//minerCheckJobFreqTick := time.NewTicker(time.Duration(minerCheckJobFreq) * time.Second)
 
 	for {
 		select {
-		case <-pieceCommpJobFreqTick.C:
+		case <-jobDispatchTick.C:
 			go func() {
-				pieceCommpRun := jobs.NewPieceCommpProcessor(ln)
-				go pieceCommpRun.Run()
+				ln.Dispatcher.Start(100)
 			}()
-		case <-replicationJobFreqTick.C:
-			go func() {
-				replicationRun := jobs.NewStorageDealMakerProcessor(ln)
-				go replicationRun.Run()
-
-			}()
+			//case <-replicationJobFreqTick.C:
+			//	go func() {
+			//		replicationRun := jobs.NewStorageDealMakerProcessor(ln)
+			//		go replicationRun.Run()
+			//
+			//	}()
+			//case <-minerCheckJobFreqTick.C:
+			//	go func() {
+			//		minerCheckRun := jobs.NewMinerCheckProcessor(ln)
+			//		go minerCheckRun.Run()
+			//
+			//	}()
 		}
+
+	}
+}
+func runRequeue(ln *core.LightNode) {
+	// get all the pending content jobs. we need to requeue them.
+
+	var contents []core.Content
+	ln.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&contents)
+
+	for _, content := range contents {
+		ln.Dispatcher.AddJob(jobs.NewItemContentProcessor(ln, content))
+	}
+
+	var pieceCommps []core.PieceCommitment
+	ln.DB.Model(&core.PieceCommitment{}).Where("status = ?", "open").Find(&pieceCommps)
+
+	for _, pieceCommp := range pieceCommps {
+		var content core.Content
+		ln.DB.Model(&core.Content{}).Where("piece_commitment_id = ?", pieceCommp.ID).Find(&content)
+		ln.Dispatcher.AddJob(jobs.NewItemReplicationProcessor(ln, content, pieceCommp))
 	}
 }

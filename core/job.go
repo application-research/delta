@@ -1,8 +1,32 @@
-package jobs
+package core
 
 import (
+	"context"
 	"fmt"
 )
+
+type JobExecutable func() error
+type IProcessor interface {
+	Run() error
+}
+
+type Processor struct {
+	Context   context.Context
+	LightNode *LightNode
+}
+
+type ContentProcessor struct {
+	Context   context.Context
+	LightNode *LightNode
+	Content   Content
+}
+
+type ReplicationProcessor struct {
+	Context   context.Context
+	LightNode *LightNode
+	Content   *Content
+	PieceComm *PieceCommitment
+}
 
 type Job struct {
 	ID        int
@@ -51,7 +75,7 @@ type DispatchStatus struct {
 
 type Dispatcher struct {
 	jobCounter     int                  // internal counter for number of jobs
-	jobQueue       chan *Job            // channel of jobs submitted by main()
+	jobQueue       chan *Job            // channel of jobs submitted
 	dispatchStatus chan *DispatchStatus // channel for job/worker status reports
 	workQueue      chan *Job            // channel of work dispatched
 	workerQueue    chan *Worker         // channel of workers

@@ -43,6 +43,8 @@ func (i ItemContentProcessor) Run() error {
 	// prepare the commp
 	commitment, u, a, err := filclient.GeneratePieceCommitmentFFI(i.Context, payloadCid, i.LightNode.Node.Blockstore)
 	if err != nil {
+		// put this back to the queue
+		i.LightNode.Dispatcher.AddJob(NewItemContentProcessor(i.LightNode, i.Content))
 		return err
 	}
 
@@ -60,6 +62,10 @@ func (i ItemContentProcessor) Run() error {
 
 	// update bucket status to commp-computed
 	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-assigned", PieceCommitmentId: commpRec.ID})
+
+	item := NewItemReplicationProcessor(i.LightNode, i.Content, *commpRec)
+	i.LightNode.Dispatcher.AddJob(item)
+
 	return nil
 }
 
@@ -75,7 +81,7 @@ func (r *PieceCommpProcessor) Run() error {
 	// get the CID field of the bucket and generate a commp for it.
 	var contents []core.Content
 	r.LightNode.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&contents)
-	dispatcher := CreateNewDispatcher()
+	dispatcher := core.CreateNewDispatcher()
 	for _, content := range contents {
 		job := NewItemContentProcessor(r.LightNode, content)
 		dispatcher.AddJob(job)

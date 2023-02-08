@@ -2,6 +2,7 @@ package api
 
 import (
 	"fc-deal-making-service/core"
+	"fc-deal-making-service/jobs"
 	"strings"
 	"time"
 
@@ -58,6 +59,10 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			Message: "Car uploaded and pinned successfully to the network.",
 			ID:      content.ID,
 		})
+
+		d := jobs.NewItemContentProcessor(node, content)
+		node.Dispatcher.AddJob(d) // add the job so we can process it later
+
 		return nil
 	})
 
@@ -101,6 +106,11 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			Message: "File uploaded and pinned successfully",
 			ID:      content.ID,
 		})
+
+		// prepare to dispatch
+		d := jobs.NewItemContentProcessor(node, content)
+		node.Dispatcher.AddJob(d) // add the job so we can process it later
+
 		return nil
 	})
 
@@ -144,6 +154,10 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			Message: "CID uploaded and pinned successfully",
 			ID:      content.ID,
 		})
+
+		d := jobs.NewItemContentProcessor(node, content)
+		node.Dispatcher.AddJob(d) // add the job so we can process it later
+
 		return nil
 	})
 
@@ -176,6 +190,8 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			}
 
 			node.DB.Create(&content)
+			d := jobs.NewItemContentProcessor(node, content)
+			node.Dispatcher.AddJob(d) // add the job so we can process it later
 		}
 		return nil
 	})
