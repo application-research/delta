@@ -1,5 +1,5 @@
-# Filecoin Storage-Deal Microservice
-Generic Deal Making Service using whypfs + filclient + estuary_auth
+# Δ Delta
+Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 
 ![image](https://user-images.githubusercontent.com/4479171/217404677-7fca404c-a89a-48b4-bc83-3f223dd6508d.png)
 
