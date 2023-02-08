@@ -76,9 +76,6 @@ func (r *StorageDealMakerProcessor) Run() error {
 
 func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceComm *core.PieceCommitment) error {
 
-	//var pieceCommitment core.PieceCommitment
-	//r.LightNode.DB.Model(&core.PieceCommitment{}).Where("piece = ?", bucketReplicationRequests.PieceCommitment).Find(&pieceCommitment)
-
 	bal, err := r.LightNode.Filclient.Balance(r.Context)
 	if err != nil {
 		return err
@@ -143,8 +140,8 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 	}
 
 	fmt.Println(r.GetStorageProviders()[0].Address)
-	propPhase, err := r.sendProposalV120(r.Context, *prop, propnd.Cid(), dealUUID, deal.ID)
-	if propPhase != true && err != nil {
+	propPhase, err := r.sendProposalV120(r.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID))
+	if propPhase == true && err != nil {
 		fmt.Println("PropPhase", err)
 		// get this request back to the queue
 		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
@@ -152,7 +149,21 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 	}
 
 	// check propPhase
-	if propPhase == true {
+	if propPhase == false {
+		propCid, err := cid.Decode(deal.PropCid)
+		contentCid, err := cid.Decode(content.Cid)
+		chanid, err := r.LightNode.Filclient.StartDataTransfer(r.Context, r.GetStorageProviders()[0].Address, propCid, contentCid)
+		//deal.DTChan = chanid
+		//r.LightNode.Filclient.SubscribeToDataTransferEvents(r.Context, func(event datatransfer.Event, channelState datatransfer.ChannelState) {
+		//	fmt.Println("event", event)
+		//	fmt.Println("channelState", channelState)
+		//})
+		fmt.Println("chanid", chanid)
+		if err != nil {
+			fmt.Println("StartDataTransfer", err)
+			r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
+			return err
+		}
 		content.PieceCommitmentId = pieceComm.ID
 		pieceComm.Status = "complete"
 		content.Status = "replication-complete"
@@ -184,7 +195,7 @@ func (r *ItemReplicationProcessor) GetStorageProviders() []MinerAddress {
 }
 
 var mainnetMinerStrs = []string{
-	"f0501283",
+	"f01963614",
 }
 
 func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {
@@ -222,11 +233,8 @@ func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop
 
 	if err != nil {
 		r.LightNode.Filclient.Libp2pTransferMgr.CleanupPreparedRequest(r.Context, dbid, authToken)
-		//  deal proposal is identical
-		// if err includes message  deal proposal is identical
 		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
-			fmt.Println("identical!!!", err)
-			return true, err
+			return false, err
 		}
 	}
 	fmt.Println("PropPhase RETURN", propPhase)

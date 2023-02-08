@@ -41,7 +41,7 @@ func DaemonCmd() []*cli.Command {
 			//	launch the jobs
 			go runProcessors(ln)
 			go runRequeue(ln)
-			go runMinerCheck(ln)
+			//go runMinerCheck(ln)
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
 			api.LoopForever()
@@ -110,6 +110,13 @@ func runRequeue(ln *core.LightNode) {
 	ln.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&contents)
 
 	for _, content := range contents {
+		ln.Dispatcher.AddJob(jobs.NewItemContentProcessor(ln, content))
+	}
+
+	var contentsForCommp []core.Content
+	ln.DB.Model(&core.Content{}).Where("status = ?", "piece-computing").Find(&contentsForCommp)
+
+	for _, content := range contentsForCommp {
 		ln.Dispatcher.AddJob(jobs.NewItemContentProcessor(ln, content))
 	}
 

@@ -55,8 +55,8 @@ func (i ItemContentProcessor) Run() error {
 		Size:            int64(u),
 		PaddedPieceSize: int64(a),
 		Status:          "open",
-		Created_at:      time.Now(),
-		Updated_at:      time.Now(),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 	i.LightNode.DB.Create(commpRec)
 

@@ -44,8 +44,8 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			Cid:              addNode.Cid().String(),
 			RequestingApiKey: authParts[1],
 			Status:           "pinned",
-			Created_at:       time.Now(),
-			Updated_at:       time.Now(),
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
 		}
 
 		node.DB.Create(&content)
@@ -88,8 +88,8 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			Cid:              addNode.Cid().String(),
 			RequestingApiKey: authParts[1],
 			Status:           "pinned",
-			Created_at:       time.Now(),
-			Updated_at:       time.Now(),
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
 		}
 
 		node.DB.Create(&content)
@@ -136,8 +136,8 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 			Cid:              addNode.Cid().String(),
 			RequestingApiKey: authParts[1],
 			Status:           "pinned",
-			Created_at:       time.Now(),
-			Updated_at:       time.Now(),
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
 		}
 
 		node.DB.Create(&content)
@@ -185,8 +185,8 @@ func ConfigurePinningRouter(e *echo.Group, node *core.LightNode) {
 				Cid:              addNode.Cid().String(),
 				RequestingApiKey: authParts[1],
 				Status:           "pinned",
-				Created_at:       time.Now(),
-				Updated_at:       time.Now(),
+				CreatedAt:        time.Now(),
+				UpdatedAt:        time.Now(),
 			}
 
 			node.DB.Create(&content)

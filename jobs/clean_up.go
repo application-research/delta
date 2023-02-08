@@ -29,7 +29,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 		fmt.Println("error on cid")
 	}
 	i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
-	i.LightNode.DB.Update("status", "replication-complete-cleaned-up").Where("cid = ?", i.Content.Cid).Delete(&core.Content{})
+	i.LightNode.DB.Model(&core.Content{}).Where("cid = ?", i.Content.Cid).Update("status", "replication-complete-cleaned-up")
 
 	return nil
 }
