@@ -24,7 +24,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.LightNode) {
 		authParts := strings.Split(authorizationString, " ")
 
 		var content core.Content
-		node.DB.Raw("select c.id, c.estuary_content_id, c.cid, c.status from contents as c where c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&content)
+		node.DB.Raw("select c.id, c.cid, c.status from contents as c where c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&content)
 
 		return c.JSON(200, StatusCheckResponse{
 			Content: struct {
@@ -43,7 +43,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.LightNode) {
 		authParts := strings.Split(authorizationString, " ")
 
 		var content []core.Content
-		node.DB.Raw("select c.name, c.id, c.estuary_content_id, c.cid, c.status,c.created_at,c.updated_at from contents as c where requesting_api_key = ?", authParts[1]).Scan(&content)
+		node.DB.Raw("select c.name, c.id, c.cid, c.status,c.created_at,c.updated_at from contents as c where requesting_api_key = ?", authParts[1]).Scan(&content)
 
 		return c.JSON(200, content)
 
