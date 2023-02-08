@@ -1,4 +1,4 @@
-# Storage-deal Microservice
+# Filecoin Storage-Deal Microservice
 Generic Deal Making Service using whypfs + filclient + estuary_auth
 
 ## Features
