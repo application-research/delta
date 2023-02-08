@@ -22,10 +22,11 @@ Create the .env file in the root directory of the project. The following are the
 # Database configuration
 MODE=standalone # HA
 DB_NAME=stg-deal-maker
-REPO=/mnt/.whypfs # shared mounted repo
+#REPO=/mnt/.whypfs # shared mounted repo
 
-# Job frequencies
+# Frequencies
 DISPATCH_JOBS_EVERY=10
+MAX_DISPATCH_WORKERS=100
 MINER_INFO_UPDATE_JOB_FREQ=300
 ```
 
