@@ -1,6 +1,9 @@
 # Filecoin Storage-Deal Microservice
 Generic Deal Making Service using whypfs + filclient + estuary_auth
 
+![image](https://user-images.githubusercontent.com/4479171/217404677-7fca404c-a89a-48b4-bc83-3f223dd6508d.png)
+
+
 ## Features
 - Creates a deal for large files. The recommended size is 1GB. 
 - Shows all the deals made for specific user
@@ -31,6 +34,9 @@ Running this the first time will generate a wallet. Make sure to get FIL from th
 ## HA mode
 - Run multiple instances of the deal-maker microservice all pointing to HA Postgres and Centralize/Shared filesystem.
 - Enable this option by setting .env `MODE=HA` and `DB_NAME` to the name of the database and REPO to the shared filesystem.
+
+![image](https://user-images.githubusercontent.com/4479171/217404957-21fd15be-f0c8-4bd2-a5c6-a2770c5c1db1.png)
+
 
 ## Build and run
 ```
