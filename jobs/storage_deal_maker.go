@@ -144,18 +144,20 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 
 	fmt.Println(r.GetStorageProviders()[0].Address)
 	propPhase, err := r.sendProposalV120(r.Context, *prop, propnd.Cid(), dealUUID, deal.ID)
-	if err != nil {
+	if propPhase != true && err != nil {
 		fmt.Println("PropPhase", err)
 		// get this request back to the queue
 		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 		return err
 	}
-	fmt.Println("propPhase", propPhase)
+
+	// check propPhase
 	if propPhase == true {
+		content.PieceCommitmentId = pieceComm.ID
 		pieceComm.Status = "complete"
 		content.Status = "replication-complete"
-		r.LightNode.DB.Save(&pieceComm)
-		r.LightNode.DB.Save(&content)
+		r.LightNode.DB.Model(&core.PieceCommitment{}).Save(pieceComm)
+		r.LightNode.DB.Model(&core.PieceCommitment{}).Save(content)
 	} else {
 		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 	}
@@ -219,14 +221,13 @@ func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop
 	propPhase, err := r.LightNode.Filclient.SendProposalV120(ctx, dbid, netprop, dealUUID, announceAddr, authToken)
 
 	if err != nil {
+		r.LightNode.Filclient.Libp2pTransferMgr.CleanupPreparedRequest(r.Context, dbid, authToken)
 		//  deal proposal is identical
 		// if err includes message  deal proposal is identical
-		if strings.ContainsAny(err.Error(), "deal proposal is identical") { // don't put it back on the queue
+		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
 			fmt.Println("identical!!!", err)
 			return true, err
 		}
-
-		r.LightNode.Filclient.Libp2pTransferMgr.CleanupPreparedRequest(r.Context, dbid, authToken)
 	}
 	return propPhase, err
 }

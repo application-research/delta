@@ -3,13 +3,17 @@ Generic Deal Making Service using whypfs + filclient + estuary_auth
 
 ![image](https://user-images.githubusercontent.com/4479171/217404677-7fca404c-a89a-48b4-bc83-3f223dd6508d.png)
 
-
 ## Features
 - Creates a deal for large files. The recommended size is 1GB. 
 - Shows all the deals made for specific user
 - Built-in gateway to view the files while the background process creates the deals for each
 
 This is strictly a deal-making service. It'll pin the files/CIDs but it won't keep the files. Once a deal is made, the CID will be removed from the blockstore. For retrievals, use the retrieval-deal microservice.
+
+## Process Flow
+- client upload files
+- service queues the request for content or commp
+- dispatcher runs every N seconds to check the request
 
 ## Configuration
 
@@ -20,9 +24,9 @@ MODE=standalone # HA
 DB_NAME=stg-deal-maker
 REPO=/mnt/.whypfs # shared mounted repo
 
-# Piece commp and deal-making job frequency in seconds
-PIECE_COMMP_JOB_FREQ=300 // runs every 5 mins
-REPLICATION_JOB_FREQ=600 // runs every 10 mins
+# Job frequencies
+DISPATCH_JOBS_EVERY=10
+MINER_INFO_UPDATE_JOB_FREQ=300
 ```
 
 Running this the first time will generate a wallet. Make sure to get FIL from the [faucet](https://verify.glif.io/) and fund the wallet

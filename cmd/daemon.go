@@ -5,6 +5,7 @@ import (
 	"fc-deal-making-service/api"
 	"fc-deal-making-service/core"
 	"fc-deal-making-service/jobs"
+	"fmt"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 	"strconv"
@@ -59,6 +60,7 @@ func runProcessors(ln *core.LightNode) {
 
 	// run the job every 10 seconds.
 	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
+	jobDispatchWorker, err := strconv.Atoi(viper.Get("DISPATCH_WORKER").(string))
 	//pieceCommpJobFreq, err := strconv.Atoi(viper.Get("PIECE_COMMP_JOB_FREQ").(string))
 	//replicationJobFreq, err := strconv.Atoi(viper.Get("REPLICATION_JOB_FREQ").(string))
 	//minerCheckJobFreq, err := strconv.Atoi(viper.Get("MINER_INFO_UPDATE_JOB_FREQ").(string))
@@ -76,7 +78,13 @@ func runProcessors(ln *core.LightNode) {
 		select {
 		case <-jobDispatchTick.C:
 			go func() {
-				ln.Dispatcher.Start(100)
+				ln.Dispatcher.Start(jobDispatchWorker)
+				for {
+					if ln.Dispatcher.Finished() {
+						fmt.Printf("All jobs finished.\n")
+						break
+					}
+				}
 			}()
 			//case <-replicationJobFreqTick.C:
 			//	go func() {
@@ -112,4 +120,12 @@ func runRequeue(ln *core.LightNode) {
 		ln.DB.Model(&core.Content{}).Where("piece_commitment_id = ?", pieceCommp.ID).Find(&content)
 		ln.Dispatcher.AddJob(jobs.NewItemReplicationProcessor(ln, content, pieceCommp))
 	}
+
+	var contentsForDeletion []core.Content
+	ln.DB.Model(&core.Content{}).Where("status = ?", "replication-complete").Find(&contentsForDeletion)
+
+	for _, content := range contentsForDeletion {
+		ln.Dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln, content)) // just delete it
+	}
+
 }
