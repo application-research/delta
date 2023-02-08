@@ -156,8 +156,8 @@ func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceC
 		content.PieceCommitmentId = pieceComm.ID
 		pieceComm.Status = "complete"
 		content.Status = "replication-complete"
-		r.LightNode.DB.Model(&core.PieceCommitment{}).Save(pieceComm)
-		r.LightNode.DB.Model(&core.PieceCommitment{}).Save(content)
+		r.LightNode.DB.Model(&core.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)
+		r.LightNode.DB.Model(&core.Content{}).Where("id = ?", content.ID).Save(content)
 	} else {
 		r.LightNode.Dispatcher.AddJob(NewItemReplicationProcessor(r.LightNode, *content, *pieceComm))
 	}
@@ -184,7 +184,7 @@ func (r *ItemReplicationProcessor) GetStorageProviders() []MinerAddress {
 }
 
 var mainnetMinerStrs = []string{
-	"f01963614",
+	"f0501283",
 }
 
 func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {
@@ -229,5 +229,6 @@ func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop
 			return true, err
 		}
 	}
+	fmt.Println("PropPhase RETURN", propPhase)
 	return propPhase, err
 }

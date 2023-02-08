@@ -46,6 +46,7 @@ func (m MinerCheckProcessor) Run() error {
 	// for each miner info, get miner price
 	var minerPrices []core.MinerPrice
 	for _, minerInfo := range minerInfos {
+		fmt.Println(minerInfo.Addr)
 		var minerPrice core.MinerPrice
 		reqMinerPrice, err := http.Get("https://api.estuary.tech/public/miners/storage/query/" + minerInfo.Addr)
 		if err != nil {
@@ -57,5 +58,13 @@ func (m MinerCheckProcessor) Run() error {
 		minerPrices = append(minerPrices, minerPrice)
 	}
 
+	fmt.Println(minerPrices)
+
+	m.LightNode.DB.Transaction(func(tx *gorm.DB) error {
+		// insert all
+		tx.Create(&minerInfos)
+		tx.Create(&minerPrices)
+		return nil
+	})
 	return nil
 }

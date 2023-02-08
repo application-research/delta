@@ -121,7 +121,7 @@ type PieceCommitment struct {
 	Cid             string `json:"cid"`
 	Piece           string `json:"piece"`
 	Size            int64  `json:"size"`
-	PaddedPieceSize uint64 `json:"padded_piece_size"`
+	PaddedPieceSize int64  `json:"padded_piece_size"`
 	Status          string `json:"status"` // open, in-progress, completed (closed).
 	Created_at      time.Time
 	Updated_at      time.Time

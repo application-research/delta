@@ -41,6 +41,7 @@ func DaemonCmd() []*cli.Command {
 			//	launch the jobs
 			go runProcessors(ln)
 			go runRequeue(ln)
+			go runMinerCheck(ln)
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
 			api.LoopForever()
@@ -60,7 +61,7 @@ func runProcessors(ln *core.LightNode) {
 
 	// run the job every 10 seconds.
 	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
-	jobDispatchWorker, err := strconv.Atoi(viper.Get("DISPATCH_WORKER").(string))
+	jobDispatchWorker, err := strconv.Atoi(viper.Get("MAX_DISPATCH_WORKERS").(string))
 	//pieceCommpJobFreq, err := strconv.Atoi(viper.Get("PIECE_COMMP_JOB_FREQ").(string))
 	//replicationJobFreq, err := strconv.Atoi(viper.Get("REPLICATION_JOB_FREQ").(string))
 	//minerCheckJobFreq, err := strconv.Atoi(viper.Get("MINER_INFO_UPDATE_JOB_FREQ").(string))
@@ -128,4 +129,8 @@ func runRequeue(ln *core.LightNode) {
 		ln.Dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln, content)) // just delete it
 	}
 
+}
+
+func runMinerCheck(ln *core.LightNode) {
+	jobs.NewMinerCheckProcessor(ln).Run()
 }

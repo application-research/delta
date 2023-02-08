@@ -28,6 +28,8 @@ func (i ItemContentCleanUpProcessor) Run() error {
 	if err != nil {
 		fmt.Println("error on cid")
 	}
-	i.LightNode.Node.DAGService.Remove(i.Context, cidD)
+	i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+	i.LightNode.DB.Update("status", "replication-complete-cleaned-up").Where("cid = ?", i.Content.Cid).Delete(&core.Content{})
+
 	return nil
 }

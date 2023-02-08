@@ -53,7 +53,7 @@ func (i ItemContentProcessor) Run() error {
 		Cid:             payloadCid.String(),
 		Piece:           commitment.String(),
 		Size:            int64(u),
-		PaddedPieceSize: uint64(a),
+		PaddedPieceSize: int64(a),
 		Status:          "open",
 		Created_at:      time.Now(),
 		Updated_at:      time.Now(),
