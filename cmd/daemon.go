@@ -5,8 +5,9 @@ import (
 	"fc-deal-making-service/api"
 	"fc-deal-making-service/core"
 	"fc-deal-making-service/jobs"
-	"fmt"
+	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
+	"strconv"
 	"time"
 )
 
@@ -20,18 +21,24 @@ func DaemonCmd() []*cli.Command {
 
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name: "enable-api",
+				Name: "repo",
 			},
 		},
 		Action: func(c *cli.Context) error {
 
-			ln, err := core.NewLightNode(context.Background())
+			repo := c.String("repo")
+
+			if repo == "" {
+				repo = ".whypfs"
+			}
+
+			ln, err := core.NewLightNode(context.Background(), repo)
 			if err != nil {
 				return err
 			}
 
 			//	launch the jobs
-			go runJobs(ln)
+			go runProcessors(ln)
 
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
@@ -48,26 +55,33 @@ func DaemonCmd() []*cli.Command {
 
 }
 
-func runJobs(ln *core.LightNode) {
+func runProcessors(ln *core.LightNode) {
 
-	fmt.Println("run jobs")
 	// run the job every 10 seconds.
-	tick := time.NewTicker(10 * time.Second)
+	pieceCommpJobFreq, err := strconv.Atoi(viper.Get("PIECE_COMMP_JOB_FREQ").(string))
+	replicationJobFreq, err := strconv.Atoi(viper.Get("REPLICATION_JOB_FREQ").(string))
+
+	if err != nil {
+		pieceCommpJobFreq = 10
+		replicationJobFreq = 10
+	}
+
+	pieceCommpJobFreqTick := time.NewTicker(time.Duration(pieceCommpJobFreq) * time.Second)
+	replicationJobFreqTick := time.NewTicker(time.Duration(replicationJobFreq) * time.Second)
+
 	for {
 		select {
-		case <-tick.C:
+		case <-pieceCommpJobFreqTick.C:
 			go func() {
-				fmt.Println("piece commp processor")
-				pieceNewCommpProcessor := jobs.NewPieceCommpProcessor(ln)
-				pieceNewCommpProcessor.Run()
+				pieceCommpRun := jobs.NewPieceCommpProcessor(ln)
+				go pieceCommpRun.Run()
 			}()
-
+		case <-replicationJobFreqTick.C:
 			go func() {
-				fmt.Println("replication deal maker")
-				dealMaker := jobs.NewReplicationProcessor(ln)
-				dealMaker.Run()
+				replicationRun := jobs.NewStorageDealMakerProcessor(ln)
+				go replicationRun.Run()
+
 			}()
 		}
 	}
-
 }

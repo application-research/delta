@@ -1,15 +1,29 @@
 package jobs
 
-import "fc-deal-making-service/core"
+import (
+	"context"
+	"fc-deal-making-service/core"
+)
+
+type JobExecutable func() error
+type IProcessor interface {
+	Run() error
+}
 
 type Processor struct {
-	ProcessorInterface
+	Context   context.Context
 	LightNode *core.LightNode
 }
 
-type ProcessorInterface interface {
-	PreProcess()
-	PostProcess()
-	Run()
-	Verify()
+type ContentProcessor struct {
+	Context   context.Context
+	LightNode *core.LightNode
+	Content   core.Content
+}
+
+type ReplicationProcessor struct {
+	Context   context.Context
+	LightNode *core.LightNode
+	Content   *core.Content
+	PieceComm *core.PieceCommitment
 }

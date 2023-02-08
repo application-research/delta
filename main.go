@@ -5,6 +5,7 @@ package main
 import (
 	"fc-deal-making-service/cmd"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 	_ "net/http"
 	"os"
@@ -15,6 +16,12 @@ var (
 )
 
 func main() {
+
+	viper.SetConfigFile(".env")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Error(err)
+	}
 
 	// get all the commands
 	var commands []*cli.Command

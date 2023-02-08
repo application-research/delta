@@ -118,7 +118,7 @@ type Bucket struct {
 }
 
 type PieceCommitment struct {
-	ID              uint   `gorm:"primaryKey"`
+	ID              int64  `gorm:"primaryKey"`
 	Cid             string `json:"cid"`
 	Piece           string `json:"piece"`
 	Size            int64  `json:"size"`

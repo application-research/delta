@@ -16,46 +16,69 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// ReplicationProcessor check replication if exists
-type ReplicationProcessor struct {
+type StorageDealMakerProcessor struct {
 	Processor
 }
 
-func NewReplicationProcessor(ln *core.LightNode) ReplicationProcessor {
-	return ReplicationProcessor{
+type ItemReplicationProcessor struct {
+	ReplicationProcessor
+}
+
+func (i ItemReplicationProcessor) Run() error {
+	err := i.makeStorageDeal(i.Content, i.PieceComm)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func NewItemReplicationProcessor(ln *core.LightNode, content core.Content, commitment core.PieceCommitment) IProcessor {
+	return &ItemReplicationProcessor{
+		ReplicationProcessor{
+			LightNode: ln,
+			Content:   &content,
+			PieceComm: &commitment,
+			Context:   context.Background(),
+		},
+	}
+}
+
+func NewStorageDealMakerProcessor(ln *core.LightNode) IProcessor {
+	return &StorageDealMakerProcessor{
 		Processor{
 			LightNode: ln,
 		},
 	}
 }
 
-func (r *ReplicationProcessor) Run() {
+func (r *StorageDealMakerProcessor) Run() error {
 
 	// get all piece comm record that are replication-assigned
+	dispatcher := CreateNewDispatcher()
 	var contents []core.Content
 	r.LightNode.DB.Model(&core.Content{}).Where("status = ?", "piece-assigned").Find(&contents)
 
 	// for each content, get piece commitment and process
 	for _, content := range contents {
 		var pieceCommitments []core.PieceCommitment
-		r.LightNode.DB.Model(&core.PieceCommitment{}).Where("piece_commitment_id = ?", content.PieceCommitmentId).Find(&pieceCommitments)
-		for _, pieceCommitment := range pieceCommitments {
-			err := r.makeStorageDeal(content, pieceCommitment)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}
-	}
+		r.LightNode.DB.Model(&core.PieceCommitment{}).Where("id = ?", content.PieceCommitmentId).Find(&pieceCommitments)
 
+		for _, pieceCommitment := range pieceCommitments {
+			item := NewItemReplicationProcessor(r.LightNode, content, pieceCommitment)
+			dispatcher.AddJob(item)
+		}
+		dispatcher.Start(10)
+	}
+	return nil
 }
 
-func (r *ReplicationProcessor) makeStorageDeal(content core.Content, pieceComm core.PieceCommitment) error {
+func (r *ItemReplicationProcessor) makeStorageDeal(content *core.Content, pieceComm *core.PieceCommitment) error {
 
 	//var pieceCommitment core.PieceCommitment
 	//r.LightNode.DB.Model(&core.PieceCommitment{}).Where("piece = ?", bucketReplicationRequests.PieceCommitment).Find(&pieceCommitment)
 
-	bal, err := r.LightNode.Filclient.Balance(context.Background())
+	bal, err := r.LightNode.Filclient.Balance(r.Context)
 	if err != nil {
 		return err
 	}
@@ -76,8 +99,8 @@ func (r *ReplicationProcessor) makeStorageDeal(content core.Content, pieceComm c
 	var DealDuration = 1555200 - (2880 * 21)
 	duration := abi.ChainEpoch(DealDuration)
 
-	prop, err := r.LightNode.Filclient.MakeDeal(context.Background(), r.GetStorageProviders()[0].Address, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
-
+	prop, err := r.LightNode.Filclient.MakeDeal(r.Context, r.GetStorageProviders()[0].Address, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
+	fmt.Println(prop)
 	if err != nil {
 		return err
 	}
@@ -95,7 +118,7 @@ func (r *ReplicationProcessor) makeStorageDeal(content core.Content, pieceComm c
 		//return err
 	}
 
-	proto, err := r.LightNode.Filclient.DealProtocolForMiner(context.Background(), r.GetStorageProviders()[0].Address)
+	proto, err := r.LightNode.Filclient.DealProtocolForMiner(r.Context, r.GetStorageProviders()[0].Address)
 	if err != nil {
 		fmt.Println("Proto ", err)
 		//return err
@@ -116,11 +139,16 @@ func (r *ReplicationProcessor) makeStorageDeal(content core.Content, pieceComm c
 	}
 
 	fmt.Println(r.GetStorageProviders()[0].Address)
-	propPhase, err := r.sendProposalV120(context.Background(), *prop, propnd.Cid(), dealUUID, deal.ID)
-
+	propPhase, err := r.sendProposalV120(r.Context, *prop, propnd.Cid(), dealUUID, deal.ID)
+	if err != nil {
+		fmt.Println("PropPhase", err)
+		return err
+	}
 	if propPhase == true {
 		pieceComm.Status = "complete"
+		content.Status = "replication-complete"
 		r.LightNode.DB.Save(&pieceComm)
+		r.LightNode.DB.Save(&content)
 	}
 
 	return nil
@@ -131,7 +159,7 @@ type MinerAddress struct {
 	Address address.Address
 }
 
-func (r *ReplicationProcessor) GetStorageProviders() []MinerAddress {
+func (r *ItemReplicationProcessor) GetStorageProviders() []MinerAddress {
 	var storageProviders []MinerAddress
 	for _, s := range mainnetMinerStrs {
 		address.CurrentNetwork = address.Mainnet
@@ -148,10 +176,8 @@ var mainnetMinerStrs = []string{
 	"f01963614",
 }
 
-func (r *ReplicationProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {
+func (r *ItemReplicationProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {
 	// In deal protocol v120 the transfer will be initiated by the
-	// storage provider (a pull transfer) so we need to prepare for
-	// the data request
 
 	// Create an auth token to be used in the request
 	authToken, err := httptransport.GenerateAuthToken()
@@ -167,8 +193,8 @@ func (r *ReplicationProcessor) sendProposalV120(ctx context.Context, netprop net
 		return false, xerrors.Errorf("cannot serve deal data: no announce address configured for estuary node")
 	}
 
-	fmt.Println("AnnounceAddrs", r.LightNode.Node.Config.AnnounceAddrs[0])
-	addrstr := r.LightNode.Node.Config.AnnounceAddrs[0] + "/p2p/" + r.LightNode.Node.Host.ID().String()
+	fmt.Println("AnnounceAddrs", r.LightNode.Node.Config.AnnounceAddrs[1])
+	addrstr := r.LightNode.Node.Config.AnnounceAddrs[1] + "/p2p/" + r.LightNode.Node.Host.ID().String()
 	announceAddr, err = multiaddr.NewMultiaddr(addrstr)
 	if err != nil {
 		return false, xerrors.Errorf("cannot parse announce address '%s': %w", addrstr, err)

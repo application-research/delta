@@ -15,21 +15,12 @@ import (
 	"github.com/filecoin-project/lotus/chain/wallet"
 	"github.com/filecoin-project/lotus/chain/wallet/key"
 	cliutil "github.com/filecoin-project/lotus/cli/util"
-	"github.com/ipfs/go-blockservice"
-	bsfetcher "github.com/ipfs/go-fetcher/impl/blockservice"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	mdagipld "github.com/ipfs/go-ipld-format"
-	"github.com/ipfs/go-merkledag"
 	"github.com/ipfs/go-path/resolver"
-	"github.com/ipfs/go-unixfsnode"
-	dagpb "github.com/ipld/go-codec-dagpb"
-	"github.com/ipld/go-ipld-prime"
-	ipldbasicnode "github.com/ipld/go-ipld-prime/node/basic"
-	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/labstack/gommon/log"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	"github.com/urfave/cli"
 	"gorm.io/gorm"
 	"io/ioutil"
 	"net/http"
@@ -95,23 +86,24 @@ func BootstrapEstuaryPeers() []peer.AddrInfo {
 
 // Add a config to enable gateway or not.
 // Add a config to enable content, bucket, commp, replication verifier processor
-func NewLightNode(ctx context.Context) (*LightNode, error) {
+func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 	//	database
 	db, err := OpenDatabase()
 	publicIp, err := GetPublicIP()
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{
-			"/ip4/" + publicIp + "/tcp/6745",
 			"/ip4/0.0.0.0/tcp/6745",
+			"/ip4/" + publicIp + "/tcp/6745",
 		},
 		AnnounceAddrs: []string{
-			"/ip4/" + publicIp + "/tcp/6745",
 			"/ip4/0.0.0.0/tcp/6745",
+			"/ip4/" + publicIp + "/tcp/6745",
 		},
 	}
 	params := whypfs.NewNodeParams{
 		Ctx:       context.Background(),
 		Datastore: whypfs.NewInMemoryDatastore(),
+		Repo:      repo,
 	}
 	// node
 	params.Config = params.ConfigurationBuilder(newConfig)
@@ -146,71 +138,6 @@ func NewLightNode(ctx context.Context) (*LightNode, error) {
 		Node:      whypfsPeer,
 		DB:        db,
 		Filclient: fc,
-	}, nil
-}
-
-func NewFullLightNode(ctx *cli.Context) (*LightNode, error) {
-
-	// database connection
-	db, err := OpenDatabase()
-
-	// node
-	whypfsPeer, err := whypfs.NewNode(whypfs.NewNodeParams{
-		Ctx:       context.Background(),
-		Datastore: whypfs.NewInMemoryDatastore(),
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	whypfsPeer.BootstrapPeers(BootstrapEstuaryPeers())
-
-	// Filclient
-	api, _, err := LotusConnection("http://api.chain.love")
-	addr, err := api.WalletDefaultAddress(context.Background())
-	wallet := &wallet.LocalWallet{}
-
-	fmt.Println(whypfsPeer.Host.ID().String())
-	fc, err := fc.NewClient(whypfsPeer.Host, api, wallet, addr, whypfsPeer.Blockstore, whypfsPeer.Datastore, whypfsPeer.Config.DatastoreDir.Directory)
-
-	amt, err := types.ParseFIL("0.5")
-
-	fc.LockMarketFunds(context.Background(), amt)
-	// gateway
-	gw, err := NewGatewayHandler(whypfsPeer)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// create the global light node.
-	return &LightNode{
-		Node:      whypfsPeer,
-		Gw:        gw,
-		DB:        db,
-		Filclient: fc,
-	}, nil
-
-}
-
-func NewGatewayHandler(node *whypfs.Node) (*GatewayHandler, error) {
-
-	bsvc := blockservice.New(node.Blockstore, nil)
-	ipldFetcher := bsfetcher.NewFetcherConfig(bsvc)
-
-	ipldFetcher.PrototypeChooser = dagpb.AddSupportToChooser(func(lnk ipld.Link, lnkCtx ipld.LinkContext) (ipld.NodePrototype, error) {
-		if tlnkNd, ok := lnkCtx.LinkNode.(schema.TypedLinkNode); ok {
-			return tlnkNd.LinkTargetNodePrototype(), nil
-		}
-		return ipldbasicnode.Prototype.Any, nil
-	})
-
-	resolver := resolver.NewBasicResolver(ipldFetcher.WithReifier(unixfsnode.Reify))
-	return &GatewayHandler{
-		bs:       node.Blockstore,
-		dserv:    merkledag.NewDAGService(bsvc),
-		resolver: resolver,
-		node:     node,
 	}, nil
 }
 
