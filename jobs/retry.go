@@ -32,7 +32,6 @@ func (i RetryProcessor) Run() error {
 	}
 
 	// get all the pending content jobs. we need to requeue them.
-
 	var pinnedContents []core.Content
 	i.LightNode.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&pinnedContents)
 

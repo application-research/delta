@@ -46,6 +46,14 @@ type Content struct {
 	UpdatedAt         time.Time `json:"updated_at"`
 }
 
+type ContentMinerAssignment struct {
+	ID        int64     `gorm:"primaryKey"`
+	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	Miner     string    `json:"miner"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type ContentDeal struct {
 	ID                  int64       `gorm:"primaryKey"`
 	Content             int64       `json:"content" gorm:"index:,option:CONCURRENTLY"`

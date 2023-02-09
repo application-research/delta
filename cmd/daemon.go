@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -40,9 +39,11 @@ func DaemonCmd() []*cli.Command {
 				return err
 			}
 
-			//	launch the jobs
+			//	launch the dispatchers.
 			go runProcessors(ln)
-			go runRequeue(ln)
+
+			//	launch clean up dispatch jobs
+			//	any failures due to the node shutdown will be retried after 1 day
 			go runCron(ln)
 
 			// launch the API node
@@ -70,15 +71,6 @@ func runCron(ln *core.LightNode) {
 
 	<-gocron.Start()
 
-}
-
-func wait(wg *sync.WaitGroup) chan bool {
-	ch := make(chan bool)
-	go func() {
-		wg.Wait()
-		ch <- true
-	}()
-	return ch
 }
 
 func runProcessors(ln *core.LightNode) {
@@ -112,34 +104,4 @@ func runProcessors(ln *core.LightNode) {
 			}()
 		}
 	}
-}
-func runRequeue(ln *core.LightNode) {
-	// get all the pending content jobs. we need to requeue them.
-
-	var contents []core.Content
-	ln.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&contents)
-
-	for _, content := range contents {
-		ln.Dispatcher.AddJob(jobs.NewPieceCommpProcessor(ln, content))
-	}
-
-	var contentsForCommp []core.Content
-	ln.DB.Model(&core.Content{}).Where("status = ?", "piece-computing").Find(&contentsForCommp)
-
-	for _, content := range contentsForCommp {
-		ln.Dispatcher.AddJob(jobs.NewPieceCommpProcessor(ln, content))
-	}
-
-	var pieceCommps []core.PieceCommitment
-	ln.DB.Model(&core.PieceCommitment{}).Where("status = ?", "open").Find(&pieceCommps)
-
-	for _, pieceCommp := range pieceCommps {
-		var content core.Content
-		ln.DB.Model(&core.Content{}).Where("piece_commitment_id = ?", pieceCommp.ID).Find(&content)
-		ln.Dispatcher.AddJob(jobs.NewStorageDealMakerProcessor(ln, content, pieceCommp))
-	}
-
-	var contentsForDeletion []core.Content
-	ln.DB.Model(&core.Content{}).Where("status = ?", "replication-complete").Find(&contentsForDeletion)
-
 }

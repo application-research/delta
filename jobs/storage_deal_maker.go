@@ -46,6 +46,7 @@ func NewStorageDealMakerProcessor(ln *core.LightNode, content core.Content, comm
 
 func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, pieceComm *core.PieceCommitment) error {
 
+	var minerAddress = i.GetAssignedMinerForContent(*content).Address
 	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
 		Status: "making-deal-proposal",
 	})
@@ -68,7 +69,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	var DealDuration = 1555200 - (2880 * 21)
 	duration := abi.ChainEpoch(DealDuration)
 
-	prop, err := i.LightNode.FilClient.MakeDeal(i.Context, i.GetStorageProviders()[0].Address, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
+	prop, err := i.LightNode.FilClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
 	fmt.Println(prop)
 	if err != nil {
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
@@ -82,7 +83,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	}
 
 	dealUUID := uuid.New()
-	proto, err := i.LightNode.FilClient.DealProtocolForMiner(i.Context, i.GetStorageProviders()[0].Address)
+	proto, err := i.LightNode.FilClient.DealProtocolForMiner(i.Context, minerAddress)
 	if err != nil {
 		fmt.Println("deal protocol for miner", err)
 	}
@@ -91,7 +92,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		Content:             content.ID,
 		PropCid:             propnd.Cid().String(),
 		DealUUID:            dealUUID.String(),
-		Miner:               i.GetStorageProviders()[0].Address.String(),
+		Miner:               minerAddress.String(),
 		Verified:            true,
 		DealProtocolVersion: proto,
 		CreatedAt:           time.Now(),
@@ -117,7 +118,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	if propPhase == false {
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
-		channelId, err := i.LightNode.FilClient.StartDataTransfer(i.Context, i.GetStorageProviders()[0].Address, propCid, contentCid)
+		channelId, err := i.LightNode.FilClient.StartDataTransfer(i.Context, i.GetAssignedMinerForContent(*content).Address, propCid, contentCid)
 		if err != nil {
 			i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
 			return err
@@ -148,6 +149,21 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 type MinerAddress struct {
 	Address address.Address
+}
+
+func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content core.Content) MinerAddress {
+	var storageMinerAssignment core.ContentMinerAssignment
+	i.LightNode.DB.Model(&core.ContentMinerAssignment{}).Where("content = ?", content.ID).First(&storageMinerAssignment)
+
+	if storageMinerAssignment.ID == 0 {
+		address.CurrentNetwork = address.Mainnet
+		a, err := address.NewFromString(storageMinerAssignment.Miner)
+		if err != nil {
+			fmt.Println("error on miner address", err, a)
+		}
+		return MinerAddress{Address: a}
+	}
+	return i.GetStorageProviders()[0]
 }
 
 func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {

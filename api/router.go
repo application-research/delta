@@ -116,6 +116,7 @@ func InitializeEchoRouterConfig(ln *core.LightNode) {
 	ConfigureUploadRouter(apiGroup, ln)
 	ConfigureStatusCheckRouter(apiGroup, ln)
 	ConfigureNodeInfoRouter(openApiGroup, ln)
+	ConfigureRepairRouter(apiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1313")) // configuration

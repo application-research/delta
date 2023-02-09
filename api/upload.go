@@ -35,9 +35,12 @@ func ConfigureUploadRouter(e *echo.Group, node *core.LightNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 		file, err := c.FormFile("data")
+		miner := c.FormValue("miner")
+
 		if err != nil {
 			return err
 		}
+
 		src, err := file.Open()
 		if err != nil {
 			return err
@@ -56,8 +59,17 @@ func ConfigureUploadRouter(e *echo.Group, node *core.LightNode) {
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
-
 		node.DB.Create(&content)
+
+		if miner != "" {
+			contentMinerAssignment := core.ContentMinerAssignment{
+				Miner:     miner,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentMinerAssignment)
+		}
 
 		if err != nil {
 			c.JSON(500, UploadResponse{

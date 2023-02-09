@@ -25,9 +25,9 @@ NODE_NAME=stg-deal-maker
 NODE_DESCRIPTION=Experimental Deal Maker
 NODE_TYPE=delta-main
 
-# Database configuration
+# DB Configuration
 MODE=standalone # HA
-DB_NAME=stg-deal-maker
+DB_DSN=<POSGRES DSN URI>
 #REPO=/mnt/.whypfs # shared mounted repo
 
 # Frequencies
