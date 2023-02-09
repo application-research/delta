@@ -37,7 +37,7 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	// prepare the commp
-	commitment, u, a, err := filclient.GeneratePieceCommitmentFFI(i.Context, payloadCid, i.LightNode.Node.Blockstore)
+	commitment, u, a, err := filclient.GeneratePieceCommitment(i.Context, payloadCid, i.LightNode.Node.Blockstore)
 	if err != nil {
 		// put this back to the queue
 		i.LightNode.Dispatcher.AddJob(NewPieceCommpProcessor(i.LightNode, i.Content))
