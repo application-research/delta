@@ -84,9 +84,12 @@ func BootstrapEstuaryPeers() []peer.AddrInfo {
 	return peers
 }
 
-// Add a config to enable gateway or not.
-// Add a config to enable content, bucket, commp, replication verifier processor
-func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
+type NewLightNodeParams struct {
+	Repo             string
+	DefaultWalletDir string
+}
+
+func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*LightNode, error) {
 	//	database
 	db, err := OpenDatabase()
 	publicIp, err := GetPublicIP()
@@ -103,7 +106,7 @@ func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 	params := whypfs.NewNodeParams{
 		Ctx:       context.Background(),
 		Datastore: whypfs.NewInMemoryDatastore(),
-		Repo:      repo,
+		Repo:      repo.Repo,
 	}
 	// node
 	params.Config = params.ConfigurationBuilder(newConfig)
@@ -117,11 +120,8 @@ func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 
 	//	FilClient
 	api, _, err := LotusConnection("http://api.chain.love")
-	addr, err := api.WalletDefaultAddress(ctx)
 
-	fmt.Println(addr)
-	//wallet := &wallet.LocalWallet{}
-	wallet, err := SetupWallet("./wallet")
+	wallet, err := SetupWallet(repo.DefaultWalletDir)
 	walletAddr, err := wallet.GetDefault()
 	if err != nil {
 		panic(err)

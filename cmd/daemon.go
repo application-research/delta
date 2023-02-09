@@ -29,12 +29,21 @@ func DaemonCmd() []*cli.Command {
 		Action: func(c *cli.Context) error {
 
 			repo := c.String("repo")
+			walletDir := c.String("wallet-dir")
 
 			if repo == "" {
 				repo = ".whypfs"
 			}
 
-			ln, err := core.NewLightNode(context.Background(), repo)
+			if walletDir == "" {
+				walletDir = "./wallet"
+			}
+
+			nodeParams := core.NewLightNodeParams{
+				Repo:             repo,
+				DefaultWalletDir: walletDir,
+			}
+			ln, err := core.NewLightNode(context.Background(), nodeParams)
 			if err != nil {
 				return err
 			}
