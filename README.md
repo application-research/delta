@@ -73,7 +73,6 @@ curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
 
 ### Stats (content, commps and deals) 
 ```
-curl --location --request GET 'http://localhost:1313/api/v1/status/deals' \
+curl --location --request GET 'http://localhost:1313/api/v1/stats' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---form 'data=@"/Users/alvinreyes/Projects/arg/fc-deal-making-service/files/random_1675818258N.dat"'
 ```
