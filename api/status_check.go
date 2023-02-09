@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fc-deal-making-service/core"
+	"delta/core"
 	"strings"
 
 	"github.com/labstack/echo/v4"

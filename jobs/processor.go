@@ -2,7 +2,7 @@ package jobs
 
 import (
 	"context"
-	"fc-deal-making-service/core"
+	"delta/core"
 )
 
 type JobExecutable func() error

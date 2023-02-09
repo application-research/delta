@@ -3,7 +3,7 @@
 package main
 
 import (
-	"fc-deal-making-service/cmd"
+	"delta/cmd"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"

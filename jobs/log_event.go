@@ -1,6 +1,6 @@
 package jobs
 
-import "fc-deal-making-service/core"
+import "delta/core"
 
 type LogEventProcessor struct {
 	LightNode *core.LightNode

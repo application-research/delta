@@ -1,8 +1,8 @@
 package jobs
 
 import (
+	"delta/core"
 	"encoding/json"
-	"fc-deal-making-service/core"
 	"fmt"
 	"gorm.io/gorm"
 	"net/http"

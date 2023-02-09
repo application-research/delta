@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"context"
-	"fc-deal-making-service/api"
-	"fc-deal-making-service/core"
-	"fc-deal-making-service/jobs"
+	"delta/api"
+	"delta/core"
+	"delta/jobs"
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"

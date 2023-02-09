@@ -1,8 +1,8 @@
 package api
 
 import (
-	"fc-deal-making-service/core"
-	"fc-deal-making-service/jobs"
+	"delta/core"
+	"delta/jobs"
 	"strings"
 	"time"
 

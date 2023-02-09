@@ -2,7 +2,7 @@ package jobs
 
 import (
 	"context"
-	"fc-deal-making-service/core"
+	"delta/core"
 	"fmt"
 	"github.com/ipfs/go-cid"
 )

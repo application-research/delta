@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fc-deal-making-service/metrics"
+	"delta/metrics"
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
