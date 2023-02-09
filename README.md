@@ -1,7 +1,8 @@
 # Δ Delta
 Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 
-![image](https://user-images.githubusercontent.com/4479171/217404677-7fca404c-a89a-48b4-bc83-3f223dd6508d.png)
+![image](https://user-images.githubusercontent.com/4479171/217723002-fba624ff-1a1d-41e0-a550-398a3a29682c.png)
+
 
 ## Features
 - Creates a deal for large files. The recommended size is 1GB. 
