@@ -6,18 +6,19 @@ import (
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/spf13/viper"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"time"
 )
 
 func OpenDatabase() (*gorm.DB, error) {
 
-	dbName, okHost := viper.Get("DB_NAME").(string)
+	dbDsn, okHost := viper.Get("DB_DSN").(string)
 	if !okHost {
 		panic("DB_NAME not set")
 	}
-	DB, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+	//DB, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
+	DB, err := gorm.Open(postgres.Open(dbDsn), &gorm.Config{})
 
 	// generate new models.
 	ConfigureModels(DB) // create models.

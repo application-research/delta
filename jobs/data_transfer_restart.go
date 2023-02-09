@@ -35,6 +35,7 @@ func (d DataTransferRestartListenerProcessor) Run() error {
 	if err != nil {
 		return err
 	}
-
+	// subscribe to data transfer events
+	d.LightNode.Dispatcher.AddJob(NewDataTransferStatusListenerProcessor(d.LightNode))
 	return nil
 }

@@ -8,28 +8,35 @@ import (
 )
 
 type ItemContentCleanUpProcessor struct {
-	ContentProcessor
+	Context   context.Context
+	LightNode *core.LightNode
 }
 
-func NewItemContentCleanUpProcessor(ln *core.LightNode, content core.Content) IProcessor {
+func NewItemContentCleanUpProcessor(ln *core.LightNode) IProcessor {
 	return &ItemContentCleanUpProcessor{
-		ContentProcessor{
-			LightNode: ln,
-			Content:   content,
-			Context:   context.Background(),
-		},
+		Context:   context.Background(),
+		LightNode: ln,
 	}
 }
 
 func (i ItemContentCleanUpProcessor) Run() error {
 
-	cidD, err := cid.Decode(i.Content.Cid)
-	fmt.Println("cleaning up" + i.Content.Cid)
-	if err != nil {
-		fmt.Println("error on cid")
+	// get all content with transfer status = "transfer-finished"
+	var contents []core.Content
+	i.LightNode.DB.Model(&core.Content{}).Where("status = ?", "transfer-finished").Find(&contents)
+
+	for _, content := range contents {
+		cidD, err := cid.Decode(content.Cid)
+		if err != nil {
+			fmt.Println("error in decoding cid", err)
+			continue
+		}
+		err = i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+		if err != nil {
+			fmt.Println("error in deleting block", err)
+			continue
+		}
 	}
-	i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
-	i.LightNode.DB.Model(&core.Content{}).Where("cid = ?", i.Content.Cid).Update("status", "replication-complete-cleaned-up")
 
 	return nil
 }

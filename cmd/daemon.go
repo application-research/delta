@@ -6,9 +6,11 @@ import (
 	"delta/core"
 	"delta/jobs"
 	"fmt"
+	"github.com/jasonlvhit/gocron"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -41,8 +43,8 @@ func DaemonCmd() []*cli.Command {
 			//	launch the jobs
 			go runProcessors(ln)
 			go runRequeue(ln)
-			go runRetryTransfers(ln)
-			//go runMinerCheck(ln)
+			go runCron(ln)
+
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
 			api.LoopForever()
@@ -51,11 +53,32 @@ func DaemonCmd() []*cli.Command {
 		},
 	}
 
-	// add commands.
 	daemonCommands = append(daemonCommands, daemonCmd)
 
 	return daemonCommands
 
+}
+
+func runCron(ln *core.LightNode) {
+
+	gocron.Every(1).Day().Do(func() {
+		dispatcher := core.CreateNewDispatcher()
+		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
+		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		dispatcher.Start(1000)
+	})
+
+	<-gocron.Start()
+
+}
+
+func wait(wg *sync.WaitGroup) chan bool {
+	ch := make(chan bool)
+	go func() {
+		wg.Wait()
+		ch <- true
+	}()
+	return ch
 }
 
 func runProcessors(ln *core.LightNode) {
@@ -63,6 +86,10 @@ func runProcessors(ln *core.LightNode) {
 	// run the job every 10 seconds.
 	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
 	jobDispatchWorker, err := strconv.Atoi(viper.Get("MAX_DISPATCH_WORKERS").(string))
+
+	// 	cron job
+	//	- retry
+	//	- clean up
 
 	if err != nil {
 		jobDispatch = 10
@@ -115,24 +142,4 @@ func runRequeue(ln *core.LightNode) {
 	var contentsForDeletion []core.Content
 	ln.DB.Model(&core.Content{}).Where("status = ?", "replication-complete").Find(&contentsForDeletion)
 
-	for _, content := range contentsForDeletion {
-		ln.Dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln, content)) // just delete it
-	}
-
-}
-func runRetryTransfers(ln *core.LightNode) {
-	// get all the pending content jobs. we need to requeue them.
-	var contentDeals []core.ContentDeal
-
-	// select * from content_deals as cd, contents as c where cd.content_id = c.id and c.status = 'transfer-started';
-	ln.DB.Model(&core.ContentDeal{}).Joins("left join contents as c on content_deals.content = c.id").Where("c.status = ?", "transfer-started").Find(&contentDeals)
-
-	for _, contentDeal := range contentDeals {
-		fmt.Println("Restarting data transfer for content deal: ", contentDeal.ID)
-		ln.Dispatcher.AddJob(jobs.NewDataTransferRestartListenerProcessor(ln, contentDeal))
-	}
-}
-
-func runMinerCheck(ln *core.LightNode) {
-	jobs.NewMinerCheckProcessor(ln).Run()
 }

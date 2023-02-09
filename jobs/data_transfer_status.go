@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
+	"strconv"
 	"time"
 )
 
@@ -20,25 +21,22 @@ func NewDataTransferStatusListenerProcessor(ln *core.LightNode) IProcessor {
 
 func (d DataTransferStatusListenerProcessor) Run() error {
 	d.LightNode.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
-		fmt.Println("data transfer status listener", dbid, fst.Status)
 		switch fst.Status {
 		case datatransfer.Requested:
 			d.LightNode.DB.Model(&core.ContentDeal{}).Where("id = ?", dbid).Updates(core.ContentDeal{
 				TransferStarted: time.Now(),
 			})
-			d.LightNode.DB.Model(&core.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(core.Content{
-				Status: "transfer-requested",
-			})
-		case datatransfer.Ongoing:
-			d.LightNode.DB.Model(&core.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(core.Content{
-				Status: "transfer-ongoing",
-			})
 		case datatransfer.TransferFinished, datatransfer.Completed:
+			transferId, err := strconv.Atoi(fst.TransferID)
+			if err != nil {
+				fmt.Println(err)
+			}
 			d.LightNode.DB.Model(&core.ContentDeal{}).Where("id = ?", dbid).Updates(core.ContentDeal{
+				DealID:           int64(transferId),
 				TransferFinished: time.Now(),
 				SealedAt:         time.Now(),
 			})
-			d.LightNode.DB.Model(&core.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(core.Content{
+			d.LightNode.DB.Model(&core.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(core.Content{
 				Status: "transfer-finished",
 			})
 		case datatransfer.Failed:
@@ -50,7 +48,6 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 				Status: "transfer-failed",
 			})
 
-			// retry
 			d.LightNode.Dispatcher.AddJob(NewDataTransferRestartListenerProcessor(d.LightNode, contentDeal))
 		default:
 

@@ -111,7 +111,7 @@ func InitializeEchoRouterConfig(ln *core.LightNode) {
 			return next(c)
 		}
 	})
-	//ConfigureRetrieveRouter(apiGroup, ln)
+
 	ConfigMetricsRouter(apiGroup)
 	ConfigureUploadRouter(apiGroup, ln)
 	ConfigureStatusCheckRouter(apiGroup, ln)

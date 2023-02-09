@@ -49,6 +49,46 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.LightNode) {
 
 	})
 
+	e.GET("/stats/commps", func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
+		var pieceCommitments []core.PieceCommitment
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
+
+		return c.JSON(200, map[string]interface{}{
+			"piece_commitments": pieceCommitments,
+		})
+		return nil
+	})
+
+	e.GET("/stats/deals", func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		var contentDeal []core.ContentDeal
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
+
+		return c.JSON(200, map[string]interface{}{
+			"deals": contentDeal,
+		})
+		return nil
+	})
+
+	e.GET("/stats/contents", func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		var content []core.Content
+		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
+
+		return c.JSON(200, map[string]interface{}{
+			"content": content,
+		})
+		return nil
+	})
+
 	e.GET("/stats", func(c echo.Context) error {
 
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -56,14 +96,14 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.LightNode) {
 
 		// select * from content_deals cd, content c where cd.content = c.id and c.requesting_api_key = ?;
 		var content []core.Content
-		node.DB.Raw("select * from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
+		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
 
 		var contentDeal []core.ContentDeal
-		node.DB.Raw("select * from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
 
 		// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
 		var pieceCommitments []core.PieceCommitment
-		node.DB.Raw("select * from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
 
 		return c.JSON(200, map[string]interface{}{
 			"content":           content,
