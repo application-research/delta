@@ -148,6 +148,8 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		//})
 
 	} else {
+
+		// reprocess
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
 	}
 
@@ -173,7 +175,7 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 }
 
 var mainnetMinerStrs = []string{
-	"f01133080",
+	"f01963614",
 }
 
 func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {

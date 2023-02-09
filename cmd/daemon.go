@@ -110,14 +110,14 @@ func runRequeue(ln *core.LightNode) {
 	ln.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&contents)
 
 	for _, content := range contents {
-		ln.Dispatcher.AddJob(jobs.NewItemContentProcessor(ln, content))
+		ln.Dispatcher.AddJob(jobs.NewPieceCommpProcessor(ln, content))
 	}
 
 	var contentsForCommp []core.Content
 	ln.DB.Model(&core.Content{}).Where("status = ?", "piece-computing").Find(&contentsForCommp)
 
 	for _, content := range contentsForCommp {
-		ln.Dispatcher.AddJob(jobs.NewItemContentProcessor(ln, content))
+		ln.Dispatcher.AddJob(jobs.NewPieceCommpProcessor(ln, content))
 	}
 
 	var pieceCommps []core.PieceCommitment
@@ -126,7 +126,7 @@ func runRequeue(ln *core.LightNode) {
 	for _, pieceCommp := range pieceCommps {
 		var content core.Content
 		ln.DB.Model(&core.Content{}).Where("piece_commitment_id = ?", pieceCommp.ID).Find(&content)
-		ln.Dispatcher.AddJob(jobs.NewItemReplicationProcessor(ln, content, pieceCommp))
+		ln.Dispatcher.AddJob(jobs.NewStorageDealMakerProcessor(ln, content, pieceCommp))
 	}
 
 	var contentsForDeletion []core.Content
