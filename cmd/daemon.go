@@ -41,6 +41,7 @@ func DaemonCmd() []*cli.Command {
 			//	launch the jobs
 			go runProcessors(ln)
 			go runRequeue(ln)
+			go runRetryTransfers(ln)
 			//go runMinerCheck(ln)
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
@@ -62,23 +63,18 @@ func runProcessors(ln *core.LightNode) {
 	// run the job every 10 seconds.
 	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
 	jobDispatchWorker, err := strconv.Atoi(viper.Get("MAX_DISPATCH_WORKERS").(string))
-	//pieceCommpJobFreq, err := strconv.Atoi(viper.Get("PIECE_COMMP_JOB_FREQ").(string))
-	//replicationJobFreq, err := strconv.Atoi(viper.Get("REPLICATION_JOB_FREQ").(string))
-	//minerCheckJobFreq, err := strconv.Atoi(viper.Get("MINER_INFO_UPDATE_JOB_FREQ").(string))
 
 	if err != nil {
 		jobDispatch = 10
 	}
 
 	jobDispatchTick := time.NewTicker(time.Duration(jobDispatch) * time.Second)
-	//pieceCommpJobFreqTick := time.NewTicker(time.Duration(pieceCommpJobFreq) * time.Second)
-	//replicationJobFreqTick := time.NewTicker(time.Duration(replicationJobFreq) * time.Second)
-	//minerCheckJobFreqTick := time.NewTicker(time.Duration(minerCheckJobFreq) * time.Second)
 
 	for {
 		select {
 		case <-jobDispatchTick.C:
 			go func() {
+				ln.Dispatcher.AddJob(jobs.NewDataTransferStatusListenerProcessor(ln))
 				ln.Dispatcher.Start(jobDispatchWorker)
 				for {
 					if ln.Dispatcher.Finished() {
@@ -87,20 +83,7 @@ func runProcessors(ln *core.LightNode) {
 					}
 				}
 			}()
-			//case <-replicationJobFreqTick.C:
-			//	go func() {
-			//		replicationRun := jobs.NewStorageDealMakerProcessor(ln)
-			//		go replicationRun.Run()
-			//
-			//	}()
-			//case <-minerCheckJobFreqTick.C:
-			//	go func() {
-			//		minerCheckRun := jobs.NewMinerCheckProcessor(ln)
-			//		go minerCheckRun.Run()
-			//
-			//	}()
 		}
-
 	}
 }
 func runRequeue(ln *core.LightNode) {
@@ -136,6 +119,18 @@ func runRequeue(ln *core.LightNode) {
 		ln.Dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln, content)) // just delete it
 	}
 
+}
+func runRetryTransfers(ln *core.LightNode) {
+	// get all the pending content jobs. we need to requeue them.
+	var contentDeals []core.ContentDeal
+
+	// select * from content_deals as cd, contents as c where cd.content_id = c.id and c.status = 'transfer-started';
+	ln.DB.Model(&core.ContentDeal{}).Joins("left join contents as c on content_deals.content = c.id").Where("c.status = ?", "transfer-started").Find(&contentDeals)
+
+	for _, contentDeal := range contentDeals {
+		fmt.Println("Restarting data transfer for content deal: ", contentDeal.ID)
+		ln.Dispatcher.AddJob(jobs.NewDataTransferRestartListenerProcessor(ln, contentDeal))
+	}
 }
 
 func runMinerCheck(ln *core.LightNode) {

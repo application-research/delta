@@ -19,6 +19,11 @@ This is strictly a deal-making service. It'll pin the files/CIDs but it won't ke
 
 Create the .env file in the root directory of the project. The following are the required fields.
 ```
+# Node info
+NODE_NAME=stg-deal-maker
+NODE_DESCRIPTION=Experimental Deal Maker
+NODE_TYPE=delta-main
+
 # Database configuration
 MODE=standalone # HA
 DB_NAME=stg-deal-maker
@@ -50,9 +55,24 @@ go build -tags netgo -ldflags '-s -w' -o stg-dealer
 ```
 
 ## Endpoints
+
+### Node information
+```
+curl --location --request GET 'http://localhost:1313/api/v1/open/node/info'
+curl --location --request GET 'http://localhost:1313/api/v1/open/node/peers'
+curl --location --request GET 'http://localhost:1313/api/v1/open/node/host'
+```
+
 ### Upload a file
 ```
 curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"random_1675815458N.dat"'
+```
+
+### Stats (content, commps and deals) 
+```
+curl --location --request GET 'http://localhost:1313/api/v1/status/deals' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--form 'data=@"/Users/alvinreyes/Projects/arg/fc-deal-making-service/files/random_1675818258N.dat"'
 ```

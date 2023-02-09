@@ -34,7 +34,7 @@ type LightNode struct {
 	Gw         *GatewayHandler
 	DB         *gorm.DB
 	Wallet     LocalWallet
-	Filclient  *fc.FilClient
+	FilClient  *fc.FilClient
 	Config     *Configuration
 	Dispatcher *Dispatcher
 }
@@ -42,8 +42,7 @@ type LightNode struct {
 type LocalWallet struct {
 	keys     map[address.Address]*key.Key
 	keystore types.KeyStore
-
-	lk sync.Mutex
+	lk       sync.Mutex
 }
 
 type Configuration struct {
@@ -116,7 +115,7 @@ func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 
 	whypfsPeer.BootstrapPeers(BootstrapEstuaryPeers())
 
-	//	Filclient
+	//	FilClient
 	api, _, err := LotusConnection("http://api.chain.love")
 	addr, err := api.WalletDefaultAddress(ctx)
 
@@ -140,7 +139,7 @@ func NewLightNode(ctx context.Context, repo string) (*LightNode, error) {
 	return &LightNode{
 		Node:       whypfsPeer,
 		DB:         db,
-		Filclient:  fc,
+		FilClient:  fc,
 		Dispatcher: dispatcher,
 	}, nil
 }

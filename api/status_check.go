@@ -48,4 +48,28 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.LightNode) {
 		return c.JSON(200, content)
 
 	})
+
+	e.GET("/stats", func(c echo.Context) error {
+
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		// select * from content_deals cd, content c where cd.content = c.id and c.requesting_api_key = ?;
+		var content []core.Content
+		node.DB.Raw("select * from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
+
+		var contentDeal []core.ContentDeal
+		node.DB.Raw("select * from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
+
+		// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
+		var pieceCommitments []core.PieceCommitment
+		node.DB.Raw("select * from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
+
+		return c.JSON(200, map[string]interface{}{
+			"content":           content,
+			"deals":             contentDeal,
+			"piece_commitments": pieceCommitments,
+		})
+
+	})
 }

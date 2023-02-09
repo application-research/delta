@@ -1,6 +1,9 @@
 package core
 
 import (
+	"fmt"
+	"github.com/application-research/filclient"
+	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/spf13/viper"
 	"gorm.io/driver/sqlite"
@@ -109,4 +112,19 @@ type LogEvent struct {
 	LogEventId int64     `json:"log_event_id"` // object id
 	LogEvent   string    `json:"log_event"`    // description
 	CreatedAt  time.Time `json:"created_at"`   // auto set
+}
+
+var ErrNoChannelID = fmt.Errorf("no data transfer channel id in deal")
+
+func (cd ContentDeal) ChannelID() (datatransfer.ChannelID, error) {
+	if cd.DTChan == "" {
+		return datatransfer.ChannelID{}, ErrNoChannelID
+	}
+
+	chid, err := filclient.ChannelIDFromString(cd.DTChan)
+	if err != nil {
+		err = fmt.Errorf("incorrectly formatted data transfer channel ID in contentDeal record: %w", err)
+		return datatransfer.ChannelID{}, err
+	}
+	return *chid, nil
 }

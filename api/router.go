@@ -56,11 +56,12 @@ func InitializeEchoRouterConfig(ln *core.LightNode) {
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.HTTPErrorHandler = ErrorHandler
 
-	defaultGatewayRoute := e.Group("")
-	ConfigureGatewayRouter(defaultGatewayRoute, ln) // access to light node
+	//defaultGatewayRoute := e.Group("")
+	//ConfigureGatewayRouter(defaultGatewayRoute, ln) // access to light node
 	//ConfigureStatsRouter(defaultGatewayRoute, ln)
 
 	apiGroup := e.Group("/api/v1")
+	openApiGroup := e.Group("/api/v1/open")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authorizationString := c.Request().Header.Get("Authorization")
@@ -114,6 +115,7 @@ func InitializeEchoRouterConfig(ln *core.LightNode) {
 	ConfigMetricsRouter(apiGroup)
 	ConfigureUploadRouter(apiGroup, ln)
 	ConfigureStatusCheckRouter(apiGroup, ln)
+	ConfigureNodeInfoRouter(openApiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1313")) // configuration
