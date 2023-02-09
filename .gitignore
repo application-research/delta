@@ -4,3 +4,4 @@ libp2p.key
 datastore
 wallet
 wallet_BU
+.env
