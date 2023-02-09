@@ -26,7 +26,7 @@ func OpenDatabase() (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &ContentLogEvents{}, &DealLogEvents{}, &PieceCommLogEvents{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{})
 }
 
 type Content struct {
@@ -93,28 +93,18 @@ type MinerPrice struct {
 	MinerVersion  string `json:"miner_version"`
 }
 
-type ContentLogEvents struct {
+type Wallet struct {
 	ID        int64     `gorm:"primaryKey"`
-	ContentId int64     `json:"content_id"`
-	LogEvent  string    `json:"log_event"`
+	Addr      string    `json:"addr"`
+	Owner     string    `json:"owner"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type DealLogEvents struct {
-	ID        int64     `gorm:"primaryKey"`
-	DealId    int64     `json:"deal_id"`
-	DealUUID  string    `json:"deal_uuid"`
-	LogEvent  string    `json:"log_event"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type PieceCommLogEvents struct {
-	ID        int64     `gorm:"primaryKey"`
-	PieceId   int64     `json:"piece_id"`
-	LogEvent  string    `json:"log_event"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type UserApiKeyLogEvents struct {
-	ID int64 `gorm:"primaryKey"`
+type LogEvent struct {
+	ID         int64     `gorm:"primaryKey"`   // auto increment
+	EventType  string    `json:"log_event"`    // content, deal, piece_commitment, upload, miner, info
+	LogEventId int64     `json:"log_event_id"` // object id
+	LogEvent   string    `json:"log_event"`    // description
+	CreatedAt  time.Time `json:"created_at"`   // auto set
 }

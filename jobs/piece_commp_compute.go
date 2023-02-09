@@ -15,24 +15,20 @@ import (
 // for other groups.
 
 type PieceCommpProcessor struct {
-	Processor
+	Context   context.Context
+	LightNode *core.LightNode
+	Content   core.Content
 }
 
-type ItemContentProcessor struct {
-	ContentProcessor
-}
-
-func NewItemContentProcessor(ln *core.LightNode, content core.Content) IProcessor {
-	return &ItemContentProcessor{
-		ContentProcessor{
-			LightNode: ln,
-			Content:   content,
-			Context:   context.Background(),
-		},
+func NewPieceCommpProcessor(ln *core.LightNode, content core.Content) IProcessor {
+	return &PieceCommpProcessor{
+		LightNode: ln,
+		Content:   content,
+		Context:   context.Background(),
 	}
 }
 
-func (i ItemContentProcessor) Run() error {
+func (i PieceCommpProcessor) Run() error {
 
 	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-computing"})
 	payloadCid, err := cid.Decode(i.Content.Cid)
@@ -44,7 +40,7 @@ func (i ItemContentProcessor) Run() error {
 	commitment, u, a, err := filclient.GeneratePieceCommitmentFFI(i.Context, payloadCid, i.LightNode.Node.Blockstore)
 	if err != nil {
 		// put this back to the queue
-		i.LightNode.Dispatcher.AddJob(NewItemContentProcessor(i.LightNode, i.Content))
+		i.LightNode.Dispatcher.AddJob(NewPieceCommpProcessor(i.LightNode, i.Content))
 		return err
 	}
 
@@ -63,29 +59,8 @@ func (i ItemContentProcessor) Run() error {
 	// update bucket status to commp-computed
 	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-assigned", PieceCommitmentId: commpRec.ID})
 
-	item := NewItemReplicationProcessor(i.LightNode, i.Content, *commpRec)
+	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)
 	i.LightNode.Dispatcher.AddJob(item)
 
-	return nil
-}
-
-func NewPieceCommpProcessor(ln *core.LightNode) IProcessor {
-	return &PieceCommpProcessor{
-		Processor{
-			LightNode: ln,
-		},
-	}
-}
-
-func (r *PieceCommpProcessor) Run() error {
-	// get the CID field of the bucket and generate a commp for it.
-	var contents []core.Content
-	r.LightNode.DB.Model(&core.Content{}).Where("status = ?", "pinned").Find(&contents)
-	dispatcher := core.CreateNewDispatcher()
-	for _, content := range contents {
-		job := NewItemContentProcessor(r.LightNode, content)
-		dispatcher.AddJob(job)
-		dispatcher.Start(10)
-	}
 	return nil
 }

@@ -20,10 +20,3 @@ type ContentProcessor struct {
 	LightNode *core.LightNode
 	Content   core.Content
 }
-
-type ReplicationProcessor struct {
-	Context   context.Context
-	LightNode *core.LightNode
-	Content   *core.Content
-	PieceComm *core.PieceCommitment
-}

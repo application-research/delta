@@ -6,6 +6,7 @@ all: build
 
 .PHONY: build
 build:
+	git submodule update --init --recursive
 	go build -tags netgo -ldflags '-s -w' -o stg-dealer
 
 .PHONE: clean

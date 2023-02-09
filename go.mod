@@ -1,4 +1,4 @@
-module fc-deal-making-service
+module delta
 
 go 1.19
 
