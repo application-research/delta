@@ -16,6 +16,7 @@ import (
 	"golang.org/x/xerrors"
 	"gorm.io/gorm"
 	"strings"
+	"time"
 )
 
 type StorageDealMakerProcessor struct {
@@ -92,6 +93,8 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		Miner:               i.GetStorageProviders()[0].Address.String(),
 		Verified:            true,
 		DealProtocolVersion: proto,
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
 		//MinerVersion:        ask.MinerVersion,
 	}
 	if err := i.LightNode.DB.Create(deal).Error; err != nil {
@@ -111,13 +114,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
 		chanid, err := i.LightNode.Filclient.StartDataTransfer(i.Context, i.GetStorageProviders()[0].Address, propCid, contentCid)
-
-		//deal.DTChan = chanid
-		//r.LightNode.Filclient.SubscribeToDataTransferEvents(r.Context, func(event datatransfer.Event, channelState datatransfer.ChannelState) {
-		//	fmt.Println("event", event)
-		//	fmt.Println("channelState", channelState)
-		//})
-		fmt.Println("chanid", chanid)
 		if err != nil {
 			fmt.Println("StartDataTransfer", err)
 			i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
@@ -136,24 +132,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 		// subscribe to data transfer events
 		i.LightNode.Dispatcher.AddJob(NewDataTransferListenerProcessor(i.LightNode, *deal))
-		//i.LightNode.Filclient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
-		//	switch fst.Status {
-		//	case datatransfer.Requested:
-		//		if err := m.SetDataTransferStartedOrFinished(ctx, dbid, fst.TransferID, &fst, true); err != nil {
-		//			m.log.Errorf("failed to set data transfer started from event: %s", err)
-		//		}
-		//	case datatransfer.TransferFinished, datatransfer.Completed:
-		//		if err := m.SetDataTransferStartedOrFinished(ctx, dbid, fst.TransferID, &fst, false); err != nil {
-		//			m.log.Errorf("failed to set data transfer started from event: %s", err)
-		//		}
-		//	default:
-		//		// for every other events
-		//		trsFailed, msg := util.TransferFailed(&fst)
-		//		if err := m.UpdateDataTransferStatus(ctx, dbid, fst.TransferID, &fst, trsFailed, msg); err != nil {
-		//			m.log.Errorf("failed to set data transfer update from event: %s", err)
-		//		}
-		//	}
-		//})
 
 	} else {
 

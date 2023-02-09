@@ -2,9 +2,9 @@ package jobs
 
 import (
 	"delta/core"
-	"fmt"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
+	"time"
 )
 
 type DataTransferListenerProcessor struct {
@@ -21,14 +21,23 @@ func NewDataTransferListenerProcessor(ln *core.LightNode, contentDeal core.Conte
 
 func (d DataTransferListenerProcessor) Run() error {
 	d.LightNode.Filclient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
-		fmt.Println("dbid", dbid)
 		switch fst.Status {
 		case datatransfer.Requested:
-			fmt.Println("Requested")
+			d.LightNode.DB.Model(&d.ContentDeal).Where("id = ?", dbid).Updates(core.ContentDeal{
+				TransferStarted: time.Now(),
+			})
+		case datatransfer.Ongoing:
 		case datatransfer.TransferFinished, datatransfer.Completed:
-			fmt.Println("TransferFinished, Completed")
+			d.LightNode.DB.Model(&d.ContentDeal).Where("id = ?", dbid).Updates(core.ContentDeal{
+				TransferFinished: time.Now(),
+				SealedAt:         time.Now(),
+			})
+		case datatransfer.Failed:
+			d.LightNode.DB.Model(&d.ContentDeal).Where("id = ?", dbid).Updates(core.ContentDeal{
+				FailedAt: time.Now(),
+			})
 		default:
-			fmt.Println("default")
+
 		}
 	})
 	return nil

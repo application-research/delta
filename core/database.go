@@ -60,6 +60,8 @@ type ContentDeal struct {
 	SealedAt            time.Time   `json:"sealedAt"`
 	DealProtocolVersion protocol.ID `json:"deal_protocol_version"`
 	MinerVersion        string      `json:"miner_version"`
+	CreatedAt           time.Time   `json:"created_at"`
+	UpdatedAt           time.Time   `json:"updated_at"`
 }
 
 type PieceCommitment struct {
