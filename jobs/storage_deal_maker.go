@@ -14,6 +14,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multiaddr"
 	"golang.org/x/xerrors"
+	"gorm.io/gorm"
 	"strings"
 )
 
@@ -125,9 +126,16 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		content.PieceCommitmentId = pieceComm.ID
 		pieceComm.Status = "complete"
 		content.Status = "replication-complete"
-		i.LightNode.DB.Model(&core.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)
-		i.LightNode.DB.Model(&core.Content{}).Where("id = ?", content.ID).Save(content)
+		deal.DTChan = chanid.String()
+		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
+			tx.Model(&core.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)
+			tx.Model(&core.Content{}).Where("id = ?", content.ID).Save(content)
+			tx.Model(&core.ContentDeal{}).Where("id = ?", deal.ID).Save(deal)
+			return nil
+		})
 
+		// subscribe to data transfer events
+		i.LightNode.Dispatcher.AddJob(NewDataTransferListenerProcessor(i.LightNode, *deal))
 		//i.LightNode.Filclient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
 		//	switch fst.Status {
 		//	case datatransfer.Requested:

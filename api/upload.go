@@ -80,6 +80,12 @@ func ConfigureUploadRouter(e *echo.Group, node *core.LightNode) {
 	})
 
 	content.POST("/commp", func(c echo.Context) error {
+		var req UploadCommpRequest
+		c.Bind(&req)
+		return nil
+	})
+
+	content.POST("/commps", func(c echo.Context) error {
 		var req []UploadCommpRequest
 		c.Bind(&req)
 
@@ -145,24 +151,6 @@ func ConfigureUploadRouter(e *echo.Group, node *core.LightNode) {
 
 		return nil
 	})
-
-	// a function that accepts a list of cid, piece, size and padded size
-	// and returns a list of piece_comm id.
-
-	// [
-	// 	{
-	// 		"cid": "QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N",
-	// 		"piece": baga6ea4seaqffuuwhmeotm5hsxtytyyhd3jdnol6cw3oskvcmjsgkz3xk4j72ei,
-	// 		"size": 134217728,
-	// 		"padded_size": 134217728
-	// 	},
-	// 	{
-	// 		"cid": "QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N",
-	// 		"piece": baga6ea4seaqffuuwhmeotm5hsxtytyyhd3jdnol6cw3oskvcmjsgkz3xk4j72ei,
-	// 		"size": 134217728,
-	// 		"padded_size": 134217728
-	// 	},
-	// ]
 
 	content.POST("/cids", func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
