@@ -30,7 +30,7 @@ func OpenDatabase() (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &RetryDealCount{})
 }
 
 type Content struct {
@@ -70,8 +70,9 @@ type ContentDeal struct {
 	TransferFinished    time.Time   `json:"transferFinished"`
 	OnChainAt           time.Time   `json:"onChainAt"`
 	SealedAt            time.Time   `json:"sealedAt"`
+	LastMessage         string      `json:"lastMessage"`
 	DealProtocolVersion protocol.ID `json:"deal_protocol_version"`
-	MinerVersion        string      `json:"miner_version"`
+	MinerVersion        string      `json:"miner_version,omitempty"`
 	CreatedAt           time.Time   `json:"created_at"`
 	UpdatedAt           time.Time   `json:"updated_at"`
 }
@@ -121,6 +122,15 @@ type LogEvent struct {
 	LogEventId int64     `json:"log_event_id"` // object id
 	LogEvent   string    `json:"log_event"`    // description
 	CreatedAt  time.Time `json:"created_at"`   // auto set
+}
+
+type RetryDealCount struct {
+	ID        int64     `gorm:"primaryKey"`
+	DealUUID  string    `json:"deal_uuid"`
+	Count     int64     `json:"count"`
+	LastError string    `json:"last_error"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 var ErrNoChannelID = fmt.Errorf("no data transfer channel id in deal")

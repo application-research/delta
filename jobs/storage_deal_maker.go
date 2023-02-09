@@ -110,11 +110,26 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID))
 	if propPhase == true && err != nil {
+
+		// TODO: better error handling
+		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+			})
+			return err
+		}
+		if strings.Contains(err.Error(), " piece size less than minimum required size") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+			})
+			return err
+		}
+
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
+
 		return err
 	}
 
-	// check propPhase
 	if propPhase == false {
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
@@ -126,6 +141,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		content.PieceCommitmentId = pieceComm.ID
 		pieceComm.Status = "committed"
 		content.Status = "transfer-started"
+		deal.LastMessage = "transfer-started"
 		deal.DTChan = channelId.String()
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 			tx.Model(&core.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)

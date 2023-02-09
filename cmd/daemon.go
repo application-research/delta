@@ -61,15 +61,15 @@ func DaemonCmd() []*cli.Command {
 }
 
 func runCron(ln *core.LightNode) {
-
-	gocron.Every(1).Day().Do(func() {
+	s := gocron.NewScheduler()
+	s.Every(1).Days().Do(func() {
 		dispatcher := core.CreateNewDispatcher()
 		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
 		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
-		dispatcher.Start(1000)
+		dispatcher.Start(100)
 	})
 
-	<-gocron.Start()
+	s.Start()
 
 }
 
@@ -78,10 +78,6 @@ func runProcessors(ln *core.LightNode) {
 	// run the job every 10 seconds.
 	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
 	jobDispatchWorker, err := strconv.Atoi(viper.Get("MAX_DISPATCH_WORKERS").(string))
-
-	// 	cron job
-	//	- retry
-	//	- clean up
 
 	if err != nil {
 		jobDispatch = 10

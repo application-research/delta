@@ -26,7 +26,7 @@ func Exporter() http.Handler {
 	}
 	exporter, err := prometheus.NewExporter(prometheus.Options{
 		Registry:  registry,
-		Namespace: "estuary",
+		Namespace: "delta",
 	})
 	if err != nil {
 		log.Errorf("could not create the prometheus stats exporter: %v", err)
