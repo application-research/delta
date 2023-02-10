@@ -44,6 +44,7 @@ func DaemonCmd() []*cli.Command {
 				walletDir = "./wallet"
 			}
 
+			// create the node (with whypfs, db, filclient)
 			nodeParams := core.NewLightNodeParams{
 				Repo:             repo,
 				DefaultWalletDir: walletDir,
@@ -80,7 +81,8 @@ func runCron(ln *core.LightNode) {
 		dispatcher := core.CreateNewDispatcher()
 		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
 		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
-		dispatcher.Start(100)
+		dispatcher.AddJob(jobs.NewMinerCheckProcessor(ln))
+		dispatcher.Start(100) // fix 100 workers for now.
 	})
 
 	s.Start()

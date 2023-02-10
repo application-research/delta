@@ -35,6 +35,7 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 				DealID:           int64(transferId),
 				TransferFinished: time.Now(),
 				SealedAt:         time.Now(),
+				LastMessage:      "transfer-finished",
 			})
 			d.LightNode.DB.Model(&core.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(core.Content{
 				Status: "transfer-finished",

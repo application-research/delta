@@ -55,5 +55,7 @@ func (i RetryProcessor) Run() error {
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, content, pieceCommp))
 	}
 
+	// we also want to retry those request that are not failed but not "transfer-finished" that are within the 48 hour period.
+
 	return nil
 }

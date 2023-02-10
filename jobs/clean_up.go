@@ -38,5 +38,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 		}
 	}
 
+	// fail request that are older than 7 days. No point in retrying them.
+
 	return nil
 }

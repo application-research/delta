@@ -1,31 +1,12 @@
 package core
 
 import (
-	"context"
 	"fmt"
 )
 
 type JobExecutable func() error
 type IProcessor interface {
 	Run() error
-}
-
-type Processor struct {
-	Context   context.Context
-	LightNode *LightNode
-}
-
-type ContentProcessor struct {
-	Context   context.Context
-	LightNode *LightNode
-	Content   Content
-}
-
-type ReplicationProcessor struct {
-	Context   context.Context
-	LightNode *LightNode
-	Content   *Content
-	PieceComm *PieceCommitment
 }
 
 type Job struct {

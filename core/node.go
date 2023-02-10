@@ -39,6 +39,17 @@ type LightNode struct {
 	Dispatcher *Dispatcher
 }
 
+type MultiWalletNode struct {
+	Node       *whypfs.Node
+	Api        url.URL
+	Gw         *GatewayHandler
+	DB         *gorm.DB
+	Wallet     []LocalWallet
+	FilClient  *[]fc.FilClient
+	Config     *Configuration
+	Dispatcher *Dispatcher
+}
+
 type LocalWallet struct {
 	keys     map[address.Address]*key.Key
 	keystore types.KeyStore
