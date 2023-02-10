@@ -15,7 +15,7 @@ func OpenDatabase() (*gorm.DB, error) {
 
 	dbDsn, okHost := viper.Get("DB_DSN").(string)
 	if !okHost {
-		panic("DB_NAME not set")
+		panic("DB_DSN not set")
 	}
 	//DB, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
 	DB, err := gorm.Open(postgres.Open(dbDsn), &gorm.Config{})

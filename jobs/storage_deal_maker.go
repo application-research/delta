@@ -115,12 +115,14 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
+				Failed:      true,
 			})
 			return err
 		}
 		if strings.Contains(err.Error(), " piece size less than minimum required size") { // don't put it back on the queue
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
+				Failed:      true,
 			})
 			return err
 		}
@@ -169,9 +171,9 @@ type MinerAddress struct {
 
 func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content core.Content) MinerAddress {
 	var storageMinerAssignment core.ContentMinerAssignment
-	i.LightNode.DB.Model(&core.ContentMinerAssignment{}).Where("content = ?", content.ID).First(&storageMinerAssignment)
-
-	if storageMinerAssignment.ID == 0 {
+	i.LightNode.DB.Model(&core.ContentMinerAssignment{}).Where("content = ?", content.ID).Find(&storageMinerAssignment)
+	fmt.Println("storageMinerAssignment", storageMinerAssignment.ID)
+	if storageMinerAssignment.ID != 0 {
 		address.CurrentNetwork = address.Mainnet
 		a, err := address.NewFromString(storageMinerAssignment.Miner)
 		if err != nil {

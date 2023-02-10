@@ -49,10 +49,33 @@ Running this the first time will generate a wallet. Make sure to get FIL from th
 ![image](https://user-images.githubusercontent.com/4479171/217404957-21fd15be-f0c8-4bd2-a5c6-a2770c5c1db1.png)
 
 
+## Install the following pre-req
+- go 1.18
+- [jq](https://stedolan.github.io/jq/)
+- [hwloc](https://www.open-mpi.org/projects/hwloc/)
+- opencl
+- [rustup](https://rustup.rs/)
+- postgresql
+
+Alternatively, if using Ubuntu, you can run the following commands to install the pre-reqs
+```
+apt-get update && \
+apt-get install -y wget jq hwloc ocl-icd-opencl-dev git libhwloc-dev pkg-config make && \
+apt-get install -y cargo
+```
+
 ## Build and run
+
+### Using `go` lang
 ```
 go build -tags netgo -ldflags '-s -w' -o stg-dealer
 ./stg-dealer daemon --repo=.whypfs
+```
+
+### Using `docker`
+```
+docker build -t stg-dealer .
+docker run -it --rm -p 1313:1313 stg-dealer
 ```
 
 ## Endpoints

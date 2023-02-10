@@ -23,7 +23,12 @@ func DaemonCmd() []*cli.Command {
 
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name: "repo",
+				Name:  "repo",
+				Usage: "specify the repo blockstore path of the node. ",
+			},
+			&cli.StringFlag{
+				Name:  "wallet-dir",
+				Usage: "specify the wallet directory path of the node. ",
 			},
 		},
 		Action: func(c *cli.Context) error {
