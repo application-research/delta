@@ -75,21 +75,30 @@ func DaemonCmd() []*cli.Command {
 
 }
 
-func runCron(ln *core.LightNode) {
+// Run the cron jobs.
+// The cron jobs are run every 12 hours and are responsible for cleaning up the database and the blockstore.
+// It also retries the failed tranfers.
+func runCron(ln *core.DeltaNode) {
+
+	maxCleanUpJobs, err := strconv.Atoi(viper.Get("MAX_CLEANUP_WORKERS").(string))
+	if err != nil {
+		maxCleanUpJobs = 100
+	}
+
 	s := gocron.NewScheduler()
-	s.Every(1).Days().Do(func() {
+	s.Every(12).Hour().Do(func() {
 		dispatcher := core.CreateNewDispatcher()
 		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
 		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.AddJob(jobs.NewMinerCheckProcessor(ln))
-		dispatcher.Start(100) // fix 100 workers for now.
+		dispatcher.Start(maxCleanUpJobs) // fix 100 workers for now.
 	})
 
 	s.Start()
 
 }
 
-func runProcessors(ln *core.LightNode) {
+func runProcessors(ln *core.DeltaNode) {
 
 	// run the job every 10 seconds.
 	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))

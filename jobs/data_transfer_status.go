@@ -10,10 +10,10 @@ import (
 )
 
 type DataTransferStatusListenerProcessor struct {
-	LightNode *core.LightNode
+	LightNode *core.DeltaNode
 }
 
-func NewDataTransferStatusListenerProcessor(ln *core.LightNode) IProcessor {
+func NewDataTransferStatusListenerProcessor(ln *core.DeltaNode) IProcessor {
 	return &DataTransferStatusListenerProcessor{
 		LightNode: ln,
 	}

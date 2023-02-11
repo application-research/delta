@@ -21,7 +21,7 @@ import (
 
 type StorageDealMakerProcessor struct {
 	Context   context.Context
-	LightNode *core.LightNode
+	LightNode *core.DeltaNode
 	Content   *core.Content
 	PieceComm *core.PieceCommitment
 }
@@ -35,7 +35,7 @@ func (i StorageDealMakerProcessor) Run() error {
 	return nil
 }
 
-func NewStorageDealMakerProcessor(ln *core.LightNode, content core.Content, commitment core.PieceCommitment) IProcessor {
+func NewStorageDealMakerProcessor(ln *core.DeltaNode, content core.Content, commitment core.PieceCommitment) IProcessor {
 	return &StorageDealMakerProcessor{
 		LightNode: ln,
 		Content:   &content,

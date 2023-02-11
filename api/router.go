@@ -46,7 +46,7 @@ type AuthResponse struct {
 }
 
 // RouterConfig configures the API node
-func InitializeEchoRouterConfig(ln *core.LightNode) {
+func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	// Echo instance
 	e := echo.New()
 
@@ -58,6 +58,8 @@ func InitializeEchoRouterConfig(ln *core.LightNode) {
 
 	apiGroup := e.Group("/api/v1")
 	openApiGroup := e.Group("/api/v1/open")
+	adminApiGroup := e.Group("/admin")
+	ConfigureAdminRouter(adminApiGroup, ln)
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			authorizationString := c.Request().Header.Get("Authorization")

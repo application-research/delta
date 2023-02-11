@@ -6,7 +6,7 @@ import (
 )
 
 // repair deals (re-create or re-try)
-func ConfigureRepairRouter(e *echo.Group, node *core.LightNode) {
+func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 	repair := e.Group("/repair")
 

@@ -12,5 +12,5 @@ type IProcessor interface {
 
 type Processor struct {
 	Context   context.Context
-	LightNode *core.LightNode
+	LightNode *core.DeltaNode
 }

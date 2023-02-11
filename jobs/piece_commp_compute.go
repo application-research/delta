@@ -16,11 +16,11 @@ import (
 
 type PieceCommpProcessor struct {
 	Context   context.Context
-	LightNode *core.LightNode
+	LightNode *core.DeltaNode
 	Content   core.Content
 }
 
-func NewPieceCommpProcessor(ln *core.LightNode, content core.Content) IProcessor {
+func NewPieceCommpProcessor(ln *core.DeltaNode, content core.Content) IProcessor {
 	return &PieceCommpProcessor{
 		LightNode: ln,
 		Content:   content,

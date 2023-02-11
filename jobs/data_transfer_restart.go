@@ -8,11 +8,11 @@ import (
 )
 
 type DataTransferRestartListenerProcessor struct {
-	LightNode   *core.LightNode
+	LightNode   *core.DeltaNode
 	ContentDeal core.ContentDeal
 }
 
-func NewDataTransferRestartListenerProcessor(ln *core.LightNode, contentDeal core.ContentDeal) IProcessor {
+func NewDataTransferRestartListenerProcessor(ln *core.DeltaNode, contentDeal core.ContentDeal) IProcessor {
 	return &DataTransferRestartListenerProcessor{
 		LightNode:   ln,
 		ContentDeal: contentDeal,

@@ -3,11 +3,11 @@ package jobs
 import "delta/core"
 
 type LogEventProcessor struct {
-	LightNode *core.LightNode
+	LightNode *core.DeltaNode
 	LogEvent  core.LogEvent
 }
 
-func NewLogEvent(ln *core.LightNode, logEvent core.LogEvent) IProcessor {
+func NewLogEvent(ln *core.DeltaNode, logEvent core.LogEvent) IProcessor {
 	return &LogEventProcessor{
 		LightNode: ln,
 		LogEvent:  logEvent,

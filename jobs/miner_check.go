@@ -13,7 +13,7 @@ type MinerCheckProcessor struct {
 }
 
 // job run to get updated miner list and their piece sizes
-func NewMinerCheckProcessor(ln *core.LightNode) IProcessor {
+func NewMinerCheckProcessor(ln *core.DeltaNode) IProcessor {
 	return &MinerCheckProcessor{
 		Processor{
 			LightNode: ln,

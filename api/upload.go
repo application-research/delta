@@ -27,7 +27,7 @@ type UploadCommpRequest struct {
 	PaddedSize int64  `json:"padded_size"`
 }
 
-func ConfigureUploadRouter(e *echo.Group, node *core.LightNode) {
+func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 	content := e.Group("/content")
 

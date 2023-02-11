@@ -41,7 +41,7 @@ type Content struct {
 	RequestingApiKey  string    `json:"requesting_api_key,omitempty"`
 	PieceCommitmentId int64     `json:"piece_commitment_id,omitempty"`
 	Status            string    `json:"status"`
-	Origins           string    `json:"origins,omitempty"`
+	ConnectionMode    string    `json:"connection_mode"` // offline or online
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }
@@ -112,6 +112,14 @@ type Wallet struct {
 	ID        int64     `gorm:"primaryKey"`
 	Addr      string    `json:"addr"`
 	Owner     string    `json:"owner"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type AdminUser struct {
+	ID        int64     `gorm:"primaryKey"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

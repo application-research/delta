@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"delta/status"
 	"fmt"
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
@@ -28,26 +29,15 @@ import (
 	"sync"
 )
 
-type LightNode struct {
+type DeltaNode struct {
+	Context    context.Context
 	Node       *whypfs.Node
 	Api        url.URL
-	Gw         *GatewayHandler
 	DB         *gorm.DB
-	Wallet     LocalWallet
 	FilClient  *fc.FilClient
 	Config     *Configuration
 	Dispatcher *Dispatcher
-}
-
-type MultiWalletNode struct {
-	Node       *whypfs.Node
-	Api        url.URL
-	Gw         *GatewayHandler
-	DB         *gorm.DB
-	Wallet     []LocalWallet
-	FilClient  *[]fc.FilClient
-	Config     *Configuration
-	Dispatcher *Dispatcher
+	StatusLog  *status.StatusLogger
 }
 
 type LocalWallet struct {
@@ -100,7 +90,7 @@ type NewLightNodeParams struct {
 	DefaultWalletDir string
 }
 
-func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*LightNode, error) {
+func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, error) {
 	//	database
 	db, err := OpenDatabase()
 	publicIp, err := GetPublicIP()
@@ -147,7 +137,7 @@ func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*LightNode, err
 	// job dispatcher
 	dispatcher := CreateNewDispatcher()
 	// create the global light node.
-	return &LightNode{
+	return &DeltaNode{
 		Node:       whypfsPeer,
 		DB:         db,
 		FilClient:  fc,

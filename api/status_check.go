@@ -17,7 +17,7 @@ type StatusCheckResponse struct {
 	} `json:"content"`
 }
 
-func ConfigureStatusCheckRouter(e *echo.Group, node *core.LightNode) {
+func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	e.GET("/status/:id", func(c echo.Context) error {
 
 		authorizationString := c.Request().Header.Get("Authorization")

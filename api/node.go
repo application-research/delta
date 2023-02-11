@@ -6,12 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// node info
-// multi addr
-// peer id
-// host
-
-func ConfigureNodeInfoRouter(e *echo.Group, node *core.LightNode) {
+func ConfigureNodeInfoRouter(e *echo.Group, node *core.DeltaNode) {
 	nodeGroup := e.Group("/node")
 	nodeGroup.GET("/info", func(c echo.Context) error {
 		nodeName := viper.Get("NODE_NAME").(string)
