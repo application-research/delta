@@ -1,7 +1,7 @@
 # Δ Delta
 Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 
-![image](https://user-images.githubusercontent.com/4479171/217723002-fba624ff-1a1d-41e0-a550-398a3a29682c.png)
+![image](https://user-images.githubusercontent.com/4479171/218267752-9a7af133-4e36-4f4c-95da-16b3c7bd73ae.png)
 
 
 ## Features
