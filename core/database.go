@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
@@ -118,11 +119,13 @@ type MinerPrice struct {
 }
 
 type Wallet struct {
-	ID        int64     `gorm:"primaryKey"`
-	Addr      string    `json:"addr"`
-	Owner     string    `json:"owner"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         int64         `gorm:"primaryKey"`
+	Addr       string        `json:"addr"`
+	Owner      string        `json:"owner"`
+	KeyType    types.KeyType `json:"key_type"`
+	PrivateKey string        `json:"private_key"`
+	CreatedAt  time.Time     `json:"created_at"`
+	UpdatedAt  time.Time     `json:"updated_at"`
 }
 
 type AdminUser struct {
