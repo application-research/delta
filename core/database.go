@@ -54,6 +54,15 @@ type ContentMinerAssignment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type ContentWalletAssignment struct {
+	ID               int64     `gorm:"primaryKey"`
+	Content          int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	Wallet           string    `json:"wallet"`
+	RequestingApiKey string    `json:"requesting_api_key,omitempty"` // we need to associate it to a KEY
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+}
+
 type ContentDeal struct {
 	ID                  int64       `gorm:"primaryKey"`
 	Content             int64       `json:"content" gorm:"index:,option:CONCURRENTLY"`

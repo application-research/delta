@@ -107,6 +107,13 @@ func (d *Dispatcher) AddJob(je IProcessor) {
 	fmt.Printf("jobCounter is now: %d\n", d.jobCounter)
 }
 
+func (d *Dispatcher) AddJobAndFire(je IProcessor, numWorkers int) {
+	j := &Job{ID: d.jobCounter, Processor: je}
+	go func() { d.jobQueue <- j }()
+	d.jobCounter++
+	d.Start(numWorkers)
+}
+
 func (d *Dispatcher) Finished() bool {
 	if d.jobCounter < 1 {
 		return true
