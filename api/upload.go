@@ -4,9 +4,8 @@ import (
 	"delta/core"
 	"delta/jobs"
 	"delta/utils"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -36,23 +35,30 @@ type WalletRequest struct {
 	PrivateKey string `json:"private_key"`
 }
 
+type CommpRequest struct {
+	Piece    string `json:"piece"`
+	Size     int64  `json:"size"`
+	Duration int64  `json:"duration"`
+}
+
 func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 	content := e.Group("/content")
-
 	content.POST("/add", func(c echo.Context) error {
+
+		var walletReq WalletRequest
+		var commpRequest CommpRequest
+
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 		file, err := c.FormFile("data")
 		connMode := c.FormValue("connection_mode") // online or offline
 		miner := c.FormValue("miner")
-		duration := c.FormValue("duration")
-		size := c.FormValue("size")
-		walletReq := WalletRequest{}
-		//{"Type":"secp256k1","PrivateKey":"<key>"}
+		commp := c.FormValue("commp")
 		walletAddr := c.FormValue("wallet") // insecure
-		fmt.Println(duration)
+
 		json.Unmarshal([]byte(walletAddr), &walletReq)
+		json.Unmarshal([]byte(commp), &commpRequest)
 
 		if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
 			connMode = "online"
@@ -71,15 +77,15 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 		// if size is given, let's create a commp record for it.
 		var pieceCommp core.PieceCommitment
-		if size != "" {
-			paddedPieceSize, err := strconv.Atoi(size)
-			if err != nil {
-				return err
-			}
+		if commpRequest.Piece != "" {
+
+			// if commp is there, make sure the piece and size are there. Use default duration.
+
+			paddedPieceSize := commpRequest.Size
 			pieceCommp.Cid = addNode.Cid().String()
-			pieceCommp.Piece = addNode.Cid().String()
+			pieceCommp.Piece = commpRequest.Piece
 			pieceCommp.Size = file.Size
-			pieceCommp.PaddedPieceSize = int64(paddedPieceSize)
+			pieceCommp.PaddedPieceSize = paddedPieceSize
 			pieceCommp.CreatedAt = time.Now()
 			pieceCommp.UpdatedAt = time.Now()
 			pieceCommp.Status = utils.COMMP_STATUS_OPEN
@@ -95,6 +101,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			PieceCommitmentId: pieceCommp.ID,
 			Status:            utils.CONTENT_PINNED,
 			ConnectionMode:    connMode,
+			Duration:          commpRequest.Duration,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -115,9 +122,19 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 		// 	assign a wallet
 		if walletAddr != "" {
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = walletReq.KeyType
+			hexedWallet.PrivateKey = hex.EncodeToString([]byte(walletReq.PrivateKey))
+			walletByteArr, err := json.Marshal(hexedWallet)
 
+			if err != nil {
+				c.JSON(500, UploadResponse{
+					Status:  "error",
+					Message: "Error pinning the file" + err.Error(),
+				})
+			}
 			contentWalletAssignment := core.ContentWalletAssignment{
-				Wallet:    walletAddr,
+				Wallet:    string(walletByteArr),
 				Content:   content.ID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),

@@ -19,4 +19,6 @@ const (
 	CONNECTION_MODE_OFFLINE = "offline"
 
 	LOTUS_API = "http://api.chain.love"
+
+	DEFAULT_DURATION = 1555200 - (2880 * 21)
 )

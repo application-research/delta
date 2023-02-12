@@ -101,11 +101,10 @@ curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
 Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
 ```
 curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
---header 'Authorization: Bearer [REDACTED]' \
---form 'data=@"random_1675815458N.dat"' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--form 'data=@"random_1675988961N.dat"' \
 --form 'miner="f01963614"' \
---form 'duration="10000000"' \
---form 'size="266338304"'
+--form 'commp="{\"piece\":\"bafybeie6sk45lkml45a6s2ftygkt4h2dh5pcpq3pa7dgl64sl7ycxouczq\",\"size\":2000000,\"duration\":20000000}"' \
 --form 'connection_mode="online"' 
 ```
 

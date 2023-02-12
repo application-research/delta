@@ -52,6 +52,7 @@ type Content struct {
 	PieceCommitmentId int64     `json:"piece_commitment_id,omitempty"`
 	Status            string    `json:"status"`
 	ConnectionMode    string    `json:"connection_mode"` // offline or online
+	Duration          int64     `json:"duration"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }

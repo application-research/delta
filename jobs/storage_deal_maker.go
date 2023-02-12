@@ -4,6 +4,7 @@ import (
 	"context"
 	"delta/core"
 	"delta/utils"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	fc "github.com/application-research/filclient"
@@ -81,7 +82,8 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	}
 
 	priceBigInt, err := types.BigFromString("0001")
-	var DealDuration = 1555200 - (2880 * 21)
+
+	var DealDuration = i.GetDurationForContent(*content)
 	duration := abi.ChainEpoch(DealDuration)
 
 	prop, err := filClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
@@ -133,12 +135,30 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 				LastMessage: err.Error(),
 				Failed:      true, // mark it as failed
 			})
+
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+			})
+			return err
+		}
+
+		if strings.Contains(err.Error(), "storage price per epoch less than asking price") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+			})
 			return err
 		}
 		if strings.Contains(err.Error(), " piece size less than minimum required size") { // don't put it back on the queue
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
 				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
 			})
 			return err
 		}
@@ -208,8 +228,16 @@ func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content core.Cont
 }
 
 type WalletMeta struct {
-	KeyType    string `json:"Type"`
-	PrivateKey string `json:"PrivateKey"`
+	KeyType    string `json:"key_type"`
+	PrivateKey string `json:"private_key"`
+}
+
+func (i *StorageDealMakerProcessor) GetDurationForContent(content core.Content) int64 {
+
+	if content.Duration == 0 {
+		return utils.DEFAULT_DURATION
+	}
+	return content.Duration
 }
 
 func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content core.Content) (*fc.FilClient, error) {
@@ -224,23 +252,29 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content core.Con
 	if storageWalletAssignment.ID != 0 {
 		newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
 		var walletMeta WalletMeta
+
 		json.Unmarshal([]byte(storageWalletAssignment.Wallet), &walletMeta)
-		fmt.Println("walletMeta", &walletMeta)
+		unhexPkey, err := hex.DecodeString(walletMeta.PrivateKey)
+
+		fmt.Println("unhexPkey", string(unhexPkey))
 		if err != nil {
+			fmt.Println("error on unhex", err)
 			return nil, err
 		}
 
-		fmt.Println("walletMeta", &walletMeta.PrivateKey)
 		newWalletAddr, err := newWallet.WalletImport(context.Background(), &types.KeyInfo{
 			Type:       types.KeyType(walletMeta.KeyType),
-			PrivateKey: []byte(walletMeta.PrivateKey),
+			PrivateKey: unhexPkey,
 		})
+
 		if err != nil {
+			fmt.Println("error on wallet import", err)
 			return nil, err
 		}
 		// new filclient just for this request
 		fc, err := fc.NewClient(i.LightNode.Node.Host, api, newWallet, newWalletAddr, i.LightNode.Node.Blockstore, i.LightNode.Node.Datastore, i.LightNode.Node.Config.DatastoreDir.Directory)
 		if err != nil {
+			fmt.Println("error on filclient", err)
 			return nil, err
 		}
 		return fc, err
