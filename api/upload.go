@@ -56,7 +56,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		miner := c.FormValue("miner")
 		commp := c.FormValue("commp")
 		walletAddr := c.FormValue("wallet") // insecure
-
+		walletAddr = ""                     // don't try to use this for now
 		json.Unmarshal([]byte(walletAddr), &walletReq)
 		json.Unmarshal([]byte(commp), &commpRequest)
 

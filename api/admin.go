@@ -5,6 +5,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// ConfigureAdminRouter configures the admin router
+// This is the router that is used to administer the node
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 
 	adminRepair := e.Group("/repair")

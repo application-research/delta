@@ -117,7 +117,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	ConfigureRepairRouter(apiGroup, ln)
 
 	// Start server
-	e.Logger.Fatal(e.Start("0.0.0.0:1313")) // configuration
+	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
 }
 
 func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
