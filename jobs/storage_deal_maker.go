@@ -86,7 +86,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	var DealDuration = i.GetDurationForContent(*content)
 	duration := abi.ChainEpoch(DealDuration)
 
-	prop, err := filClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
+	prop, err := filClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true, true)
 	fmt.Println(prop)
 	if err != nil {
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
@@ -129,8 +129,19 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 	if propPhase == true && err != nil {
 
-		// TODO: better error handling
 		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+			})
+			return err
+		}
+
+		if strings.Contains(err.Error(), " deal duration out of bounds") {
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
 				Failed:      true, // mark it as failed
@@ -328,8 +339,10 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 	}
 
 	// Send the deal proposal to the storage provider
-	propPhase, err := i.LightNode.FilClient.SendProposalV120(ctx, dbid, netprop, dealUUID, announceAddr, authToken)
-
+	propPhase, err := i.LightNode.FilClient.SendProposalV120WithOptions(
+		i.Context, netprop,
+		fc.ProposalV120WithDealUUID(dealUUID),
+		fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid))
 	if err != nil {
 		i.LightNode.FilClient.Libp2pTransferMgr.CleanupPreparedRequest(i.Context, dbid, authToken)
 		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
