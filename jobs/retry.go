@@ -15,13 +15,14 @@ func NewRetryProcessor(ln *core.DeltaNode) IProcessor {
 	}
 }
 
+// DB heavy process. We need to check the status of the content and requeue the job if needed.
 func (i RetryProcessor) Run() error {
 
 	// create the new logic again.
 	// if transfer-started but older than 3 days, then requeue the job.
 
 	var contents []core.Content
-	i.LightNode.DB.Model(&core.Content{}).Where("status = ? and created_at < ?", "transfer-started", time.Now().AddDate(0, 0, -3)).Find(&contents)
+	i.LightNode.DB.Model(&core.Content{}).Where("status = ? and created_at < ?", "transfer-started", time.Now().AddDate(0, 0, -1)).Find(&contents)
 
 	for _, content := range contents {
 
@@ -49,16 +50,23 @@ func (i RetryProcessor) Run() error {
 		i.LightNode.Dispatcher.AddJob(NewPieceCommpProcessor(i.LightNode, content))
 	}
 
+	var contentsTransfer []core.Content
+	i.LightNode.DB.Model(&core.Content{}).Where("status = ? and created_at < ?", "transfer-started", time.Now().AddDate(0, 0, -1)).Find(&contentsTransfer)
+
+	for _, content := range contentsTransfer {
+		var contentDeal core.ContentDeal
+		i.LightNode.DB.Model(&core.ContentDeal{}).Where("content = ?", content.ID).Find(&contentDeal) // restart
+		i.LightNode.Dispatcher.AddJob(NewDataTransferRestartProcessor(i.LightNode, contentDeal))
+	}
+
 	var pieceCommps []core.PieceCommitment
-	i.LightNode.DB.Model(&core.PieceCommitment{}).Where("status = ?", "open").Find(&pieceCommps)
+	i.LightNode.DB.Model(&core.PieceCommitment{}).Where("status = ? and created_at < ?", "piece-computing", time.Now().AddDate(0, 0, -1)).Find(&pieceCommps)
 
 	for _, pieceCommp := range pieceCommps {
 		var content core.Content
 		i.LightNode.DB.Model(&core.Content{}).Where("piece_commitment_id = ?", pieceCommp.ID).Find(&content)
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, content, pieceCommp))
 	}
-
-	// we also want to retry those request that are not failed but not "transfer-finished" that are within the 48 hour period.
 
 	return nil
 }

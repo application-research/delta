@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"delta/core"
+	"delta/utils"
 	"fmt"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
@@ -35,10 +36,10 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 				DealID:           int64(transferId),
 				TransferFinished: time.Now(),
 				SealedAt:         time.Now(),
-				LastMessage:      "transfer-finished",
+				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
 			})
 			d.LightNode.DB.Model(&core.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(core.Content{
-				Status: "transfer-finished",
+				Status: utils.DEAL_STATUS_TRANSFER_FINISHED,
 			})
 		case datatransfer.Failed:
 			var contentDeal core.ContentDeal
@@ -46,10 +47,10 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 				FailedAt: time.Now(),
 			}).Find(&contentDeal)
 			d.LightNode.DB.Model(&core.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(core.Content{
-				Status: "transfer-failed",
+				Status: utils.DEAL_STATUS_TRANSFER_FAILED,
 			})
 
-			d.LightNode.Dispatcher.AddJob(NewDataTransferRestartListenerProcessor(d.LightNode, contentDeal))
+			d.LightNode.Dispatcher.AddJob(NewDataTransferRestartProcessor(d.LightNode, contentDeal))
 		default:
 
 		}

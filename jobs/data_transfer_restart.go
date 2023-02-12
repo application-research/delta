@@ -12,7 +12,7 @@ type DataTransferRestartListenerProcessor struct {
 	ContentDeal core.ContentDeal
 }
 
-func NewDataTransferRestartListenerProcessor(ln *core.DeltaNode, contentDeal core.ContentDeal) IProcessor {
+func NewDataTransferRestartProcessor(ln *core.DeltaNode, contentDeal core.ContentDeal) IProcessor {
 	return &DataTransferRestartListenerProcessor{
 		LightNode:   ln,
 		ContentDeal: contentDeal,

@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"delta/status"
 	"fmt"
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
@@ -37,7 +36,6 @@ type DeltaNode struct {
 	FilClient  *fc.FilClient
 	Config     *Configuration
 	Dispatcher *Dispatcher
-	StatusLog  *status.StatusLogger
 }
 
 type LocalWallet struct {

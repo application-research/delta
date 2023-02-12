@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	"delta/utils"
 	"fmt"
 	"github.com/ipfs/go-cid"
 	"time"
@@ -22,11 +23,46 @@ func NewItemContentCleanUpProcessor(ln *core.DeltaNode) IProcessor {
 
 func (i ItemContentCleanUpProcessor) Run() error {
 
-	// get all content with transfer status = "transfer-finished"
-	var contents []core.Content
-	i.LightNode.DB.Model(&core.Content{}).Where("status = ?", "transfer-finished").Find(&contents)
+	// clear up finished CID deals.
+	var contentsOnline []core.Content
+	i.LightNode.DB.Model(&core.Content{}).Where("status = ? and connection_mode = ?", "transfer-finished", "online").Find(&contentsOnline)
 
-	for _, content := range contents {
+	for _, content := range contentsOnline {
+		cidD, err := cid.Decode(content.Cid)
+		if err != nil {
+			fmt.Println("error in decoding cid", err)
+			continue
+		}
+		err = i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+		if err != nil {
+			fmt.Println("error in deleting block", err)
+			continue
+		}
+	}
+
+	var contentsOffline []core.Content
+	i.LightNode.DB.Model(&core.Content{}).Where("status = ? and connection_mode = ?", "deal-proposal-sent", "offline").Find(&contentsOffline)
+
+	for _, content := range contentsOnline {
+		cidD, err := cid.Decode(content.Cid)
+		if err != nil {
+			fmt.Println("error in decoding cid", err)
+			continue
+		}
+		err = i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+		if err != nil {
+			fmt.Println("error in deleting block", err)
+			continue
+		}
+	}
+
+	// clear up failed CID deals.
+	var contentDeals []core.ContentDeal
+	i.LightNode.DB.Model(&core.ContentDeal{}).Where("failed = ?", true).Find(&contentDeals)
+
+	for _, contentDeal := range contentDeals {
+		var content core.Content
+		i.LightNode.DB.Model(&core.Content{}).Where("id = ?", contentDeal.Content).Find(&content)
 		cidD, err := cid.Decode(content.Cid)
 		if err != nil {
 			fmt.Println("error in decoding cid", err)
@@ -41,7 +77,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 
 	// fail request that are older than 7 days. No point in retrying them.
 	i.LightNode.DB.Model(&core.Content{}).Where("status <> ? and created_at < ?", "transfer-finished", time.Now().AddDate(0, 0, -7)).Updates(core.Content{
-		Status: "transfer-failed",
+		Status: utils.DEAL_STATUS_TRANSFER_FAILED,
 	})
 	return nil
 }

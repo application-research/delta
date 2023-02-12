@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-// workers
-// jobs
-
-// this processors are independent. we want it to run on it's own without waiting
-// for other groups.
-
 type PieceCommpProcessor struct {
 	Context   context.Context
 	LightNode *core.DeltaNode
@@ -54,6 +48,7 @@ func (i PieceCommpProcessor) Run() error {
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}
+
 	i.LightNode.DB.Create(commpRec)
 
 	// update bucket status to commp-computed

@@ -47,6 +47,14 @@ type Content struct {
 	UpdatedAt         time.Time `json:"updated_at"`
 }
 
+type RetryCounter struct {
+	ID        int64     `gorm:"primaryKey"`
+	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	Counter   int64     `json:"counter"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type ContentMinerAssignment struct {
 	ID        int64     `gorm:"primaryKey"`
 	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`

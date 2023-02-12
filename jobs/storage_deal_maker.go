@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	"delta/utils"
 	"fmt"
 	"github.com/filecoin-project/boost/transport/httptransport"
 	"github.com/filecoin-project/go-address"
@@ -48,7 +49,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
 	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
-		Status: "making-deal-proposal",
+		Status: utils.CONTENT_DEAL_MAKING_PROPOSAL, //"making-deal-proposal",
 	})
 
 	bal, err := i.LightNode.FilClient.Balance(i.Context)
@@ -105,24 +106,25 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	}
 
 	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
-		Status: "sending-deal-proposal",
+		Status: utils.CONTENT_DEAL_SENDING_PROPOSAL, //"sending-deal-proposal",
 	})
 
 	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID))
+
 	if propPhase == true && err != nil {
 
 		// TODO: better error handling
 		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
-				Failed:      true,
+				Failed:      true, // mark it as failed
 			})
 			return err
 		}
 		if strings.Contains(err.Error(), " piece size less than minimum required size") { // don't put it back on the queue
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
-				Failed:      true,
+				Failed:      true, // mark it as failed
 			})
 			return err
 		}
@@ -132,7 +134,14 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		return err
 	}
 
-	if propPhase == false {
+	if propPhase == false && err != nil {
+		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+			Status: utils.CONTENT_DEAL_PROPOSAL_SENT, //"deal-proposal-sent",
+		})
+	}
+
+	// Online - transfer it
+	if propPhase == false && content.ConnectionMode == "online" {
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
 		channelId, err := i.LightNode.FilClient.StartDataTransfer(i.Context, i.GetAssignedMinerForContent(*content).Address, propCid, contentCid)
@@ -141,9 +150,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 			return err
 		}
 		content.PieceCommitmentId = pieceComm.ID
-		pieceComm.Status = "committed"
-		content.Status = "transfer-started"
-		deal.LastMessage = "transfer-started"
+		pieceComm.Status = utils.COMMP_STATUS_COMITTED        //"committed"
+		content.Status = utils.DEAL_STATUS_TRANSFER_STARTED   //"transfer-started"
+		deal.LastMessage = utils.DEAL_STATUS_TRANSFER_STARTED //"transfer-started"
 		deal.DTChan = channelId.String()
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 			tx.Model(&core.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)

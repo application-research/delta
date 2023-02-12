@@ -3,6 +3,7 @@ package api
 import (
 	"delta/core"
 	"delta/jobs"
+	"delta/utils"
 	"strings"
 	"time"
 
@@ -35,7 +36,14 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 		file, err := c.FormFile("data")
+		connMode := c.FormValue("connection_mode") // online or offline
 		miner := c.FormValue("miner")
+		//duration := c.FormValue("duration")
+		walletAddr := c.FormValue("walletAddr")
+
+		if connMode == "" || (connMode != "online" && connMode != "offline") {
+			connMode = "online"
+		}
 
 		if err != nil {
 			return err
@@ -55,12 +63,14 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			Size:             file.Size,
 			Cid:              addNode.Cid().String(),
 			RequestingApiKey: authParts[1],
-			Status:           "pinned",
+			Status:           utils.CONTENT_PINNED,
+			ConnectionMode:   connMode,
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
 		node.DB.Create(&content)
 
+		//	assign a miner
 		if miner != "" {
 			contentMinerAssignment := core.ContentMinerAssignment{
 				Miner:     miner,
@@ -71,6 +81,18 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			node.DB.Create(&contentMinerAssignment)
 		}
 
+		// 	assign a wallet
+		if walletAddr != "" {
+			contentWalletAssignment := core.ContentWalletAssignment{
+				Wallet:    walletAddr,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentWalletAssignment)
+		}
+
+		//	error
 		if err != nil {
 			c.JSON(500, UploadResponse{
 				Status:  "error",
@@ -109,7 +131,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			pieceCommp.PaddedPieceSize = r.PaddedSize
 			pieceCommp.CreatedAt = time.Now()
 			pieceCommp.UpdatedAt = time.Now()
-			pieceCommp.Status = "open"
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
 			node.DB.Create(&pieceCommp)
 
 			//jobs.NewStorageDealMakerProcessor(node, nil, pieceCommp)
@@ -138,7 +160,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			Size:             int64(size),
 			Cid:              addNode.Cid().String(),
 			RequestingApiKey: authParts[1],
-			Status:           "pinned",
+			Status:           utils.CONTENT_PINNED,
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
@@ -187,7 +209,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 				Size:             int64(size),
 				Cid:              addNode.Cid().String(),
 				RequestingApiKey: authParts[1],
-				Status:           "pinned",
+				Status:           utils.CONTENT_PINNED,
 				CreatedAt:        time.Now(),
 				UpdatedAt:        time.Now(),
 			}
