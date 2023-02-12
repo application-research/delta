@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"delta/utils"
 	"fmt"
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
@@ -118,8 +119,7 @@ func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, err
 	whypfsPeer.BootstrapPeers(BootstrapEstuaryPeers())
 
 	//	FilClient
-	api, _, err := LotusConnection("http://api.chain.love")
-
+	api, _, err := LotusConnection(utils.LOTUS_API)
 	wallet, err := SetupWallet(repo.DefaultWalletDir)
 	walletAddr, err := wallet.GetDefault()
 	if err != nil {

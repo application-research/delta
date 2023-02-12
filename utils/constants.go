@@ -14,4 +14,9 @@ const (
 
 	COMMP_STATUS_OPEN     = "open"
 	COMMP_STATUS_COMITTED = "committed"
+
+	CONNECTION_MODE_ONLINE  = "online"
+	CONNECTION_MODE_OFFLINE = "offline"
+
+	LOTUS_API = "http://api.chain.love"
 )

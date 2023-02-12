@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
-	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"time"
 )
@@ -18,8 +18,17 @@ func OpenDatabase() (*gorm.DB, error) {
 	if !okHost {
 		panic("DB_DSN not set")
 	}
-	//DB, err := gorm.Open(sqlite.Open(dbName), &gorm.Config{})
-	DB, err := gorm.Open(postgres.Open(dbDsn), &gorm.Config{})
+
+	// if dbDsn has prefix postgres
+	// use postgres
+	var DB *gorm.DB
+	var err error
+
+	if dbDsn[:8] == "postgres" {
+		DB, err = gorm.Open(postgres.Open(dbDsn), &gorm.Config{})
+	} else {
+		DB, err = gorm.Open(sqlite.Open(dbDsn), &gorm.Config{})
+	}
 
 	// generate new models.
 	ConfigureModels(DB) // create models.
@@ -31,7 +40,7 @@ func OpenDatabase() (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &RetryDealCount{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &ProcessContentCounter{}, &ContentWalletAssignment{})
 }
 
 type Content struct {
@@ -47,7 +56,7 @@ type Content struct {
 	UpdatedAt         time.Time `json:"updated_at"`
 }
 
-type RetryCounter struct {
+type ProcessContentCounter struct {
 	ID        int64     `gorm:"primaryKey"`
 	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
 	Counter   int64     `json:"counter"`
@@ -64,12 +73,11 @@ type ContentMinerAssignment struct {
 }
 
 type ContentWalletAssignment struct {
-	ID               int64     `gorm:"primaryKey"`
-	Content          int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
-	Wallet           string    `json:"wallet"`
-	RequestingApiKey string    `json:"requesting_api_key,omitempty"` // we need to associate it to a KEY
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID        int64     `gorm:"primaryKey"`
+	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	Wallet    string    `json:"wallet_meta"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type ContentDeal struct {
@@ -96,44 +104,48 @@ type ContentDeal struct {
 }
 
 type PieceCommitment struct {
-	ID              int64  `gorm:"primaryKey"`
-	Cid             string `json:"cid"`
-	Piece           string `json:"piece"`
-	Size            int64  `json:"size"`
-	PaddedPieceSize int64  `json:"padded_piece_size"`
-	Status          string `json:"status"` // open, in-progress, completed (closed).
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID              int64     `gorm:"primaryKey"`
+	Cid             string    `json:"cid"`
+	Piece           string    `json:"piece"`
+	Size            int64     `json:"size"`
+	PaddedPieceSize int64     `json:"padded_piece_size"`
+	Status          string    `json:"status"` // open, in-progress, completed (closed).
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type MinerInfo struct {
-	ID              int64  `gorm:"primaryKey"`
-	Addr            string `json:"addr"` // same as Miner from MinerPrice
-	Name            string `json:"name"`
-	Suspended       bool   `json:"suspended"`
-	Version         string `json:"version"`
-	ChainInfo       string `json:"chain_info"`
-	SuspendedReason string `json:"suspendedReason,omitempty"`
+	ID              int64     `gorm:"primaryKey"`
+	Addr            string    `json:"addr"` // same as Miner from MinerPrice
+	Name            string    `json:"name"`
+	Suspended       bool      `json:"suspended"`
+	Version         string    `json:"version"`
+	ChainInfo       string    `json:"chain_info"`
+	SuspendedReason string    `json:"suspendedReason,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type MinerPrice struct {
-	ID            int64  `gorm:"primaryKey"`
-	Miner         string `json:"miner"`
-	Price         string `json:"price"`
-	VerifiedPrice string `json:"verifiedPrice"`
-	MinPieceSize  int64  `json:"minPieceSize"`
-	MaxPieceSize  int64  `json:"maxPieceSize"`
-	MinerVersion  string `json:"miner_version"`
+	ID            int64     `gorm:"primaryKey"`
+	Miner         string    `json:"miner"`
+	Price         string    `json:"price"`
+	VerifiedPrice string    `json:"verifiedPrice"`
+	MinPieceSize  int64     `json:"minPieceSize"`
+	MaxPieceSize  int64     `json:"maxPieceSize"`
+	MinerVersion  string    `json:"miner_version"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type Wallet struct {
-	ID         int64         `gorm:"primaryKey"`
-	Addr       string        `json:"addr"`
-	Owner      string        `json:"owner"`
-	KeyType    types.KeyType `json:"key_type"`
-	PrivateKey string        `json:"private_key"`
-	CreatedAt  time.Time     `json:"created_at"`
-	UpdatedAt  time.Time     `json:"updated_at"`
+	ID         int64     `gorm:"primaryKey"`
+	Addr       string    `json:"addr"`
+	Owner      string    `json:"owner"`
+	KeyType    string    `json:"key_type"`
+	PrivateKey string    `json:"private_key"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type AdminUser struct {
@@ -150,6 +162,7 @@ type LogEvent struct {
 	LogEventId int64     `json:"log_event_id"` // object id
 	LogEvent   string    `json:"log_event"`    // description
 	CreatedAt  time.Time `json:"created_at"`   // auto set
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 type RetryDealCount struct {

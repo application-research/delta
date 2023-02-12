@@ -78,7 +78,7 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 	walletToDb := &Wallet{
 		Addr:       address.String(),
 		Owner:      param.RequestingApiKey,
-		KeyType:    param.KeyType,
+		KeyType:    string(param.KeyType),
 		PrivateKey: string(address.Payload()),
 		CreatedAt:  time.Time{},
 		UpdatedAt:  time.Time{},
@@ -108,7 +108,7 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 	walletToDb := &Wallet{
 		Addr:       address.String(),
 		Owner:      param.RequestingApiKey,
-		KeyType:    param.KeyType,
+		KeyType:    string(param.KeyType),
 		PrivateKey: string(param.PrivateKey),
 		CreatedAt:  time.Time{},
 		UpdatedAt:  time.Time{},

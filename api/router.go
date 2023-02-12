@@ -57,7 +57,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	e.HTTPErrorHandler = ErrorHandler
 
 	apiGroup := e.Group("/api/v1")
-	openApiGroup := e.Group("/api/v1/open")
+	openApiGroup := e.Group("/open")
 	adminApiGroup := e.Group("/admin")
 	ConfigureAdminRouter(adminApiGroup, ln)
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {

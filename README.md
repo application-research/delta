@@ -25,15 +25,15 @@ NODE_NAME=stg-deal-maker
 NODE_DESCRIPTION=Experimental Deal Maker
 NODE_TYPE=delta-main
 
-# DB Configuration
+# Database configuration
 MODE=standalone # HA
-DB_DSN=<POSGRES DSN URI>
+DB_DSN=stg-deal-maker
 #REPO=/mnt/.whypfs # shared mounted repo
 
 # Frequencies
 DISPATCH_JOBS_EVERY=10
-MAX_DISPATCH_WORKERS=100
-MINER_INFO_UPDATE_JOB_FREQ=300
+MAX_DISPATCH_WORKERS=5000
+MAX_CLEANUP_WORKERS=1500
 ```
 
 Running this the first time will generate a wallet. Make sure to get FIL from the [faucet](https://verify.glif.io/) and fund the wallet
@@ -81,17 +81,32 @@ docker run -it --rm -p 1313:1313 stg-dealer
 ## Endpoints
 
 ### Node information
+To get the node information, use the following endpoints
 ```
-curl --location --request GET 'http://localhost:1313/api/v1/open/node/info'
-curl --location --request GET 'http://localhost:1313/api/v1/open/node/peers'
-curl --location --request GET 'http://localhost:1313/api/v1/open/node/host'
+curl --location --request GET 'http://localhost:1313/open/node/info'
+curl --location --request GET 'http://localhost:1313/open/node/peers'
+curl --location --request GET 'http://localhost:1313/open/node/host'
 ```
 
 ### Upload a file
+Use the following endpoint to upload a file. The process will automatically compute the piece size and initiate the deal proposal
+and transfer
 ```
 curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"random_1675815458N.dat"'
+```
+
+### Upload a file with a specific pad piece size, duration, miner and connection mode
+Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
+```
+curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
+--header 'Authorization: Bearer [REDACTED]' \
+--form 'data=@"random_1675815458N.dat"' \
+--form 'miner="f01963614"' \
+--form 'duration="10000000"' \
+--form 'size="266338304"'
+--form 'connection_mode="online"' 
 ```
 
 ### Stats (content, commps and deals) 

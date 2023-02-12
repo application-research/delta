@@ -4,13 +4,16 @@ import (
 	"context"
 	"delta/core"
 	"delta/utils"
+	"encoding/json"
 	"fmt"
+	fc "github.com/application-research/filclient"
 	"github.com/filecoin-project/boost/transport/httptransport"
 	"github.com/filecoin-project/go-address"
 	cborutil "github.com/filecoin-project/go-cbor-util"
 	"github.com/filecoin-project/go-fil-markets/storagemarket/network"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/lotus/chain/types"
+	"github.com/filecoin-project/lotus/chain/wallet"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multiaddr"
@@ -25,6 +28,12 @@ type StorageDealMakerProcessor struct {
 	LightNode *core.DeltaNode
 	Content   *core.Content
 	PieceComm *core.PieceCommitment
+	DealParam *DealParam
+}
+
+type DealParam struct {
+	Size     int64
+	Duration int64
 }
 
 func (i StorageDealMakerProcessor) Run() error {
@@ -48,16 +57,21 @@ func NewStorageDealMakerProcessor(ln *core.DeltaNode, content core.Content, comm
 func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, pieceComm *core.PieceCommitment) error {
 
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
+	var filClient, err = i.GetAssignedWalletForContent(*content)
+	if err != nil {
+		fmt.Println("error filclient", err)
+		return err
+	}
 	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
 		Status: utils.CONTENT_DEAL_MAKING_PROPOSAL, //"making-deal-proposal",
 	})
 
-	bal, err := i.LightNode.FilClient.Balance(i.Context)
+	bal, err := filClient.Balance(i.Context)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(i.LightNode.FilClient.ClientAddr)
+	fmt.Println(filClient.ClientAddr)
 	fmt.Println("balance", bal.Balance.String())
 	fmt.Println("escrow", bal.MarketEscrow.String())
 
@@ -66,11 +80,11 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		fmt.Println("piece cid decode", err)
 	}
 
-	priceBigInt, err := types.BigFromString("0")
+	priceBigInt, err := types.BigFromString("0001")
 	var DealDuration = 1555200 - (2880 * 21)
 	duration := abi.ChainEpoch(DealDuration)
 
-	prop, err := i.LightNode.FilClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
+	prop, err := filClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true)
 	fmt.Println(prop)
 	if err != nil {
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
@@ -84,7 +98,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	}
 
 	dealUUID := uuid.New()
-	proto, err := i.LightNode.FilClient.DealProtocolForMiner(i.Context, minerAddress)
+	proto, err := filClient.DealProtocolForMiner(i.Context, minerAddress)
 	if err != nil {
 		fmt.Println("deal protocol for miner", err)
 	}
@@ -144,7 +158,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	if propPhase == false && content.ConnectionMode == "online" {
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
-		channelId, err := i.LightNode.FilClient.StartDataTransfer(i.Context, i.GetAssignedMinerForContent(*content).Address, propCid, contentCid)
+		channelId, err := filClient.StartDataTransfer(i.Context, i.GetAssignedMinerForContent(*content).Address, propCid, contentCid)
 		if err != nil {
 			i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
 			return err
@@ -191,6 +205,48 @@ func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content core.Cont
 		return MinerAddress{Address: a}
 	}
 	return i.GetStorageProviders()[0]
+}
+
+type WalletMeta struct {
+	KeyType    string `json:"Type"`
+	PrivateKey string `json:"PrivateKey"`
+}
+
+func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content core.Content) (*fc.FilClient, error) {
+	api, _, err := core.LotusConnection(utils.LOTUS_API)
+	if err != nil {
+		return nil, err
+	}
+
+	var storageWalletAssignment core.ContentWalletAssignment
+	i.LightNode.DB.Model(&core.ContentWalletAssignment{}).Where("content = ?", content.ID).Find(&storageWalletAssignment)
+
+	if storageWalletAssignment.ID != 0 {
+		newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
+		var walletMeta WalletMeta
+		json.Unmarshal([]byte(storageWalletAssignment.Wallet), &walletMeta)
+		fmt.Println("walletMeta", &walletMeta)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println("walletMeta", &walletMeta.PrivateKey)
+		newWalletAddr, err := newWallet.WalletImport(context.Background(), &types.KeyInfo{
+			Type:       types.KeyType(walletMeta.KeyType),
+			PrivateKey: []byte(walletMeta.PrivateKey),
+		})
+		if err != nil {
+			return nil, err
+		}
+		// new filclient just for this request
+		fc, err := fc.NewClient(i.LightNode.Node.Host, api, newWallet, newWalletAddr, i.LightNode.Node.Blockstore, i.LightNode.Node.Datastore, i.LightNode.Node.Config.DatastoreDir.Directory)
+		if err != nil {
+			return nil, err
+		}
+		return fc, err
+	}
+
+	return i.LightNode.FilClient, err
 }
 
 func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {

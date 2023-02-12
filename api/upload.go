@@ -4,6 +4,9 @@ import (
 	"delta/core"
 	"delta/jobs"
 	"delta/utils"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +31,11 @@ type UploadCommpRequest struct {
 	PaddedSize int64  `json:"padded_size"`
 }
 
+type WalletRequest struct {
+	KeyType    string `json:"key_type"`
+	PrivateKey string `json:"private_key"`
+}
+
 func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 	content := e.Group("/content")
@@ -38,10 +46,15 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		file, err := c.FormFile("data")
 		connMode := c.FormValue("connection_mode") // online or offline
 		miner := c.FormValue("miner")
-		//duration := c.FormValue("duration")
-		walletAddr := c.FormValue("walletAddr")
+		duration := c.FormValue("duration")
+		size := c.FormValue("size")
+		walletReq := WalletRequest{}
+		//{"Type":"secp256k1","PrivateKey":"<key>"}
+		walletAddr := c.FormValue("wallet") // insecure
+		fmt.Println(duration)
+		json.Unmarshal([]byte(walletAddr), &walletReq)
 
-		if connMode == "" || (connMode != "online" && connMode != "offline") {
+		if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
 			connMode = "online"
 		}
 
@@ -56,17 +69,34 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 		addNode, err := node.Node.AddPinFile(c.Request().Context(), src, nil)
 
-		// get available staging buckets.
+		// if size is given, let's create a commp record for it.
+		var pieceCommp core.PieceCommitment
+		if size != "" {
+			paddedPieceSize, err := strconv.Atoi(size)
+			if err != nil {
+				return err
+			}
+			pieceCommp.Cid = addNode.Cid().String()
+			pieceCommp.Piece = addNode.Cid().String()
+			pieceCommp.Size = file.Size
+			pieceCommp.PaddedPieceSize = int64(paddedPieceSize)
+			pieceCommp.CreatedAt = time.Now()
+			pieceCommp.UpdatedAt = time.Now()
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+			node.DB.Create(&pieceCommp)
+		}
+
 		// save the file to the database.
 		content := core.Content{
-			Name:             file.Filename,
-			Size:             file.Size,
-			Cid:              addNode.Cid().String(),
-			RequestingApiKey: authParts[1],
-			Status:           utils.CONTENT_PINNED,
-			ConnectionMode:   connMode,
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			Name:              file.Filename,
+			Size:              file.Size,
+			Cid:               addNode.Cid().String(),
+			RequestingApiKey:  authParts[1],
+			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
+			ConnectionMode:    connMode,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
 		}
 		node.DB.Create(&content)
 
@@ -81,8 +111,11 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			node.DB.Create(&contentMinerAssignment)
 		}
 
+		//  create a wallet record
+
 		// 	assign a wallet
 		if walletAddr != "" {
+
 			contentWalletAssignment := core.ContentWalletAssignment{
 				Wallet:    walletAddr,
 				Content:   content.ID,
@@ -106,9 +139,16 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			ID:      content.ID,
 		})
 
-		// prepare to dispatch
-		d := jobs.NewPieceCommpProcessor(node, content)
-		node.Dispatcher.AddJob(d) // add the job so we can process it later
+		var dispatchJobs core.IProcessor
+		if pieceCommp.ID != 0 {
+			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			// add the job so we can process it later
+		} else {
+			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			// add the job so we can process it later
+		}
+
+		node.Dispatcher.AddJob(dispatchJobs)
 
 		return nil
 	})
