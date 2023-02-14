@@ -125,3 +125,10 @@ curl --location --request POST 'http://localhost:1414/api/v1/content/add-cid' \
 curl --location --request GET 'http://localhost:1414/api/v1/stats' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 ```
+
+### Stats of a specific content
+When you upload, it returns a content id, use that to get the stats of a specific content
+```
+curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]'
+```
