@@ -6,6 +6,7 @@ import (
 	"delta/utils"
 	"encoding/hex"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,22 +24,17 @@ type UploadResponse struct {
 	ID      int64  `json:"id,omitempty"`
 }
 
-type UploadCommpRequest struct {
-	Cid        string `json:"cid"`
-	Piece      string `json:"piece"`
-	Size       int64  `json:"size"`
-	PaddedSize int64  `json:"padded_size"`
-}
-
 type WalletRequest struct {
 	KeyType    string `json:"key_type"`
 	PrivateKey string `json:"private_key"`
 }
 
 type CommpRequest struct {
-	Piece    string `json:"piece"`
-	Size     int64  `json:"size"`
-	Duration int64  `json:"duration"`
+	Cid               string `json:"cid"`
+	Piece             string `json:"piece"`
+	Size              int64  `json:"size"`
+	UnPaddedPieceSize uint64 `json:"unpadded_piece_size"`
+	PaddedPieceSize   uint64 `json:"padded_piece_size"`
 }
 
 func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
@@ -48,24 +44,22 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 		var walletReq WalletRequest
 		var commpRequest CommpRequest
+		var durationInt int64
 
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 		file, err := c.FormFile("data")
 		connMode := c.FormValue("connection_mode") // online or offline
 		miner := c.FormValue("miner")
+		duration := c.FormValue("duration")
 		commp := c.FormValue("commp")
 		walletAddr := c.FormValue("wallet") // insecure
-		walletAddr = ""                     // don't try to use this for now
+
 		json.Unmarshal([]byte(walletAddr), &walletReq)
 		json.Unmarshal([]byte(commp), &commpRequest)
 
 		if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
 			connMode = "online"
-		}
-
-		if err != nil {
-			return err
 		}
 
 		src, err := file.Open()
@@ -75,17 +69,23 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 		addNode, err := node.Node.AddPinFile(c.Request().Context(), src, nil)
 
+		if s, err := strconv.Atoi(duration); err == nil {
+			durationInt = int64(s)
+		} else {
+			durationInt = utils.DEFAULT_DURATION
+		}
+
 		// if size is given, let's create a commp record for it.
 		var pieceCommp core.PieceCommitment
 		if commpRequest.Piece != "" {
 
 			// if commp is there, make sure the piece and size are there. Use default duration.
-
-			paddedPieceSize := commpRequest.Size
+			//paddedPieceSize := commpRequest.Size
 			pieceCommp.Cid = addNode.Cid().String()
 			pieceCommp.Piece = commpRequest.Piece
 			pieceCommp.Size = file.Size
-			pieceCommp.PaddedPieceSize = paddedPieceSize
+			pieceCommp.UnPaddedPieceSize = commpRequest.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = commpRequest.PaddedPieceSize
 			pieceCommp.CreatedAt = time.Now()
 			pieceCommp.UpdatedAt = time.Now()
 			pieceCommp.Status = utils.COMMP_STATUS_OPEN
@@ -101,7 +101,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			PieceCommitmentId: pieceCommp.ID,
 			Status:            utils.CONTENT_PINNED,
 			ConnectionMode:    connMode,
-			Duration:          commpRequest.Duration,
+			Duration:          durationInt,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -170,14 +170,128 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	content.POST("/commp", func(c echo.Context) error {
-		var req UploadCommpRequest
-		c.Bind(&req)
+	content.POST("/add-cid", func(c echo.Context) error {
+
+		var walletReq WalletRequest
+		var commpRequest CommpRequest
+		var durationInt int64
+
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+		cidParam := c.FormValue("cid")             // online or offline
+		sizeParam := c.FormValue("size")           // online or offline
+		connMode := c.FormValue("connection_mode") // online or offline
+		miner := c.FormValue("miner")
+		duration := c.FormValue("duration")
+		commp := c.FormValue("commp")
+		walletAddr := c.FormValue("wallet") // insecure
+
+		json.Unmarshal([]byte(walletAddr), &walletReq)
+		json.Unmarshal([]byte(commp), &commpRequest)
+
+		if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
+			connMode = "online"
+		}
+
+		if s, err := strconv.Atoi(duration); err == nil {
+			durationInt = int64(s)
+		} else {
+			durationInt = utils.DEFAULT_DURATION
+		}
+
+		var pieceCommp core.PieceCommitment
+		if commpRequest.Piece != "" {
+
+			// if commp is there, make sure the piece and size are there. Use default duration.
+			pieceCommp.Cid = cidParam
+			pieceCommp.Piece = commpRequest.Piece
+			pieceCommp.Size = commpRequest.Size
+			pieceCommp.UnPaddedPieceSize = commpRequest.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = commpRequest.PaddedPieceSize
+			pieceCommp.CreatedAt = time.Now()
+			pieceCommp.UpdatedAt = time.Now()
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+			node.DB.Create(&pieceCommp)
+		}
+
+		// save the file to the database.
+		fileSize, err := strconv.Atoi(sizeParam)
+		if err != nil {
+			c.JSON(500, UploadResponse{
+				Status:  "error",
+				Message: "Error pinning the file" + err.Error(),
+			})
+		}
+
+		content := core.Content{
+			Name:              cidParam,
+			Size:              int64(fileSize),
+			Cid:               cidParam,
+			RequestingApiKey:  authParts[1],
+			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
+			ConnectionMode:    connMode,
+			Duration:          durationInt,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+		node.DB.Create(&content)
+
+		//	assign a miner
+		if miner != "" {
+			contentMinerAssignment := core.ContentMinerAssignment{
+				Miner:     miner,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentMinerAssignment)
+		}
+
+		// 	assign a wallet
+		if walletAddr != "" {
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = walletReq.KeyType
+			hexedWallet.PrivateKey = hex.EncodeToString([]byte(walletReq.PrivateKey))
+			walletByteArr, err := json.Marshal(hexedWallet)
+
+			if err != nil {
+				c.JSON(500, UploadResponse{
+					Status:  "error",
+					Message: "Error pinning the file" + err.Error(),
+				})
+			}
+			contentWalletAssignment := core.ContentWalletAssignment{
+				Wallet:    string(walletByteArr),
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentWalletAssignment)
+		}
+
+		c.JSON(200, UploadResponse{
+			Status:  "success",
+			Message: "File uploaded and pinned successfully",
+			ID:      content.ID,
+		})
+
+		var dispatchJobs core.IProcessor
+		if pieceCommp.ID != 0 {
+			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			// add the job so we can process it later
+		} else {
+			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			// add the job so we can process it later
+		}
+
+		node.Dispatcher.AddJob(dispatchJobs)
+
 		return nil
 	})
 
 	content.POST("/commps", func(c echo.Context) error {
-		var req []UploadCommpRequest
+		var req []CommpRequest
 		c.Bind(&req)
 
 		for _, r := range req {
@@ -185,7 +299,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			pieceCommp.Cid = r.Cid
 			pieceCommp.Piece = r.Piece
 			pieceCommp.Size = r.Size
-			pieceCommp.PaddedPieceSize = r.PaddedSize
+			pieceCommp.UnPaddedPieceSize = r.UnPaddedPieceSize
 			pieceCommp.CreatedAt = time.Now()
 			pieceCommp.UpdatedAt = time.Now()
 			pieceCommp.Status = utils.COMMP_STATUS_OPEN

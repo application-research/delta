@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/wallet"
@@ -75,11 +76,12 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 	}
 
 	// save it on the DB
+	hexedKey := hex.EncodeToString(address.Payload())
 	walletToDb := &Wallet{
 		Addr:       address.String(),
 		Owner:      param.RequestingApiKey,
 		KeyType:    string(param.KeyType),
-		PrivateKey: string(address.Payload()),
+		PrivateKey: hexedKey,
 		CreatedAt:  time.Time{},
 		UpdatedAt:  time.Time{},
 	}

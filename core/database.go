@@ -53,6 +53,7 @@ type Content struct {
 	Status            string    `json:"status"`
 	ConnectionMode    string    `json:"connection_mode"` // offline or online
 	Duration          int64     `json:"duration"`
+	LastMessage       string    `json:"last_message"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }
@@ -105,14 +106,15 @@ type ContentDeal struct {
 }
 
 type PieceCommitment struct {
-	ID              int64     `gorm:"primaryKey"`
-	Cid             string    `json:"cid"`
-	Piece           string    `json:"piece"`
-	Size            int64     `json:"size"`
-	PaddedPieceSize int64     `json:"padded_piece_size"`
-	Status          string    `json:"status"` // open, in-progress, completed (closed).
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID                int64     `gorm:"primaryKey"`
+	Cid               string    `json:"cid"`
+	Piece             string    `json:"piece"`
+	Size              int64     `json:"size"`
+	PaddedPieceSize   uint64    `json:"padded_piece_size"`
+	UnPaddedPieceSize uint64    `json:"unnpadded_piece_size"`
+	Status            string    `json:"status"` // open, in-progress, completed (closed).
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type MinerInfo struct {

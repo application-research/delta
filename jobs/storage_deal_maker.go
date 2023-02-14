@@ -4,11 +4,14 @@ import (
 	"context"
 	"delta/core"
 	"delta/utils"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	fc "github.com/application-research/filclient"
+	smtypes "github.com/filecoin-project/boost/storagemarket/types"
 	"github.com/filecoin-project/boost/transport/httptransport"
+	boosttypes "github.com/filecoin-project/boost/transport/types"
 	"github.com/filecoin-project/go-address"
 	cborutil "github.com/filecoin-project/go-cbor-util"
 	"github.com/filecoin-project/go-fil-markets/storagemarket/network"
@@ -76,19 +79,30 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 	fmt.Println("balance", bal.Balance.String())
 	fmt.Println("escrow", bal.MarketEscrow.String())
 
-	pCid, err := cid.Decode(pieceComm.Cid)
+	payloadCid, err := cid.Decode(pieceComm.Cid)
+	pieceCid, err := cid.Decode(pieceComm.Piece)
+
 	if err != nil {
 		fmt.Println("piece cid decode", err)
 	}
 
-	priceBigInt, err := types.BigFromString("0001")
+	priceBigInt, err := types.BigFromString("0")
 
 	var DealDuration = i.GetDurationForContent(*content)
 	duration := abi.ChainEpoch(DealDuration)
 
-	prop, err := filClient.MakeDeal(i.Context, minerAddress, pCid, priceBigInt, abi.PaddedPieceSize(pieceComm.PaddedPieceSize), duration, true, true)
-	fmt.Println(prop)
+	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,
+		fc.DealWithVerified(true),
+		fc.DealWithFastRetrieval(false),
+		fc.DealWithPieceInfo(fc.DealPieceInfo{
+			Cid:         pieceCid,
+			Size:        abi.PaddedPieceSize(pieceComm.PaddedPieceSize),
+			PayloadSize: uint64(pieceComm.Size),
+		}),
+	)
+
 	if err != nil {
+		// retry
 		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
 		return err
 	}
@@ -141,14 +155,15 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 			return err
 		}
 
-		if strings.Contains(err.Error(), " deal duration out of bounds") {
+		if strings.Contains(err.Error(), "deal duration out of bounds") {
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
 				LastMessage: err.Error(),
 				Failed:      true, // mark it as failed
 			})
 
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
-				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
 			})
 			return err
 		}
@@ -159,7 +174,8 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 				Failed:      true, // mark it as failed
 			})
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
-				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
 			})
 			return err
 		}
@@ -169,7 +185,56 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 				Failed:      true, // mark it as failed
 			})
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
-				Status: utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
+			})
+			return err
+		}
+
+		if strings.Contains(err.Error(), " invalid deal end epoch") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
+			})
+			return err
+		}
+
+		if strings.Contains(err.Error(), "could not load link") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
+			})
+			return err
+		}
+
+		if strings.Contains(err.Error(), "proposal PieceCID had wrong prefix") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
+			})
+			return err
+		}
+
+		if strings.Contains(err.Error(), "proposal piece size is invalid") { // don't put it back on the queue
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(core.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(core.Content{
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED, //"failed",
+				LastMessage: err.Error(),
 			})
 			return err
 		}
@@ -248,6 +313,7 @@ func (i *StorageDealMakerProcessor) GetDurationForContent(content core.Content) 
 	if content.Duration == 0 {
 		return utils.DEFAULT_DURATION
 	}
+	fmt.Println("duration", content.Duration)
 	return content.Duration
 }
 
@@ -262,12 +328,13 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content core.Con
 
 	if storageWalletAssignment.ID != 0 {
 		newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
+
 		var walletMeta WalletMeta
 
 		json.Unmarshal([]byte(storageWalletAssignment.Wallet), &walletMeta)
 		unhexPkey, err := hex.DecodeString(walletMeta.PrivateKey)
+		decodedPkey, err := base64.StdEncoding.DecodeString(string(unhexPkey))
 
-		fmt.Println("unhexPkey", string(unhexPkey))
 		if err != nil {
 			fmt.Println("error on unhex", err)
 			return nil, err
@@ -275,7 +342,7 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content core.Con
 
 		newWalletAddr, err := newWallet.WalletImport(context.Background(), &types.KeyInfo{
 			Type:       types.KeyType(walletMeta.KeyType),
-			PrivateKey: unhexPkey,
+			PrivateKey: decodedPkey,
 		})
 
 		if err != nil {
@@ -339,15 +406,20 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 	}
 
 	// Send the deal proposal to the storage provider
+	transferParams, err := json.Marshal(boosttypes.HttpRequest{
+		URL: "libp2p://" + announceAddr.String(),
+		Headers: map[string]string{
+			"Authorization": httptransport.BasicAuthHeader("", authToken),
+		},
+	})
+
 	propPhase, err := i.LightNode.FilClient.SendProposalV120WithOptions(
 		i.Context, netprop,
 		fc.ProposalV120WithDealUUID(dealUUID),
-		fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid))
-	if err != nil {
-		i.LightNode.FilClient.Libp2pTransferMgr.CleanupPreparedRequest(i.Context, dbid, authToken)
-		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
-			return false, err
-		}
-	}
+		fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
+		fc.ProposalV120WithTransfer(smtypes.Transfer{
+			Params: transferParams,
+		}))
+
 	return propPhase, err
 }
