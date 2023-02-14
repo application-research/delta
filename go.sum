@@ -93,6 +93,8 @@ github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/application-research/filclient v0.5.0-rc1.0.20230214041508-b8679b643fa4 h1:T7llaXAR0NoVKk2532IDecLUw2IesStlJEOmlqKqkRo=
 github.com/application-research/filclient v0.5.0-rc1.0.20230214041508-b8679b643fa4/go.mod h1:/eifGA5O8PaqfFXKUseondsR+vgBiC3mbOf+PMUNABI=
+github.com/application-research/filclient v0.5.0-rc1.0.20230214200138-bc9700d94a47 h1:Cmbs/9NZJfMS6y4qf3/X5VBL0MWG0i5vUHLX7bDPk9I=
+github.com/application-research/filclient v0.5.0-rc1.0.20230214200138-bc9700d94a47/go.mod h1:/eifGA5O8PaqfFXKUseondsR+vgBiC3mbOf+PMUNABI=
 github.com/application-research/whypfs-core v0.1.1 h1:BY40N15Ge9BlyAT3f4T4B/CAlaL7A1RYaRrNS3HIyEk=
 github.com/application-research/whypfs-core v0.1.1/go.mod h1:WPKze2Lt1+gC389Uvsr+MSqvSmqShoQbtl0/RzNC2r0=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=

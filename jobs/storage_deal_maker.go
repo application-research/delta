@@ -32,12 +32,6 @@ type StorageDealMakerProcessor struct {
 	LightNode *core.DeltaNode
 	Content   *core.Content
 	PieceComm *core.PieceCommitment
-	DealParam *DealParam
-}
-
-type DealParam struct {
-	Size     int64
-	Duration int64
 }
 
 func (i StorageDealMakerProcessor) Run() error {
@@ -62,6 +56,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
 	var filClient, err = i.GetAssignedWalletForContent(*content)
+	var dealProposal = i.GetDealProposalForContent(*content)
 	if err != nil {
 		fmt.Println("error filclient", err)
 		return err
@@ -88,7 +83,10 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 
 	priceBigInt, err := types.BigFromString("0")
 
-	var DealDuration = i.GetDurationForContent(*content)
+	var DealDuration = utils.DEFAULT_DURATION
+	if dealProposal.ID != 0 {
+		DealDuration = int(dealProposal.Duration)
+	}
 	duration := abi.ChainEpoch(DealDuration)
 
 	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,
@@ -107,6 +105,12 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		return err
 	}
 
+	dealProp := prop.DealProposal
+
+	if dealProposal.StartEpoch != 0 {
+		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
+		dealProp.Proposal.EndEpoch = dealProp.Proposal.StartEpoch + duration
+	}
 	propnd, err := cborutil.AsIpld(prop.DealProposal)
 	if err != nil {
 		fmt.Println("proposal nd", err)
@@ -308,13 +312,11 @@ type WalletMeta struct {
 	PrivateKey string `json:"private_key"`
 }
 
-func (i *StorageDealMakerProcessor) GetDurationForContent(content core.Content) int64 {
+func (i *StorageDealMakerProcessor) GetDealProposalForContent(content core.Content) core.ContentDealProposalParameters {
+	var contentDealProposalParameters core.ContentDealProposalParameters
+	i.LightNode.DB.Model(&core.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters)
 
-	if content.Duration == 0 {
-		return utils.DEFAULT_DURATION
-	}
-	fmt.Println("duration", content.Duration)
-	return content.Duration
+	return contentDealProposalParameters
 }
 
 func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content core.Content) (*fc.FilClient, error) {

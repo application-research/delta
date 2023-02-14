@@ -51,6 +51,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		file, err := c.FormFile("data")
 		connMode := c.FormValue("connection_mode") // online or offline
 		miner := c.FormValue("miner")
+		startEpoch := c.FormValue("start_epoch")
 		duration := c.FormValue("duration")
 		commp := c.FormValue("commp")
 		walletAddr := c.FormValue("wallet") // insecure
@@ -68,12 +69,6 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		}
 
 		addNode, err := node.Node.AddPinFile(c.Request().Context(), src, nil)
-
-		if s, err := strconv.Atoi(duration); err == nil {
-			durationInt = int64(s)
-		} else {
-			durationInt = utils.DEFAULT_DURATION
-		}
 
 		// if size is given, let's create a commp record for it.
 		var pieceCommp core.PieceCommitment
@@ -101,7 +96,6 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			PieceCommitmentId: pieceCommp.ID,
 			Status:            utils.CONTENT_PINNED,
 			ConnectionMode:    connMode,
-			Duration:          durationInt,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -140,6 +134,31 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 				UpdatedAt: time.Now(),
 			}
 			node.DB.Create(&contentWalletAssignment)
+		}
+		var dealProposalParam core.ContentDealProposalParameters
+		if startEpoch != "" {
+			startEpochInt, err := strconv.Atoi(startEpoch)
+			if err != nil {
+				c.JSON(500, UploadResponse{
+					Status:  "error",
+					Message: "Error pinning the file" + err.Error(),
+				})
+			}
+			dealProposalParam.StartEpoch = int64(startEpochInt)
+		}
+		if duration != "" {
+			if s, err := strconv.Atoi(duration); err == nil {
+				durationInt = int64(s)
+			} else {
+				durationInt = utils.DEFAULT_DURATION
+			}
+			dealProposalParam.Duration = durationInt
+		}
+		if dealProposalParam.StartEpoch != 0 && dealProposalParam.Duration != 0 {
+			dealProposalParam.CreatedAt = time.Now()
+			dealProposalParam.UpdatedAt = time.Now()
+			dealProposalParam.Content = content.ID
+			node.DB.Create(&dealProposalParam)
 		}
 
 		//	error
@@ -182,9 +201,10 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		sizeParam := c.FormValue("size")           // online or offline
 		connMode := c.FormValue("connection_mode") // online or offline
 		miner := c.FormValue("miner")
-		duration := c.FormValue("duration")
 		commp := c.FormValue("commp")
 		walletAddr := c.FormValue("wallet") // insecure
+		startEpoch := c.FormValue("start_epoch")
+		duration := c.FormValue("duration")
 
 		json.Unmarshal([]byte(walletAddr), &walletReq)
 		json.Unmarshal([]byte(commp), &commpRequest)
@@ -193,15 +213,8 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			connMode = "online"
 		}
 
-		if s, err := strconv.Atoi(duration); err == nil {
-			durationInt = int64(s)
-		} else {
-			durationInt = utils.DEFAULT_DURATION
-		}
-
 		var pieceCommp core.PieceCommitment
 		if commpRequest.Piece != "" {
-
 			// if commp is there, make sure the piece and size are there. Use default duration.
 			pieceCommp.Cid = cidParam
 			pieceCommp.Piece = commpRequest.Piece
@@ -231,7 +244,6 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			PieceCommitmentId: pieceCommp.ID,
 			Status:            utils.CONTENT_PINNED,
 			ConnectionMode:    connMode,
-			Duration:          durationInt,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -268,6 +280,32 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 				UpdatedAt: time.Now(),
 			}
 			node.DB.Create(&contentWalletAssignment)
+		}
+
+		var dealProposalParam core.ContentDealProposalParameters
+		if startEpoch != "" {
+			startEpochInt, err := strconv.Atoi(startEpoch)
+			if err != nil {
+				c.JSON(500, UploadResponse{
+					Status:  "error",
+					Message: "Error pinning the file" + err.Error(),
+				})
+			}
+			dealProposalParam.StartEpoch = int64(startEpochInt)
+		}
+		if duration != "" {
+			if s, err := strconv.Atoi(duration); err == nil {
+				durationInt = int64(s)
+			} else {
+				durationInt = utils.DEFAULT_DURATION
+			}
+			dealProposalParam.Duration = int64(durationInt)
+		}
+		if dealProposalParam.StartEpoch != 0 || dealProposalParam.Duration != 0 {
+			dealProposalParam.Content = content.ID
+			dealProposalParam.CreatedAt = time.Now()
+			dealProposalParam.UpdatedAt = time.Now()
+			node.DB.Create(&dealProposalParam)
 		}
 
 		c.JSON(200, UploadResponse{

@@ -40,7 +40,7 @@ func OpenDatabase() (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &ProcessContentCounter{}, &ContentWalletAssignment{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &ProcessContentCounter{}, &ContentWalletAssignment{}, &ContentDealProposalParameters{})
 }
 
 type Content struct {
@@ -52,7 +52,6 @@ type Content struct {
 	PieceCommitmentId int64     `json:"piece_commitment_id,omitempty"`
 	Status            string    `json:"status"`
 	ConnectionMode    string    `json:"connection_mode"` // offline or online
-	Duration          int64     `json:"duration"`
 	LastMessage       string    `json:"last_message"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
@@ -80,6 +79,18 @@ type ContentWalletAssignment struct {
 	Wallet    string    `json:"wallet_meta"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ContentDealProposalParameters struct {
+	ID             int64     `gorm:"primaryKey"`
+	Content        int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	Label          string    `json:"label,omitempty"`
+	Duration       int64     `json:"duration,omitempty"`
+	StartEpoch     int64     `json:"start-epoch,omitempty"`
+	EndEpoch       int64     `json:"end-epoch,omitempty"`
+	TransferParams string    `json:"transfer-params,omitempty"`
+	CreatedAt      time.Time `json:"created_at" json:"created-at"`
+	UpdatedAt      time.Time `json:"updated_at" json:"updated-at"`
 }
 
 type ContentDeal struct {
