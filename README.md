@@ -75,7 +75,7 @@ go build -tags netgo -ldflags '-s -w' -o stg-dealer
 ### Using `docker`
 ```
 docker build -t stg-dealer .
-docker run -it --rm -p 1313:1313 stg-dealer
+docker run -it --rm -p 1414:1414 stg-dealer
 ```
 
 ## Endpoints
@@ -83,16 +83,16 @@ docker run -it --rm -p 1313:1313 stg-dealer
 ### Node information
 To get the node information, use the following endpoints
 ```
-curl --location --request GET 'http://localhost:1313/open/node/info'
-curl --location --request GET 'http://localhost:1313/open/node/peers'
-curl --location --request GET 'http://localhost:1313/open/node/host'
+curl --location --request GET 'http://localhost:1414/open/node/info'
+curl --location --request GET 'http://localhost:1414/open/node/peers'
+curl --location --request GET 'http://localhost:1414/open/node/host'
 ```
 
 ### Upload a file
 Use the following endpoint to upload a file. The process will automatically compute the piece size and initiate the deal proposal
 and transfer
 ```
-curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
+curl --location --request POST 'http://localhost:1414/api/v1/content/add' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"random_1675815458N.dat"'
 ```
@@ -100,7 +100,7 @@ curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
 ### Upload a file with a specific pad piece size, duration, miner and connection mode
 Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
 ```
-curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
+curl --location --request POST 'http://localhost:1414/api/v1/content/add' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"random_1675988961N.dat"' \
 --form 'miner="f01963614"' \
@@ -108,8 +108,20 @@ curl --location --request POST 'http://localhost:1313/api/v1/content/add' \
 --form 'connection_mode="online"' 
 ```
 
+### Upload a CID with a specific pad piece size, duration, miner and connection mode
+```
+curl --location --request POST 'http://localhost:1414/api/v1/content/add-cid' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--form 'cid="bafybeie6sk45lkml45a6s2ftygkt4h2dh5pcpq3pa7dgl64sl7ycxouczq"' \
+--form 'miner="f01963614"' \
+--form 'duration="1494720"' \
+--form 'commp="{\"piece\":\"baga6ea4seaqfevzln75frz5bm74wtrddfmr2akcdww4nu45jvewg74xyzva4udi\",\"padded_piece_size\":268435456}"' \
+--form 'connection_mode="offline"' \
+--form 'size="200019978"'
+```
+
 ### Stats (content, commps and deals) 
 ```
-curl --location --request GET 'http://localhost:1313/api/v1/stats' \
+curl --location --request GET 'http://localhost:1414/api/v1/stats' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 ```
