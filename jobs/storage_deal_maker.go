@@ -377,7 +377,7 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 }
 
 var mainnetMinerStrs = []string{
-	"f01963614",
+	"f01851060",
 }
 
 func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {
@@ -421,7 +421,9 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 		fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
 		fc.ProposalV120WithTransfer(smtypes.Transfer{
 			Params: transferParams,
-		}))
+			Type:   "libp2p",
+		}),
+	)
 
 	return propPhase, err
 }
