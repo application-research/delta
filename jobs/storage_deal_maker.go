@@ -86,15 +86,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		dealDuration = int(dealProposal.Duration)
 	}
 	duration := abi.ChainEpoch(dealDuration)
-
-	fmt.Println("duration", duration)
-
 	payloadCid, err := cid.Decode(pieceComm.Cid)
 	pieceCid, err := cid.Decode(pieceComm.Piece)
 
-	//padded := abi.UnpaddedPieceSize(pieceComm.UnPaddedPieceSize).Padded()
-
-	//prop, err := filClient.MakeDeal(i.Context, minerAddress, payloadCid, priceBigInt, abi.UnpaddedPieceSize(pieceComm.UnPaddedPieceSize).Padded(), duration, true, true)
 	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,
 		fc.DealWithVerified(true),
 		fc.DealWithFastRetrieval(false), // this should be a parameter.
@@ -118,8 +112,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
 		dealProp.Proposal.EndEpoch = dealProp.Proposal.StartEpoch + duration
 	}
-
-	fmt.Println("dealProp", dealProp)
 
 	propnd, err := cborutil.AsIpld(dealProp)
 	if err != nil {
@@ -450,8 +442,14 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),
+			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
 			fc.ProposalV120WithOffline(true),
-
+			fc.ProposalV120WithTransfer(smtypes.Transfer{
+				Type:     "libp2p",
+				ClientID: fmt.Sprintf("%d", dbid),
+				Params:   transferParams,
+				Size:     uint64(i.Content.Size),
+			}),
 		)
 	} else {
 		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
