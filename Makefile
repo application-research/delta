@@ -7,6 +7,7 @@ all: build
 .PHONY: build
 build:
 	git submodule update --init --recursive
+	make -C extern/filecoin-ffi
 	go build -tags netgo -ldflags '-s -w' -o stg-dealer
 
 .PHONE: clean
