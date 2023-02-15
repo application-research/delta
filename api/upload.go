@@ -184,7 +184,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			// add the job so we can process it later
 		}
 
-		node.Dispatcher.AddJob(dispatchJobs)
+		node.Dispatcher.AddJobAndFire(dispatchJobs, 1)
 
 		return nil
 	})
@@ -429,4 +429,153 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		}
 		return nil
 	})
+}
+
+func ContentAdd(node *core.DeltaNode, c echo.Context) error {
+
+	var walletReq WalletRequest
+	var commpRequest CommpRequest
+	var durationInt int64
+
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+	file, err := c.FormFile("data")
+	connMode := c.FormValue("connection_mode") // online or offline
+	miner := c.FormValue("miner")
+	startEpoch := c.FormValue("start_epoch")
+	duration := c.FormValue("duration")
+	commp := c.FormValue("commp")
+	walletAddr := c.FormValue("wallet") // insecure
+
+	json.Unmarshal([]byte(walletAddr), &walletReq)
+	json.Unmarshal([]byte(commp), &commpRequest)
+
+	if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
+		connMode = "online"
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+
+	addNode, err := node.Node.AddPinFile(c.Request().Context(), src, nil)
+
+	// if size is given, let's create a commp record for it.
+	var pieceCommp core.PieceCommitment
+	if commpRequest.Piece != "" {
+
+		// if commp is there, make sure the piece and size are there. Use default duration.
+		//paddedPieceSize := commpRequest.Size
+		pieceCommp.Cid = addNode.Cid().String()
+		pieceCommp.Piece = commpRequest.Piece
+		pieceCommp.Size = file.Size
+		pieceCommp.UnPaddedPieceSize = commpRequest.UnPaddedPieceSize
+		pieceCommp.PaddedPieceSize = commpRequest.PaddedPieceSize
+		pieceCommp.CreatedAt = time.Now()
+		pieceCommp.UpdatedAt = time.Now()
+		pieceCommp.Status = utils.COMMP_STATUS_OPEN
+		node.DB.Create(&pieceCommp)
+	}
+
+	// save the file to the database.
+	content := core.Content{
+		Name:              file.Filename,
+		Size:              file.Size,
+		Cid:               addNode.Cid().String(),
+		RequestingApiKey:  authParts[1],
+		PieceCommitmentId: pieceCommp.ID,
+		Status:            utils.CONTENT_PINNED,
+		ConnectionMode:    connMode,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+	node.DB.Create(&content)
+
+	//	assign a miner
+	if miner != "" {
+		contentMinerAssignment := core.ContentMinerAssignment{
+			Miner:     miner,
+			Content:   content.ID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		node.DB.Create(&contentMinerAssignment)
+	}
+
+	//  create a wallet record
+
+	// 	assign a wallet
+	if walletAddr != "" {
+		var hexedWallet WalletRequest
+		hexedWallet.KeyType = walletReq.KeyType
+		hexedWallet.PrivateKey = hex.EncodeToString([]byte(walletReq.PrivateKey))
+		walletByteArr, err := json.Marshal(hexedWallet)
+
+		if err != nil {
+			c.JSON(500, UploadResponse{
+				Status:  "error",
+				Message: "Error pinning the file" + err.Error(),
+			})
+		}
+		contentWalletAssignment := core.ContentWalletAssignment{
+			Wallet:    string(walletByteArr),
+			Content:   content.ID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		node.DB.Create(&contentWalletAssignment)
+	}
+	var dealProposalParam core.ContentDealProposalParameters
+	if startEpoch != "" {
+		startEpochInt, err := strconv.Atoi(startEpoch)
+		if err != nil {
+			c.JSON(500, UploadResponse{
+				Status:  "error",
+				Message: "Error pinning the file" + err.Error(),
+			})
+		}
+		dealProposalParam.StartEpoch = int64(startEpochInt)
+	}
+	if duration != "" {
+		if s, err := strconv.Atoi(duration); err == nil {
+			durationInt = int64(s)
+		} else {
+			durationInt = utils.DEFAULT_DURATION
+		}
+		dealProposalParam.Duration = durationInt
+	}
+	if dealProposalParam.StartEpoch != 0 && dealProposalParam.Duration != 0 {
+		dealProposalParam.CreatedAt = time.Now()
+		dealProposalParam.UpdatedAt = time.Now()
+		dealProposalParam.Content = content.ID
+		node.DB.Create(&dealProposalParam)
+	}
+
+	//	error
+	if err != nil {
+		c.JSON(500, UploadResponse{
+			Status:  "error",
+			Message: "Error pinning the file" + err.Error(),
+		})
+	}
+
+	c.JSON(200, UploadResponse{
+		Status:  "success",
+		Message: "File uploaded and pinned successfully",
+		ID:      content.ID,
+	})
+
+	var dispatchJobs core.IProcessor
+	if pieceCommp.ID != 0 {
+		dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+		// add the job so we can process it later
+	} else {
+		dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+		// add the job so we can process it later
+	}
+
+	node.Dispatcher.AddJob(dispatchJobs)
+
+	return nil
 }

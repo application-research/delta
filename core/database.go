@@ -124,6 +124,7 @@ type PieceCommitment struct {
 	PaddedPieceSize   uint64    `json:"padded_piece_size"`
 	UnPaddedPieceSize uint64    `json:"unnpadded_piece_size"`
 	Status            string    `json:"status"` // open, in-progress, completed (closed).
+	LastMessage       string    `json:"last_message"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }

@@ -3,8 +3,8 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	"fmt"
 	"github.com/application-research/filclient"
-	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	"time"
 )
@@ -29,20 +29,12 @@ func (i PieceCommpProcessor) Run() error {
 	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-computing"})
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
+		fmt.Println("error in decoding cid", err)
 		panic(err)
 	}
 
 	// prepare the commp
 	pieceCid, payloadSize, unpaddedPieceSize, err := filclient.GeneratePieceCommitment(i.Context, payloadCid, i.LightNode.Node.Blockstore)
-
-	if unpaddedPieceSize.Padded() < abi.PaddedPieceSize(0) {
-		paddedPieceCid, err := filclient.ZeroPadPieceCommitment(pieceCid, unpaddedPieceSize, abi.PaddedPieceSize(0).Unpadded())
-		if err != nil {
-			return err
-		}
-		pieceCid = paddedPieceCid
-		unpaddedPieceSize = abi.PaddedPieceSize(0).Unpadded()
-	}
 
 	if err != nil {
 		// put this back to the queue
@@ -63,12 +55,11 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	i.LightNode.DB.Create(commpRec)
-
-	// update bucket status to commp-computed
 	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-assigned", PieceCommitmentId: commpRec.ID})
 
+	// add this to the job queue
 	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)
-	i.LightNode.Dispatcher.AddJob(item)
+	i.LightNode.Dispatcher.AddJobAndFire(item, 1)
 
 	return nil
 }
