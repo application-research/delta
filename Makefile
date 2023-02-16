@@ -8,8 +8,8 @@ all: build
 build:
 	git submodule update --init --recursive
 	make -C extern/filecoin-ffi
-	go build -tags netgo -ldflags '-s -w' -o stg-dealer
+	go build -tags netgo -ldflags '-s -w' -o delta
 
 .PHONE: clean
 clean:
-	rm -f stg-dealer
+	rm -f delta
