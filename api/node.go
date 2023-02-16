@@ -2,16 +2,16 @@ package api
 
 import (
 	"delta/core"
+
 	"github.com/labstack/echo/v4"
-	"github.com/spf13/viper"
 )
 
 func ConfigureNodeInfoRouter(e *echo.Group, node *core.DeltaNode) {
 	nodeGroup := e.Group("/node")
 	nodeGroup.GET("/info", func(c echo.Context) error {
-		nodeName := viper.Get("NODE_NAME").(string)
-		nodeDescription := viper.Get("NODE_DESCRIPTION").(string)
-		nodeType := viper.Get("NODE_TYPE").(string)
+		nodeName := node.Config.Node.Name
+		nodeDescription := node.Config.Node.Description
+		nodeType := node.Config.Node.Type
 
 		return c.JSON(200, map[string]string{
 			"name":        nodeName,

@@ -4,6 +4,13 @@ import (
 	"context"
 	"delta/utils"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"sync"
+
+	c "delta/config"
+
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
 	"github.com/application-research/whypfs-core"
@@ -23,10 +30,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"gorm.io/gorm"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"sync"
 )
 
 type DeltaNode struct {
@@ -35,7 +38,7 @@ type DeltaNode struct {
 	Api        url.URL
 	DB         *gorm.DB
 	FilClient  *fc.FilClient
-	Config     *Configuration
+	Config     *c.DeltaConfig
 	Dispatcher *Dispatcher
 }
 
@@ -43,10 +46,6 @@ type LocalWallet struct {
 	keys     map[address.Address]*key.Key
 	keystore types.KeyStore
 	lk       sync.Mutex
-}
-
-type Configuration struct {
-	APINodeAddress string
 }
 
 type GatewayHandler struct {
@@ -87,11 +86,12 @@ func BootstrapEstuaryPeers() []peer.AddrInfo {
 type NewLightNodeParams struct {
 	Repo             string
 	DefaultWalletDir string
+	Config           *c.DeltaConfig
 }
 
 func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, error) {
 	//	database
-	db, err := OpenDatabase()
+	db, err := OpenDatabase(repo.Config.Common.DBDSN)
 	publicIp, err := GetPublicIP()
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{
@@ -140,6 +140,7 @@ func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, err
 		DB:         db,
 		FilClient:  fc,
 		Dispatcher: dispatcher,
+		Config:     repo.Config,
 	}, nil
 }
 

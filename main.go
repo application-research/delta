@@ -4,11 +4,13 @@ package main
 
 import (
 	"delta/cmd"
-	logging "github.com/ipfs/go-log/v2"
-	"github.com/spf13/viper"
-	"github.com/urfave/cli/v2"
 	_ "net/http"
 	"os"
+
+	c "delta/config"
+
+	logging "github.com/ipfs/go-log/v2"
+	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -16,18 +18,13 @@ var (
 )
 
 func main() {
-
-	viper.SetConfigFile(".env")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Error(err)
-	}
+	cfg := c.InitConfig()
 
 	// get all the commands
 	var commands []*cli.Command
 
 	// commands
-	commands = append(commands, cmd.DaemonCmd()...)
+	commands = append(commands, cmd.DaemonCmd(&cfg)...)
 	commands = append(commands, cmd.CommpCmd()...)
 	app := &cli.App{
 		Commands: commands,
