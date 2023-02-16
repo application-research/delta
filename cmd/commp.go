@@ -1,63 +1,63 @@
 package cmd
-//
-//import (
-//	"delta/api"
-//	"delta/core"
-//	"github.com/urfave/cli/v2"
-//)
-//
-//func CommpCmd() []*cli.Command {
-//	// add a command to run API node
-//	var commpCommands []*cli.Command
-//
-//	commpCmd := &cli.Command{
-//		Name: "commp",
-//
-//		Flags: []cli.Flag{
-//			&cli.StringFlag{
-//				Name:  "file",
-//				Usage: "specify the repo blockstore path of the node. ",
-//			},
-//		},
-//		Action: func(c *cli.Context) error {
-//
-//			repo := c.String("file")
-//
-//			if repo == "" {
-//				repo = ".whypfs"
-//			}
-//
-//			if walletDir == "" {
-//				walletDir = "./wallet"
-//			}
-//
-//			// create the node (with whypfs, db, filclient)
-//			nodeParams := core.NewLightNodeParams{
-//				Repo:             repo,
-//				DefaultWalletDir: walletDir,
-//			}
-//			ln, err := core.NewLightNode(context.Background(), nodeParams)
-//			if err != nil {
-//				return err
-//			}
-//
-//			//	launch the dispatchers.
-//			go runProcessors(ln)
-//
-//			//	launch clean up dispatch jobs
-//			//	any failures due to the node shutdown will be retried after 1 day
-//			go runCron(ln)
-//
-//			// launch the API node
-//			api.InitializeEchoRouterConfig(ln)
-//			api.LoopForever()
-//
-//			return nil
-//		},
-//	}
-//
-//	daemonCommands = append(daemonCommands, daemonCmd)
-//
-//	return daemonCommands
-//
-//}
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"github.com/application-research/filclient"
+	"github.com/application-research/whypfs-core"
+	"github.com/urfave/cli/v2"
+	"os"
+)
+
+func CommpCmd() []*cli.Command {
+	// add a command to run API node
+	var commpCommands []*cli.Command
+
+	commpCmd := &cli.Command{
+		Name: "commp",
+
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "file",
+				Usage: "specify the repo blockstore path of the node. ",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			file := c.String("file")
+
+			params := whypfs.NewNodeParams{
+				Ctx:       context.Background(),
+				Datastore: whypfs.NewInMemoryDatastore(),
+			}
+			node, err := whypfs.NewNode(params)
+			openFile, err := os.Open(file)
+			reader := bufio.NewReader(openFile)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+
+			fileNode, err := node.AddPinFile(context.Background(), reader, nil)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+
+			commp, payloadSize, unpadddedPiece, err := filclient.GeneratePieceCommitment(context.Background(), fileNode.Cid(), node.Blockstore)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("commp: ", commp)
+			fmt.Println("payloadSize: ", payloadSize)
+			fmt.Println("unpadddedPiece: ", unpadddedPiece)
+
+			return nil
+		},
+	}
+
+	commpCommands = append(commpCommands, commpCmd)
+
+	return commpCommands
+
+}

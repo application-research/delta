@@ -28,7 +28,7 @@ func main() {
 
 	// commands
 	commands = append(commands, cmd.DaemonCmd()...)
-
+	commands = append(commands, cmd.CommpCmd()...)
 	app := &cli.App{
 		Commands: commands,
 	}
