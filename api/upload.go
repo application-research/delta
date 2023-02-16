@@ -184,7 +184,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			// add the job so we can process it later
 		}
 
-		node.Dispatcher.AddJobAndFire(dispatchJobs, 1)
+		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		return nil
 	})
@@ -323,7 +323,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 			// add the job so we can process it later
 		}
 
-		node.Dispatcher.AddJob(dispatchJobs)
+		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		return nil
 	})
@@ -390,7 +390,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 		})
 
 		d := jobs.NewPieceCommpProcessor(node, content)
-		node.Dispatcher.AddJob(d) // add the job so we can process it later
+		node.Dispatcher.AddJobAndDispatch(d, 1) // add the job so we can process it later
 
 		return nil
 	})
@@ -425,7 +425,7 @@ func ConfigureUploadRouter(e *echo.Group, node *core.DeltaNode) {
 
 			node.DB.Create(&content)
 			d := jobs.NewPieceCommpProcessor(node, content)
-			node.Dispatcher.AddJob(d) // add the job so we can process it later
+			node.Dispatcher.AddJobAndDispatch(d, 1) // add the job so we can process it later
 		}
 		return nil
 	})
@@ -566,16 +566,16 @@ func ContentAdd(node *core.DeltaNode, c echo.Context) error {
 		ID:      content.ID,
 	})
 
-	var dispatchJobs core.IProcessor
+	var dispatchNewCommpProcessorJob core.IProcessor
 	if pieceCommp.ID != 0 {
-		dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+		dispatchNewCommpProcessorJob = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
 		// add the job so we can process it later
 	} else {
-		dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+		dispatchNewCommpProcessorJob = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
 		// add the job so we can process it later
 	}
 
-	node.Dispatcher.AddJob(dispatchJobs)
+	node.Dispatcher.AddJobAndDispatch(dispatchNewCommpProcessorJob, 1)
 
 	return nil
 }

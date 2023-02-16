@@ -144,7 +144,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 		//MinerVersion:        ask.MinerVersion,
 	}
 	if err := i.LightNode.DB.Create(deal).Error; err != nil {
-		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
+		i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
 		return xerrors.Errorf("failed to create database entry for deal: %w", err)
 	}
 
@@ -253,7 +253,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 			})
 			return err
 		}
-		i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm))
+		i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
 
 		return err
 	}
@@ -290,7 +290,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *core.Content, piece
 			return nil
 		})
 		// subscribe to data transfer events
-		i.LightNode.Dispatcher.AddJobAndFire(NewDataTransferStatusListenerProcessor(i.LightNode), 1)
+		i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 1)
 	}
 
 	return nil

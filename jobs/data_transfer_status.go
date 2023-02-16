@@ -50,7 +50,7 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 				Status: utils.DEAL_STATUS_TRANSFER_FAILED,
 			})
 
-			d.LightNode.Dispatcher.AddJob(NewDataTransferRestartProcessor(d.LightNode, contentDeal))
+			d.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferRestartProcessor(d.LightNode, contentDeal), 1)
 		default:
 
 		}

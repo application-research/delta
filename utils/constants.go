@@ -2,8 +2,9 @@ package utils
 
 // status
 const (
-	CONTENT_PINNED        string = "pinned"
-	CONTENT_FAILED_TO_PIN string = "failed-to-pin"
+	CONTENT_PINNED            string = "pinned"
+	CONTENT_FAILED_TO_PIN     string = "failed-to-pin"
+	CONTENT_FAILED_TO_PROCESS string = "failed-to-process"
 
 	CONTENT_PIECE_COMPUTING        = "piece-computing"
 	CONTENT_PIECE_COMPUTED         = "piece-computed"

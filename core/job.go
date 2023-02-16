@@ -89,7 +89,7 @@ func (d *Dispatcher) Start(numWorkers int) {
 				// Sending it off;
 				d.workQueue <- job
 			case ds := <-d.dispatchStatus:
-				fmt.Printf("Got a dispatch status:\n\tType[%s] - ID[%d] - Status[%s]\n", ds.Type, ds.ID, ds.Status)
+				fmt.Printf("Got a dispatch status: Type[%s] - ID[%d] - Status[%s]", ds.Type, ds.ID, ds.Status)
 				if ds.Type == "worker" {
 					if ds.Status == "quit" {
 						d.jobCounter--
@@ -104,10 +104,10 @@ func (d *Dispatcher) AddJob(je IProcessor) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()
 	d.jobCounter++
-	fmt.Printf("jobCounter is now: %d\n", d.jobCounter)
+	fmt.Printf("Number Of Jobs: %d\n", d.jobCounter)
 }
 
-func (d *Dispatcher) AddJobAndFire(je IProcessor, numWorkers int) {
+func (d *Dispatcher) AddJobAndDispatch(je IProcessor, numWorkers int) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()
 	d.jobCounter++

@@ -33,9 +33,20 @@ func (i RetryProcessor) Run() error {
 		if content.Status == utils.CONTENT_PINNED || content.Status == utils.CONTENT_PIECE_COMPUTING || content.Status == utils.CONTENT_PIECE_COMPUTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.CONTENT_DEAL_SENDING_PROPOSAL || content.Status == utils.CONTENT_DEAL_MAKING_PROPOSAL {
 			var pieceCommp core.PieceCommitment
 			i.LightNode.DB.Model(&core.PieceCommitment{}).Where("id = (select piece_commitment_id from contents c where c.id = ?)", content.ID).Find(&pieceCommp)
-			i.LightNode.Dispatcher.AddJob(NewStorageDealMakerProcessor(i.LightNode, content, pieceCommp))
-		} else if content.Status == utils.DEAL_STATUS_TRANSFER_FAILED {
+			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, content, pieceCommp), 1)
+		} else if content.Status == utils.CONTENT_FAILED_TO_PIN || content.Status == utils.DEAL_STATUS_TRANSFER_FAILED || content.Status == utils.CONTENT_DEAL_PROPOSAL_FAILED || content.Status == utils.CONTENT_PIECE_COMPUTING_FAILED {
 			// delete/ignore
+			cidToDelete, err := cid.Decode(content.Cid)
+			if err != nil {
+				fmt.Println("error in decoding cid", err)
+				continue
+			}
+			i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidToDelete)
+		} else {
+			// fail it entirely
+			content.Status = utils.CONTENT_FAILED_TO_PROCESS
+			content.LastMessage = "failed to process even after retrying."
+			i.LightNode.DB.Model(&core.Content{}).Where("id = ?", content.ID).Updates(content)
 			cidToDelete, err := cid.Decode(content.Cid)
 			if err != nil {
 				fmt.Println("error in decoding cid", err)
@@ -46,7 +57,5 @@ func (i RetryProcessor) Run() error {
 
 	}
 
-	// blockstore check. if the cid is not on the blockstore, don't try, just delete/fail it.
-	// check content status. if it's failed, don't even.
 	return nil
 }

@@ -38,7 +38,7 @@ func (i PieceCommpProcessor) Run() error {
 
 	if err != nil {
 		// put this back to the queue
-		i.LightNode.Dispatcher.AddJob(NewPieceCommpProcessor(i.LightNode, i.Content))
+		i.LightNode.Dispatcher.AddJobAndDispatch(NewPieceCommpProcessor(i.LightNode, i.Content), 1)
 		return err
 	}
 
@@ -59,7 +59,7 @@ func (i PieceCommpProcessor) Run() error {
 
 	// add this to the job queue
 	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)
-	i.LightNode.Dispatcher.AddJobAndFire(item, 1)
+	i.LightNode.Dispatcher.AddJobAndDispatch(item, 1)
 
 	return nil
 }

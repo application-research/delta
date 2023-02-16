@@ -77,7 +77,8 @@ func (i ItemContentCleanUpProcessor) Run() error {
 
 	// fail request that are older than 7 days. No point in retrying them.
 	i.LightNode.DB.Model(&core.Content{}).Where("status <> ? and created_at < ?", "transfer-finished", time.Now().AddDate(0, 0, -7)).Updates(core.Content{
-		Status: utils.DEAL_STATUS_TRANSFER_FAILED,
+		Status:      utils.DEAL_STATUS_TRANSFER_FAILED,
+		LastMessage: "Transfer failed. Record is older than 7 days.",
 	})
 	return nil
 }
