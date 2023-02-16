@@ -3,17 +3,17 @@ package cmd
 import (
 	"context"
 	"delta/api"
+	c "delta/config"
 	"delta/core"
 	"delta/jobs"
 	"fmt"
-	"github.com/jasonlvhit/gocron"
-	"github.com/spf13/viper"
-	"github.com/urfave/cli/v2"
-	"strconv"
 	"time"
+
+	"github.com/jasonlvhit/gocron"
+	"github.com/urfave/cli/v2"
 )
 
-func DaemonCmd() []*cli.Command {
+func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 	// add a command to run API node
 	var daemonCommands []*cli.Command
 
@@ -48,6 +48,7 @@ func DaemonCmd() []*cli.Command {
 			nodeParams := core.NewLightNodeParams{
 				Repo:             repo,
 				DefaultWalletDir: walletDir,
+				Config:           cfg,
 			}
 			ln, err := core.NewLightNode(context.Background(), nodeParams)
 			if err != nil {
@@ -80,10 +81,7 @@ func DaemonCmd() []*cli.Command {
 // It also retries the failed tranfers.
 func runCron(ln *core.DeltaNode) {
 
-	maxCleanUpJobs, err := strconv.Atoi(viper.Get("MAX_CLEANUP_WORKERS").(string))
-	if err != nil {
-		maxCleanUpJobs = 100
-	}
+	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
 
 	s := gocron.NewScheduler()
 	s.Every(12).Hour().Do(func() {
@@ -101,12 +99,8 @@ func runCron(ln *core.DeltaNode) {
 func runProcessors(ln *core.DeltaNode) {
 
 	// run the job every 10 seconds.
-	jobDispatch, err := strconv.Atoi(viper.Get("DISPATCH_JOBS_EVERY").(string))
-	jobDispatchWorker, err := strconv.Atoi(viper.Get("MAX_DISPATCH_WORKERS").(string))
-
-	if err != nil {
-		jobDispatch = 10
-	}
+	jobDispatch := ln.Config.Dispatcher.DispatchJobsEvery
+	jobDispatchWorker := ln.Config.Dispatcher.MaxDispatchWorkers
 
 	jobDispatchTick := time.NewTicker(time.Duration(jobDispatch) * time.Second)
 

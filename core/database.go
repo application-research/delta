@@ -2,24 +2,17 @@ package core
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"time"
 )
 
-func OpenDatabase() (*gorm.DB, error) {
-
-	dbDsn, okHost := viper.Get("DB_DSN").(string)
-	if !okHost {
-		panic("DB_DSN not set")
-	}
-
-	// if dbDsn has prefix postgres
+func OpenDatabase(dbDsn string) (*gorm.DB, error) {
 	// use postgres
 	var DB *gorm.DB
 	var err error
