@@ -13,3 +13,6 @@ build:
 .PHONE: clean
 clean:
 	rm -f delta
+
+install:
+	install -C -m 0755 delta /usr/local/bin
