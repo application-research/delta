@@ -48,9 +48,11 @@ func CommpCmd() []*cli.Command {
 			if err != nil {
 				fmt.Println(err)
 			}
+			fmt.Println("payloadcid: ", fileNode.Cid())
 			fmt.Println("commp: ", commp)
 			fmt.Println("payloadSize: ", payloadSize)
 			fmt.Println("unpadddedPiece: ", unpadddedPiece)
+			fmt.Println("paddedPiece: ", unpadddedPiece.Padded())
 
 			return nil
 		},
