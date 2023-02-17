@@ -3,7 +3,7 @@ package jobs
 import (
 	"context"
 	"delta/core"
-	"fmt"
+	"delta/utils"
 	"github.com/application-research/filclient"
 	"github.com/ipfs/go-cid"
 	"time"
@@ -26,11 +26,10 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content core.Content) IProcessor
 
 func (i PieceCommpProcessor) Run() error {
 
-	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-computing"})
+	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: utils.CONTENT_PIECE_COMPUTING})
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
-		fmt.Println("error in decoding cid", err)
-		panic(err)
+		i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: utils.CONTENT_PIECE_COMPUTING_FAILED, LastMessage: err.Error()})
 	}
 
 	// prepare the commp
@@ -55,7 +54,7 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	i.LightNode.DB.Create(commpRec)
-	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: "piece-assigned", PieceCommitmentId: commpRec.ID})
+	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: utils.CONTENT_PIECE_ASSIGNED, PieceCommitmentId: commpRec.ID})
 
 	// add this to the job queue
 	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)
