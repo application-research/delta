@@ -448,7 +448,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 				Type:     "libp2p",
 				ClientID: fmt.Sprintf("%d", dbid),
 				Params:   transferParams,
-				Size:     uint64(i.Content.Size),
+				Size:     netprop.Piece.RawBlockSize,
 			}),
 		)
 	} else {

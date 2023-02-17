@@ -33,7 +33,7 @@ func OpenDatabase(dbDsn string) (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &ProcessContentCounter{}, &ContentWalletAssignment{}, &ContentDealProposalParameters{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMinerAssignment{}, &ProcessContentCounter{}, &ContentWalletAssignment{}, &ContentDealProposalParameters{}, &Wallet{})
 }
 
 type Content struct {
@@ -48,6 +48,39 @@ type Content struct {
 	LastMessage       string    `json:"last_message"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+func (u *Content) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "Content Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("Content %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *Content) BeforeCreate(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "Content Create",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("Content %d create", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *Content) AfterSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "After Content Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("After content %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
 }
 
 type ProcessContentCounter struct {
@@ -66,12 +99,78 @@ type ContentMinerAssignment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+func (u *ContentMinerAssignment) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "ContentMinerAssignment Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("ContentMinerAssignment %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *ContentMinerAssignment) BeforeCreate(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "ContentMinerAssignment Create",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("ContentMinerAssignment %d create", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *ContentMinerAssignment) AfterSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "After ContentMinerAssignment Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("After ContentMinerAssignment %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
 type ContentWalletAssignment struct {
 	ID        int64     `gorm:"primaryKey"`
 	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
 	Wallet    string    `json:"wallet_meta"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (u *ContentWalletAssignment) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "ContentWalletAssignment Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("ContentWalletAssignment %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *ContentWalletAssignment) BeforeCreate(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "ContentMinerAssignment Create",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("ContentWalletAssignment %d create", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *ContentWalletAssignment) AfterSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "After ContentWalletAssignment Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("After ContentWalletAssignment %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
 }
 
 type ContentDealProposalParameters struct {
@@ -109,6 +208,39 @@ type ContentDeal struct {
 	UpdatedAt           time.Time   `json:"updated_at"`
 }
 
+func (u *ContentDeal) BeforeSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "ContentDeal Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("ContentDeal %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *ContentDeal) BeforeCreate(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "ContentDeal Create",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("ContentDeal %d create", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
+func (u *ContentDeal) AfterSave(tx *gorm.DB) (err error) {
+	tx.Model(&LogEvent{}).Save(&LogEvent{
+		EventType:  "After ContentDeal Save",
+		LogEventId: u.ID,
+		LogEvent:   fmt.Sprintf("After ContentDeal %d saved", u.ID),
+		CreatedAt:  time.Time{},
+		UpdatedAt:  time.Time{},
+	})
+	return
+}
+
 type PieceCommitment struct {
 	ID                int64     `gorm:"primaryKey"`
 	Cid               string    `json:"cid"`
@@ -133,6 +265,22 @@ type MinerInfo struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
+
+type RepairRequest struct {
+	ID        int64     `gorm:"primaryKey"`
+	ObjectId  int64     `json:"object_id"`
+	Type      string    `json:"type"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+//type LogEventCommp
+//
+//log_event_commp
+//log_event_deal
+//log_event_miner
+//log_event_api_key
+//log_event_jobs
 
 type MinerPrice struct {
 	ID            int64     `gorm:"primaryKey"`
