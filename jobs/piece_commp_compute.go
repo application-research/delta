@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	"delta/core/model"
 	"delta/utils"
 	"github.com/application-research/filclient"
 	"github.com/ipfs/go-cid"
@@ -12,11 +13,11 @@ import (
 type PieceCommpProcessor struct {
 	Context         context.Context
 	LightNode       *core.DeltaNode
-	Content         core.Content
+	Content         model.Content
 	DealPieceConfig filclient.DealConfig
 }
 
-func NewPieceCommpProcessor(ln *core.DeltaNode, content core.Content) IProcessor {
+func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcessor {
 	return &PieceCommpProcessor{
 		LightNode: ln,
 		Content:   content,
@@ -26,10 +27,10 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content core.Content) IProcessor
 
 func (i PieceCommpProcessor) Run() error {
 
-	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: utils.CONTENT_PIECE_COMPUTING})
+	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_COMPUTING})
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
-		i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: utils.CONTENT_PIECE_COMPUTING_FAILED, LastMessage: err.Error()})
+		i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_COMPUTING_FAILED, LastMessage: err.Error()})
 	}
 
 	// prepare the commp
@@ -42,7 +43,7 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	// save the commp to the database
-	commpRec := &core.PieceCommitment{
+	commpRec := &model.PieceCommitment{
 		Cid:               payloadCid.String(),
 		Piece:             pieceCid.String(),
 		Size:              int64(payloadSize),
@@ -54,7 +55,7 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	i.LightNode.DB.Create(commpRec)
-	i.LightNode.DB.Model(&core.Content{}).Where("id = ?", i.Content.ID).Updates(core.Content{Status: utils.CONTENT_PIECE_ASSIGNED, PieceCommitmentId: commpRec.ID})
+	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_ASSIGNED, PieceCommitmentId: commpRec.ID})
 
 	// add this to the job queue
 	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"delta/core"
+	"delta/core/model"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -23,7 +24,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 
-		var content core.Content
+		var content model.Content
 		node.DB.Raw("select c.id, c.cid, c.status from contents as c where c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&content)
 
 		return c.JSON(200, StatusCheckResponse{
@@ -42,7 +43,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 
-		var content []core.Content
+		var content []model.Content
 		node.DB.Raw("select c.name, c.id, c.cid, c.status,c.created_at,c.updated_at from contents as c where requesting_api_key = ?", authParts[1]).Scan(&content)
 
 		return c.JSON(200, content)
@@ -54,7 +55,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authParts := strings.Split(authorizationString, " ")
 
 		// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
-		var pieceCommitments []core.PieceCommitment
+		var pieceCommitments []model.PieceCommitment
 		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
 
 		return c.JSON(200, map[string]interface{}{
@@ -67,22 +68,22 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 
-		var content core.Content
+		var content model.Content
 		node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&content)
 
-		var contentDeal []core.ContentDeal
+		var contentDeal []model.ContentDeal
 		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentDeal)
 
-		var pieceCommitments []core.PieceCommitment
+		var pieceCommitments []model.PieceCommitment
 		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&pieceCommitments)
 
-		var contentDealProposal []core.ContentDealProposalParameters
+		var contentDealProposal []model.ContentDealProposalParameters
 		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentDealProposal)
 
-		var contentMinerAssignment []core.ContentMinerAssignment
+		var contentMinerAssignment []model.ContentMiner
 		node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentMinerAssignment)
 
-		var contentWalletAssignment []core.ContentWalletAssignment
+		var contentWalletAssignment []model.ContentWallet
 		node.DB.Raw("select cwa.* from content_wallet_assignments cwa, contents c where cwa.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentWalletAssignment)
 
 		return c.JSON(200, map[string]interface{}{
@@ -100,7 +101,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 
-		var contentDeal []core.ContentDeal
+		var contentDeal []model.ContentDeal
 		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
 
 		return c.JSON(200, map[string]interface{}{
@@ -113,7 +114,7 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 
-		var content []core.Content
+		var content []model.Content
 		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
 
 		return c.JSON(200, map[string]interface{}{
@@ -128,14 +129,14 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		authParts := strings.Split(authorizationString, " ")
 
 		// select * from content_deals cd, content c where cd.content = c.id and c.requesting_api_key = ?;
-		var content []core.Content
+		var content []model.Content
 		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
 
-		var contentDeal []core.ContentDeal
+		var contentDeal []model.ContentDeal
 		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
 
 		// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
-		var pieceCommitments []core.PieceCommitment
+		var pieceCommitments []model.PieceCommitment
 		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
 
 		return c.JSON(200, map[string]interface{}{

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"delta/core/model"
 	"delta/utils"
 	"fmt"
 	"io/ioutil"
@@ -91,7 +92,7 @@ type NewLightNodeParams struct {
 
 func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, error) {
 	//	database
-	db, err := OpenDatabase(repo.Config.Common.DBDSN)
+	db, err := model.OpenDatabase(repo.Config.Common.DBDSN)
 	publicIp, err := GetPublicIP()
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{

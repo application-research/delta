@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"delta/core"
+	"delta/core/model"
 	"delta/utils"
 	"fmt"
 	"github.com/application-research/filclient"
@@ -24,7 +25,7 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 	d.LightNode.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
 		switch fst.Status {
 		case datatransfer.Requested:
-			d.LightNode.DB.Model(&core.ContentDeal{}).Where("id = ?", dbid).Updates(core.ContentDeal{
+			d.LightNode.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
 				TransferStarted: time.Now(),
 			})
 		case datatransfer.TransferFinished, datatransfer.Completed:
@@ -32,21 +33,21 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 			if err != nil {
 				fmt.Println(err)
 			}
-			d.LightNode.DB.Model(&core.ContentDeal{}).Where("id = ?", dbid).Updates(core.ContentDeal{
+			d.LightNode.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
 				DealID:           int64(transferId),
 				TransferFinished: time.Now(),
 				SealedAt:         time.Now(),
 				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
 			})
-			d.LightNode.DB.Model(&core.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(core.Content{
+			d.LightNode.DB.Model(&model.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(model.Content{
 				Status: utils.DEAL_STATUS_TRANSFER_FINISHED,
 			})
 		case datatransfer.Failed:
-			var contentDeal core.ContentDeal
-			d.LightNode.DB.Model(&core.ContentDeal{}).Where("id = ?", dbid).Updates(core.ContentDeal{
+			var contentDeal model.ContentDeal
+			d.LightNode.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
 				FailedAt: time.Now(),
 			}).Find(&contentDeal)
-			d.LightNode.DB.Model(&core.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(core.Content{
+			d.LightNode.DB.Model(&model.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(model.Content{
 				Status: utils.DEAL_STATUS_TRANSFER_FAILED,
 			})
 

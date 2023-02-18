@@ -1,13 +1,15 @@
 package core
 
+import "delta/core/model"
+
 type StatsService struct {
-	DeltaNode DeltaNode
+	DeltaNode *DeltaNode
 }
 
 type StatsParam struct {
 	RequestingApiKey string `json:"requesting_api_key"`
 }
-type CommpStatsParam struct {
+type PieceCommitmentStatsParam struct {
 	StatsParam
 	PieceCommpId int64 `json:"piece_commp_id"`
 }
@@ -21,36 +23,38 @@ type DealStatsParam struct {
 }
 
 type StatsResult struct {
-	Content          []Content         `json:"content"`
-	Deals            []ContentDeal     `json:"deals"`
-	PieceCommitments []PieceCommitment `json:"piece_commitments"`
+	Content          []model.Content         `json:"content"`
+	Deals            []model.ContentDeal     `json:"deals"`
+	PieceCommitments []model.PieceCommitment `json:"piece_commitments"`
 }
 
 type StatsContentResult struct {
-	Content Content `json:"content"`
+	Content model.Content `json:"content"`
 }
 
 type StatsDealResult struct {
-	Deals ContentDeal `json:"deals"`
+	Deals model.ContentDeal `json:"deals"`
 }
 
 type StatsPieceCommitmentResult struct {
-	PieceCommitments PieceCommitment `json:"piece_commitments"`
+	PieceCommitments model.PieceCommitment `json:"piece_commitments"`
 }
 
-func NewStatsStatsService() *StatsService {
-	return &StatsService{}
+func NewStatsStatsService(deltaNode *DeltaNode) *StatsService {
+	return &StatsService{
+		DeltaNode: deltaNode,
+	}
 }
 
 func (s *StatsService) Status(param StatsParam) (StatsResult, error) {
-	var content []Content
+	var content []model.Content
 	s.DeltaNode.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", param.RequestingApiKey).Scan(&content)
 
-	var contentDeal []ContentDeal
+	var contentDeal []model.ContentDeal
 	s.DeltaNode.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", param.RequestingApiKey).Scan(&contentDeal)
 
 	// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
-	var pieceCommitments []PieceCommitment
+	var pieceCommitments []model.PieceCommitment
 	s.DeltaNode.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", param.RequestingApiKey).Scan(&pieceCommitments)
 
 	return StatsResult{
@@ -59,9 +63,9 @@ func (s *StatsService) Status(param StatsParam) (StatsResult, error) {
 		PieceCommitments: pieceCommitments}, nil
 }
 
-func (s *StatsService) CommpStatus(param CommpStatsParam) (StatsPieceCommitmentResult, error) {
+func (s *StatsService) PieceCommitmentStatus(param PieceCommitmentStatsParam) (StatsPieceCommitmentResult, error) {
 	// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
-	var pieceCommitment PieceCommitment
+	var pieceCommitment model.PieceCommitment
 	s.DeltaNode.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ? and pc.id = ?", param.RequestingApiKey, param.PieceCommpId).Scan(&pieceCommitment)
 
 	return StatsPieceCommitmentResult{
@@ -69,14 +73,14 @@ func (s *StatsService) CommpStatus(param CommpStatsParam) (StatsPieceCommitmentR
 }
 
 func (s *StatsService) ContentStatus(param ContentStatsParam) (StatsContentResult, error) {
-	var content Content
+	var content model.Content
 	s.DeltaNode.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ? and c.id = ?", param.RequestingApiKey, param.ContentId).Scan(&content)
 
 	return StatsContentResult{Content: content}, nil
 }
 
 func (s *StatsService) DealStatus(param DealStatsParam) (StatsDealResult, error) {
-	var contentDeal ContentDeal
+	var contentDeal model.ContentDeal
 	s.DeltaNode.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ? and cd.id = ?", param.RequestingApiKey, param.DealId).Scan(&contentDeal)
 
 	return StatsDealResult{Deals: contentDeal}, nil

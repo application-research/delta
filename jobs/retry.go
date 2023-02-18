@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	"delta/core/model"
 	"delta/utils"
 	"fmt"
 	"github.com/ipfs/go-cid"
@@ -24,15 +25,15 @@ func (i RetryProcessor) Run() error {
 
 	// create the new logic again.
 	// if transfer-started but older than 3 days, then requeue the job.
-	var contents []core.Content
-	i.LightNode.DB.Model(&core.Content{}).Where("status <> ? and created_at < ?", "transfer-finished", time.Now().AddDate(0, 0, -1)).Find(&contents)
+	var contents []model.Content
+	i.LightNode.DB.Model(&model.Content{}).Where("status <> ? and created_at < ?", "transfer-finished", time.Now().AddDate(0, 0, -1)).Find(&contents)
 
 	for _, content := range contents {
 
 		// get the piece
 		if content.Status == utils.CONTENT_PINNED || content.Status == utils.CONTENT_PIECE_COMPUTING || content.Status == utils.CONTENT_PIECE_COMPUTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.CONTENT_DEAL_SENDING_PROPOSAL || content.Status == utils.CONTENT_DEAL_MAKING_PROPOSAL {
-			var pieceCommp core.PieceCommitment
-			i.LightNode.DB.Model(&core.PieceCommitment{}).Where("id = (select piece_commitment_id from contents c where c.id = ?)", content.ID).Find(&pieceCommp)
+			var pieceCommp model.PieceCommitment
+			i.LightNode.DB.Model(&model.PieceCommitment{}).Where("id = (select piece_commitment_id from contents c where c.id = ?)", content.ID).Find(&pieceCommp)
 			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, content, pieceCommp), 1)
 		} else if content.Status == utils.CONTENT_FAILED_TO_PIN || content.Status == utils.DEAL_STATUS_TRANSFER_FAILED || content.Status == utils.CONTENT_DEAL_PROPOSAL_FAILED || content.Status == utils.CONTENT_PIECE_COMPUTING_FAILED {
 			// delete/ignore
@@ -46,7 +47,7 @@ func (i RetryProcessor) Run() error {
 			// fail it entirely
 			content.Status = utils.CONTENT_FAILED_TO_PROCESS
 			content.LastMessage = "failed to process even after retrying."
-			i.LightNode.DB.Model(&core.Content{}).Where("id = ?", content.ID).Updates(content)
+			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", content.ID).Updates(content)
 			cidToDelete, err := cid.Decode(content.Cid)
 			if err != nil {
 				fmt.Println("error in decoding cid", err)

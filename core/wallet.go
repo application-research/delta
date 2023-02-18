@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"delta/core/model"
 	"encoding/hex"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -35,7 +36,7 @@ type ImportWalletParam struct {
 }
 
 type AddWalletResult struct {
-	Wallet        Wallet
+	Wallet        model.Wallet
 	WalletAddress address.Address
 }
 
@@ -45,11 +46,11 @@ type DeleteWalletResult struct {
 }
 
 type WalletResult struct {
-	Wallet Wallet
+	Wallet model.Wallet
 }
 
 type ImportWalletResult struct {
-	Wallet        Wallet
+	Wallet        model.Wallet
 	WalletAddress address.Address
 }
 
@@ -77,7 +78,7 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 
 	// save it on the DB
 	hexedKey := hex.EncodeToString(address.Payload())
-	walletToDb := &Wallet{
+	walletToDb := &model.Wallet{
 		Addr:       address.String(),
 		Owner:      param.RequestingApiKey,
 		KeyType:    string(param.KeyType),
@@ -107,7 +108,7 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 	}
 
 	// save it on the DB
-	walletToDb := &Wallet{
+	walletToDb := &model.Wallet{
 		Addr:       address.String(),
 		Owner:      param.RequestingApiKey,
 		KeyType:    string(param.KeyType),
@@ -124,7 +125,7 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 }
 
 func (w WalletService) Remove(param RemoveWalletParam) (DeleteWalletResult, error) {
-	err := w.DeltaNode.DB.Delete(&Wallet{}).Where("owner = ? and addr = ?", param.RequestingApiKey, param.Address).Error
+	err := w.DeltaNode.DB.Delete(&model.Wallet{}).Where("owner = ? and addr = ?", param.RequestingApiKey, param.Address).Error
 	if err != nil {
 		return DeleteWalletResult{
 			Message:       "Wallet not found",
@@ -137,14 +138,14 @@ func (w WalletService) Remove(param RemoveWalletParam) (DeleteWalletResult, erro
 	}, nil
 }
 
-func (w WalletService) List(param WalletParam) ([]Wallet, error) {
-	var wallets []Wallet
-	w.DeltaNode.DB.Model(&Wallet{}).Where("owner = ?", param.RequestingApiKey).Find(&wallets)
+func (w WalletService) List(param WalletParam) ([]model.Wallet, error) {
+	var wallets []model.Wallet
+	w.DeltaNode.DB.Model(&model.Wallet{}).Where("owner = ?", param.RequestingApiKey).Find(&wallets)
 	return wallets, nil
 }
 
-func (w WalletService) Get(param GetWalletParam) (Wallet, error) {
-	var wallet Wallet
-	w.DeltaNode.DB.Model(&Wallet{}).Where("owner = ? and addr = ?", param.RequestingApiKey, param.Address).Find(&wallet)
+func (w WalletService) Get(param GetWalletParam) (model.Wallet, error) {
+	var wallet model.Wallet
+	w.DeltaNode.DB.Model(&model.Wallet{}).Where("owner = ? and addr = ?", param.RequestingApiKey, param.Address).Find(&wallet)
 	return wallet, nil
 }
