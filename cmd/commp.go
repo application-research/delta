@@ -12,6 +12,8 @@ import (
 	"github.com/application-research/whypfs-core"
 	"github.com/urfave/cli/v2"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 )
 
@@ -92,11 +94,21 @@ func CommpCmd() []*cli.Command {
 				Usage: "specify the car file",
 				Value: true,
 			},
+			&cli.StringFlag{
+				Name:  "delta-api-url",
+				Usage: "specify the delta api url",
+			},
+			&cli.StringFlag{
+				Name:  "delta-api-key",
+				Usage: "Estuary API key",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			var commpResult api.ContentMakeDealRequest
 			car := c.String("file")
 			forOffline := c.Bool("for-offline")
+			miner := c.String("miner")
+			//wallet := c.String("wallet")
 
 			params := whypfs.NewNodeParams{
 				Ctx:       context.Background(),
@@ -116,12 +128,17 @@ func CommpCmd() []*cli.Command {
 				fmt.Println(err)
 				return err
 			}
-			if car != "" {
 
+			if miner != "" {
+				commpResult.Miner = miner
+			}
+
+			if car != "" {
 				fileNodeFromBs, err := node.GetFile(context.Background(), fileNode.Cid())
 				pieceInfo, err := commpService.GenerateCommPCarV2(fileNodeFromBs)
 				if err != nil {
 					fmt.Println(err)
+					return err
 				}
 				// return json to console.
 				commpResult.Cid = fileNode.Cid().String()
@@ -139,6 +156,7 @@ func CommpCmd() []*cli.Command {
 				size, err := fileNode.Size()
 				if err != nil {
 					fmt.Println(err)
+					return err
 				}
 				commpResult.Size = int64(size)
 
@@ -148,6 +166,35 @@ func CommpCmd() []*cli.Command {
 					fmt.Println(err)
 				}
 				fmt.Println(buffer.String())
+
+				// if the delta api url and key is given, send the result to delta api.
+				deltaApiUrl := c.String("delta-api-url")
+				deltaApiKey := c.String("delta-api-key")
+
+				if deltaApiUrl != "" && deltaApiKey != "" {
+					// send the result to delta api.
+					client := &http.Client{}
+					fmt.Println(deltaApiUrl + "/api/v1/deal/commitment-piece")
+					req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/commitment-piece", &buffer)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					req.Header.Add("Content-Type", "application/json")
+					req.Header.Add("Authorization", "Bearer "+deltaApiKey)
+					resp, err := client.Do(req)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					defer resp.Body.Close()
+					body, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					fmt.Println(string(body))
+				}
 			}
 			return nil
 		},

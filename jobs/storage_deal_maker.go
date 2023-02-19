@@ -302,7 +302,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 	}
 
-	// Online - transfer it. Offline, proposal is enough
+	// Online - transfer it.
+
+	fmt.Println(propPhase)
 	if propPhase == false && content.ConnectionMode == "online" {
 
 		propCid, err := cid.Decode(deal.PropCid)
@@ -327,13 +329,15 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			return nil
 		})
 		// subscribe to data transfer events
-		i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 1)
+		//i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 1)
 	}
 
 	if propPhase == false && content.ConnectionMode == "offline" {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
 		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
 	}
+
+	i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 10)
 
 	return nil
 
@@ -471,13 +475,6 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 	})
 
 	// Send the deal proposal to the storage provider
-	//propPhase, err := i.LightNode.FilClient.SendProposalV120(ctx, dbid, netprop, dealUUID, announceAddr, authToken)
-	//if err != nil {
-	//	i.LightNode.FilClient.Libp2pTransferMgr.CleanupPreparedRequest(i.Context, dbid, authToken)
-	//	if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
-	//		return false, err
-	//	}
-	//}
 	var propPhase bool
 	//var err error
 	if i.Content.ConnectionMode == "offline" {

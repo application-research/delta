@@ -69,6 +69,11 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleCommPieceAdd(c, node, *statsService)
 	})
 
+	// make commitment-pieces
+	dealMake.POST("/commitment-pieces", func(c echo.Context) error {
+		return handleCommPiecesAdd(c, node, *statsService)
+	})
+
 	dealStatus.POST("/content/:contentId", func(c echo.Context) error {
 		return handleContentStats(c, node, *statsService)
 	})
@@ -210,6 +215,10 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 		Meta:              contentMakeDealRequest,
 	})
 
+	return nil
+}
+
+func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
 	return nil
 }
 
