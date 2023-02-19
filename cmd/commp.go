@@ -2,12 +2,16 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"delta/api"
 	"delta/core"
+	"encoding/json"
 	"fmt"
 	"github.com/application-research/filclient"
 	"github.com/application-research/whypfs-core"
 	"github.com/urfave/cli/v2"
+	"io"
 	"os"
 )
 
@@ -83,32 +87,67 @@ func CommpCmd() []*cli.Command {
 				Name:  "file",
 				Usage: "specify the car file",
 			},
+			&cli.BoolFlag{
+				Name:  "for-offline",
+				Usage: "specify the car file",
+				Value: true,
+			},
 		},
 		Action: func(c *cli.Context) error {
-			var commpResult CommpResult
+			var commpResult api.ContentMakeDealRequest
 			car := c.String("file")
-			openFile, err := os.Open(car)
+			forOffline := c.Bool("for-offline")
 
+			params := whypfs.NewNodeParams{
+				Ctx:       context.Background(),
+				Datastore: whypfs.NewInMemoryDatastore(),
+			}
+
+			node, err := whypfs.NewNode(params)
+			openFile, err := os.Open(car)
+			reader := bufio.NewReader(openFile)
 			if err != nil {
 				fmt.Println(err)
+				return err
 			}
-			reader := bufio.NewReader(openFile)
 
+			fileNode, err := node.AddPinFile(context.Background(), reader, nil)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
 			if car != "" {
-				pieceInfo, err := commpService.GenerateCommPCarV2(reader)
+
+				fileNodeFromBs, err := node.GetFile(context.Background(), fileNode.Cid())
+				pieceInfo, err := commpService.GenerateCommPCarV2(fileNodeFromBs)
 				if err != nil {
 					fmt.Println(err)
 				}
-
-				if err != nil {
-					fmt.Println(err)
-				}
-
 				// return json to console.
-				commpResult.Commp = pieceInfo.PieceCID.String()
-				commpResult.PaddedPieceSize = uint64(pieceInfo.Size)
-				commpResult.UnPaddedPieceSize = uint64(pieceInfo.Size.Unpadded())
+				commpResult.Cid = fileNode.Cid().String()
+				commpResult.PieceCommitment.Piece = pieceInfo.PieceCID.String()
+				commpResult.PieceCommitment.PaddedPieceSize = uint64(pieceInfo.Size)
+				commpResult.PieceCommitment.UnPaddedPieceSize = uint64(pieceInfo.Size.Unpadded())
 
+				// if for offline, add connection mode offline
+				if forOffline {
+					commpResult.ConnectionMode = "offline"
+				} else {
+					commpResult.ConnectionMode = "online"
+				}
+
+				size, err := fileNode.Size()
+				if err != nil {
+					fmt.Println(err)
+				}
+				commpResult.Size = int64(size)
+
+				var buffer bytes.Buffer
+				err = PrettyEncode(commpResult, &buffer)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println(buffer.String())
 			}
 			return nil
 		},
@@ -119,4 +158,13 @@ func CommpCmd() []*cli.Command {
 
 	return commpCommands
 
+}
+
+func PrettyEncode(data interface{}, out io.Writer) error {
+	enc := json.NewEncoder(out)
+	enc.SetIndent("", "    ")
+	if err := enc.Encode(data); err != nil {
+		return err
+	}
+	return nil
 }

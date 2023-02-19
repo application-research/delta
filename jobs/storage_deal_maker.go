@@ -330,6 +330,11 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 1)
 	}
 
+	if propPhase == false && content.ConnectionMode == "offline" {
+		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
+		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
+	}
+
 	return nil
 
 }

@@ -56,7 +56,7 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 	//	inject the stats service
 	statsService := core.NewStatsStatsService(node)
 
-	dealMake := e.Group("/deal/make")
+	dealMake := e.Group("/deal")
 
 	dealStatus := e.Group("/deal/status")
 

@@ -10,6 +10,7 @@ require (
 	github.com/filecoin-project/boost v1.5.1-rc5
 	github.com/filecoin-project/go-address v1.1.0
 	github.com/filecoin-project/go-cbor-util v0.0.1
+	github.com/filecoin-project/go-commp-utils v0.1.4
 	github.com/filecoin-project/go-data-transfer v1.15.3
 	github.com/filecoin-project/go-fil-markets v1.26.0
 	github.com/filecoin-project/go-jsonrpc v0.2.1
@@ -21,6 +22,7 @@ require (
 	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/ipfs/go-log/v2 v2.5.1
 	github.com/ipfs/go-path v0.3.0
+	github.com/ipld/go-car/v2 v2.5.1
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.9.1
@@ -76,7 +78,6 @@ require (
 	github.com/filecoin-project/go-amt-ipld/v3 v3.1.0 // indirect
 	github.com/filecoin-project/go-amt-ipld/v4 v4.0.0 // indirect
 	github.com/filecoin-project/go-bitfield v0.2.4 // indirect
-	github.com/filecoin-project/go-commp-utils v0.1.4 // indirect
 	github.com/filecoin-project/go-crypto v0.0.1 // indirect
 	github.com/filecoin-project/go-ds-versioning v0.1.2 // indirect
 	github.com/filecoin-project/go-fil-commcid v0.1.0 // indirect
@@ -168,7 +169,6 @@ require (
 	github.com/ipfs/go-verifcid v0.0.2 // indirect
 	github.com/ipfs/interface-go-ipfs-core v0.7.0 // indirect
 	github.com/ipld/go-car v0.6.0 // indirect
-	github.com/ipld/go-car/v2 v2.5.1 // indirect
 	github.com/ipld/go-codec-dagpb v1.5.0 // indirect
 	github.com/ipld/go-ipld-prime v0.20.0 // indirect
 	github.com/ipld/go-ipld-selector-text-lite v0.0.1 // indirect

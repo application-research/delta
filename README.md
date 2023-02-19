@@ -100,7 +100,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/content/add' \
 ### Upload a file with a specific pad piece size, duration, miner and connection mode
 Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/make/content' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car"' \
 --form 'metadata="{\"connection_mode\":\"offline\",\"miner\":\"f01963614\", \"commp\":{\"piece\":\"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq\",\"padded_piece_size\":4294967296}}"'
@@ -108,7 +108,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/make/content' 
 
 ### Upload a CID with a specific pad piece size, duration, miner and connection mode
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/make/commitment-piece' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-piece' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '{
