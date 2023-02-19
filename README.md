@@ -123,6 +123,51 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-pie
 }'
 ```
 
+### Get the commp of a file using commp cli
+```
+./delta commp --file=<>
+```
+
+### Get the commp of a CAR file using commp cli
+```
+./delta commp-car --file=<>
+```
+
+if you want to get the commp of a CAR file for offline deal, use the following command
+```
+./delta commp-car --file=<> --for-offline
+```
+The output will be as follows
+```
+{
+    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
+    "wallet": {},
+    "commp": {
+        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+        "padded_piece_size": 4294967296
+    },
+    "connection_mode": "offline",
+    "size": 2500366291
+}
+```
+
+You can then use this and pass to the `deal/commitment-piece` endpoint to initiate an offline deal.
+```
+curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-piece' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
+    "wallet": {},
+    "commp": {
+        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+        "padded_piece_size": 4294967296
+    },
+    "connection_mode": "offline",
+    "size": 2500366291
+}'
+```
+
 ### Stats (content, commps and deals) 
 ```
 curl --location --request GET 'http://localhost:1414/api/v1/stats' \
