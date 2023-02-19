@@ -103,7 +103,7 @@ Use the following endpoint to upload a file with a specific miner, duration, pie
 curl --location --request POST 'http://localhost:1414/api/v1/deal/make/content' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car"' \
---form 'metadata="{\"connection_mode\":\"offline\",\"miner\":\"f01963614\",\"wallet\":{\"key_type\":\"secp256k1\",\"private_key\":\"R2yLyxZvIIzOATXQtbO+95jTxdT80lEth2TdhYg3bOU=\"}, \"commp\":{\"piece\":\"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq\",\"padded_piece_size\":4294967296}}"'
+--form 'metadata="{\"connection_mode\":\"offline\",\"miner\":\"f01963614\", \"commp\":{\"piece\":\"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq\",\"padded_piece_size\":4294967296}}"'
 ```
 
 ### Upload a CID with a specific pad piece size, duration, miner and connection mode
@@ -115,10 +115,6 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/make/commitmen
     "cid":"bafybeiceuiutv7y2axqbmwbn4tgdzh6zlcmrofadokbqvt5i52l3o63a6e",
     "connection_mode": "offline",
     "miner": "f01963614",
-    "wallet": {
-        "key_type": "secp256k1",
-        "private_key": "R2yLyxZvIIzOATXQtbO+95jTxdT80lEth2TdhYg3bOU="
-    },
     "commp": {
         "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
