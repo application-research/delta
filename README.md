@@ -100,24 +100,31 @@ curl --location --request POST 'http://localhost:1414/api/v1/content/add' \
 ### Upload a file with a specific pad piece size, duration, miner and connection mode
 Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/content/add' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/make/content' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---form 'data=@"random_1675988961N.dat"' \
---form 'miner="f01963614"' \
---form 'commp="{\"piece\":\"bafybeie6sk45lkml45a6s2ftygkt4h2dh5pcpq3pa7dgl64sl7ycxouczq\",\"size\":2000000,\"duration\":20000000}"' \
---form 'connection_mode="online"' 
+--form 'data=@"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car"' \
+--form 'metadata="{\"connection_mode\":\"offline\",\"miner\":\"f01963614\",\"wallet\":{\"key_type\":\"secp256k1\",\"private_key\":\"R2yLyxZvIIzOATXQtbO+95jTxdT80lEth2TdhYg3bOU=\"}, \"commp\":{\"piece\":\"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq\",\"padded_piece_size\":4294967296}}"'
 ```
 
 ### Upload a CID with a specific pad piece size, duration, miner and connection mode
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/content/add-cid' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/make/commitment-piece' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---form 'cid="bafybeie6sk45lkml45a6s2ftygkt4h2dh5pcpq3pa7dgl64sl7ycxouczq"' \
---form 'miner="f01963614"' \
---form 'duration="1494720"' \
---form 'commp="{\"piece\":\"baga6ea4seaqfevzln75frz5bm74wtrddfmr2akcdww4nu45jvewg74xyzva4udi\",\"padded_piece_size\":268435456}"' \
---form 'connection_mode="offline"' \
---form 'size="200019978"'
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "cid":"bafybeiceuiutv7y2axqbmwbn4tgdzh6zlcmrofadokbqvt5i52l3o63a6e",
+    "connection_mode": "offline",
+    "miner": "f01963614",
+    "wallet": {
+        "key_type": "secp256k1",
+        "private_key": "R2yLyxZvIIzOATXQtbO+95jTxdT80lEth2TdhYg3bOU="
+    },
+    "commp": {
+        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+        "padded_piece_size": 4294967296
+    },
+    "size":2500212773
+}'
 ```
 
 ### Stats (content, commps and deals) 

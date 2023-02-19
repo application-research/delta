@@ -16,3 +16,7 @@ package jobs
 //fmt.Printf("Total Memory: %v bytes\n", totalMemory)
 //fmt.Printf("Number of CPUs: %v\n", numCPUs)
 //fmt.Printf("Total Storage: %v bytes\n", totalStorage)
+
+// check if CPU or Mem is above the meta set
+// if CPU or Mem is above, set the disable upload to false.
+//

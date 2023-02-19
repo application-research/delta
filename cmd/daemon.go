@@ -24,21 +24,21 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "specify the repo blockstore path of the node. ",
 			},
 			&cli.StringFlag{
-				Name:  "wallet-dir",
-				Usage: "specify the wallet directory path of the node. ",
+				Name:  "wallet_estuary-dir",
+				Usage: "specify the wallet_estuary directory path of the node. ",
 			},
 		},
 		Action: func(c *cli.Context) error {
 
 			repo := c.String("repo")
-			walletDir := c.String("wallet-dir")
+			walletDir := c.String("wallet_estuary-dir")
 
 			if repo == "" {
 				repo = ".whypfs"
 			}
 
 			if walletDir == "" {
-				walletDir = "./wallet"
+				walletDir = "./wallet_estuary"
 			}
 
 			// create the node (with whypfs, db, filclient)

@@ -30,7 +30,7 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	// add wallet endpoint
+	// add wallet_estuary endpoint
 	adminWallet.POST("/add", func(c echo.Context) error {
 		return nil
 	})
@@ -39,7 +39,7 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	// list wallet endpoint
+	// list wallet_estuary endpoint
 	adminWallet.GET("/list", func(c echo.Context) error {
 		return nil
 	})

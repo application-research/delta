@@ -6,7 +6,10 @@ import (
 	"delta/core/model"
 	"delta/utils"
 	"github.com/application-research/filclient"
+	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
+	"github.com/labstack/gommon/log"
+	"io"
 	"time"
 )
 
@@ -15,13 +18,16 @@ type PieceCommpProcessor struct {
 	LightNode       *core.DeltaNode
 	Content         model.Content
 	DealPieceConfig filclient.DealConfig
+	CommpService    *core.CommpService
 }
 
 func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcessor {
+	commpService := new(core.CommpService)
 	return &PieceCommpProcessor{
-		LightNode: ln,
-		Content:   content,
-		Context:   context.Background(),
+		LightNode:    ln,
+		Content:      content,
+		Context:      context.Background(),
+		CommpService: commpService,
 	}
 }
 
@@ -34,7 +40,37 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	// prepare the commp
-	pieceCid, payloadSize, unpaddedPieceSize, err := filclient.GeneratePieceCommitment(i.Context, payloadCid, i.LightNode.Node.Blockstore)
+	node, err := i.LightNode.Node.GetFile(context.Background(), payloadCid)
+	nodeCopy := node
+
+	bytesFromCar, err := io.ReadAll(nodeCopy)
+	if err != nil {
+		log.Error(err)
+	}
+
+	var pieceCid cid.Cid
+	var payloadSize uint64
+	var unPaddedPieceSize abi.UnpaddedPieceSize
+	var paddedPieceSize abi.PaddedPieceSize
+
+	pieceInfo, err := i.CommpService.GenerateCommPCarV2(node)
+	if err != nil {
+		pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
+		paddedPieceSize = unPaddedPieceSize.Padded()
+		if err != nil {
+			log.Error(err)
+		}
+	} else {
+
+		pieceCid = pieceInfo.PieceCID
+		paddedPieceSize = pieceInfo.Size
+		unPaddedPieceSize = pieceInfo.Size.Unpadded()
+
+		if err != nil {
+			log.Error(err)
+		}
+		payloadSize = uint64(len(bytesFromCar))
+	}
 
 	if err != nil {
 		// put this back to the queue
@@ -47,8 +83,8 @@ func (i PieceCommpProcessor) Run() error {
 		Cid:               payloadCid.String(),
 		Piece:             pieceCid.String(),
 		Size:              int64(payloadSize),
-		PaddedPieceSize:   uint64(unpaddedPieceSize.Padded()),
-		UnPaddedPieceSize: uint64(unpaddedPieceSize),
+		PaddedPieceSize:   uint64(paddedPieceSize),
+		UnPaddedPieceSize: uint64(unPaddedPieceSize),
 		Status:            "open",
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),

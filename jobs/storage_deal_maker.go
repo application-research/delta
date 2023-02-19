@@ -154,7 +154,15 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		Status: utils.CONTENT_DEAL_SENDING_PROPOSAL, //"sending-deal-proposal",
 	})
 
-	// 	send the proposal over
+	propString := propnd.String()
+
+	// 	log and send the proposal over
+	i.LightNode.DB.Create(&model.ContentDealProposal{
+		Content: content.ID,
+		Meta:    propString,
+	})
+
+	// send the proposal.
 	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID))
 
 	if propPhase == true && err != nil {
@@ -390,7 +398,7 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content model.Co
 		})
 
 		if err != nil {
-			fmt.Println("error on wallet import", err)
+			fmt.Println("error on wallet_estuary import", err)
 			return nil, err
 		}
 		// new filclient just for this request
