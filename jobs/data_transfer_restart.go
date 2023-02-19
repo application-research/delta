@@ -3,16 +3,17 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	"delta/core/model"
 	"fmt"
 	"github.com/application-research/filclient"
 )
 
 type DataTransferRestartListenerProcessor struct {
 	LightNode   *core.DeltaNode
-	ContentDeal core.ContentDeal
+	ContentDeal model.ContentDeal
 }
 
-func NewDataTransferRestartProcessor(ln *core.DeltaNode, contentDeal core.ContentDeal) IProcessor {
+func NewDataTransferRestartProcessor(ln *core.DeltaNode, contentDeal model.ContentDeal) IProcessor {
 	return &DataTransferRestartListenerProcessor{
 		LightNode:   ln,
 		ContentDeal: contentDeal,
@@ -36,6 +37,6 @@ func (d DataTransferRestartListenerProcessor) Run() error {
 		return err
 	}
 	// subscribe to data transfer events
-	d.LightNode.Dispatcher.AddJob(NewDataTransferStatusListenerProcessor(d.LightNode))
+	d.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(d.LightNode), 1)
 	return nil
 }

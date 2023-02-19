@@ -1,13 +1,16 @@
 package jobs
 
-import "delta/core"
+import (
+	"delta/core"
+	"delta/core/model"
+)
 
 type LogEventProcessor struct {
 	LightNode *core.DeltaNode
-	LogEvent  core.LogEvent
+	LogEvent  model.LogEvent
 }
 
-func NewLogEvent(ln *core.DeltaNode, logEvent core.LogEvent) IProcessor {
+func NewLogEvent(ln *core.DeltaNode, logEvent model.LogEvent) IProcessor {
 	return &LogEventProcessor{
 		LightNode: ln,
 		LogEvent:  logEvent,

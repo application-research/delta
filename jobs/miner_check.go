@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"delta/core"
+	"delta/core/model"
 	"encoding/json"
 	"fmt"
 	"gorm.io/gorm"
@@ -26,14 +27,14 @@ func (m MinerCheckProcessor) Run() error {
 	// remove any record of the miner on the list
 	m.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 		// delete all
-		tx.Delete(core.MinerInfo{}).Where("1 = 1")
-		tx.Delete(core.MinerPrice{}).Where("1 = 1")
+		tx.Delete(model.MinerInfo{}).Where("1 = 1")
+		tx.Delete(model.MinerPrice{}).Where("1 = 1")
 		return nil
 	})
 
 	// refresh list
 	// get the miner list
-	var minerInfos []core.MinerInfo
+	var minerInfos []model.MinerInfo
 	req, err := http.Get("https://api.estuary.tech/public/miners/")
 	if err != nil {
 		fmt.Println(err)
@@ -44,10 +45,10 @@ func (m MinerCheckProcessor) Run() error {
 	fmt.Println(minerInfos)
 
 	// for each miner info, get miner price
-	var minerPrices []core.MinerPrice
+	var minerPrices []model.MinerPrice
 	for _, minerInfo := range minerInfos {
 		fmt.Println(minerInfo.Addr)
-		var minerPrice core.MinerPrice
+		var minerPrice model.MinerPrice
 		reqMinerPrice, err := http.Get("https://api.estuary.tech/public/miners/storage/query/" + minerInfo.Addr)
 		if err != nil {
 			fmt.Println(err)

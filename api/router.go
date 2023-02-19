@@ -111,10 +111,11 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	})
 
 	ConfigMetricsRouter(apiGroup)
-	ConfigureUploadRouter(apiGroup, ln)
+	DealRouter(apiGroup, ln)
 	ConfigureStatusCheckRouter(apiGroup, ln)
 	ConfigureNodeInfoRouter(openApiGroup, ln)
 	ConfigureRepairRouter(apiGroup, ln)
+	ConfigureMinerRouter(apiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
