@@ -158,24 +158,25 @@ The output will be as follows
 
 Output
 ```
-{"status":"success","message":"File uploaded and pinned successfully","content_id":208,"piece_commitment_id":172,"meta":{"cid":"bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om","wallet":{},"commp":{"piece":"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq","padded_piece_size":4294967296,"unpadded_piece_size":4261412864},"connection_mode":"offline","size":2500366291}}
-```
-
-You can then use this and pass to the `deal/commitment-piece` endpoint to initiate an offline deal.
-```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-piece' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "wallet": {},
-    "commp": {
-        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "offline",
-    "size": 2500366291
-}'
+{
+   "status":"success",
+   "message":"File uploaded and pinned successfully",
+   "content_id":208,
+   "piece_commitment_id":172,
+   "meta":{
+      "cid":"bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
+      "wallet":{
+         
+      },
+      "commp":{
+         "piece":"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+         "padded_piece_size":4294967296,
+         "unpadded_piece_size":4261412864
+      },
+      "connection_mode":"offline",
+      "size":2500366291
+   }
+}
 ```
 
 ### Stats (content, commps and deals) 
