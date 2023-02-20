@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -178,9 +179,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
 
-	fmt.Println("contentMakeDealRequest.StartEpoch", contentMakeDealRequest.StartEpoch)
-
-	fmt.Println("duration", contentMakeDealRequest.Duration)
 	if dealProposalParam.Duration == 0 {
 		dealProposalParam.Duration = utils.DEFAULT_DURATION
 	} else {
@@ -219,6 +217,125 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 }
 
 func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
+	var contentMakeDealRequests []ContentMakeDealRequest
+
+	// lets record this.
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	//	validate the meta
+	err := c.Bind(&contentMakeDealRequests)
+	if err != nil {
+		c.JSON(500, ContentMakeDealResponse{
+			Status:  "error",
+			Message: "Error pinning the files" + err.Error(),
+		})
+		return err
+	}
+
+	var contentMakeDealResponses []ContentMakeDealResponse
+	for _, contentMakeDealRequest := range contentMakeDealRequests {
+		var connMode = contentMakeDealRequest.ConnectionMode
+		if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
+			connMode = "online"
+		}
+
+		// if size is given, let's create a commp record for it.
+		var pieceCommp model.PieceCommitment
+		if contentMakeDealRequest.PieceCommitment.Piece != "" {
+			// if commp is there, make sure the piece and size are there. Use default duration.
+			pieceCommp.Cid = contentMakeDealRequest.Cid
+			pieceCommp.Piece = contentMakeDealRequest.PieceCommitment.Piece
+			pieceCommp.Size = contentMakeDealRequest.Size
+			pieceCommp.UnPaddedPieceSize = contentMakeDealRequest.PieceCommitment.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = contentMakeDealRequest.PieceCommitment.PaddedPieceSize
+			pieceCommp.CreatedAt = time.Now()
+			pieceCommp.UpdatedAt = time.Now()
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+			node.DB.Create(&pieceCommp)
+		}
+
+		// save the file to the database.
+		content := model.Content{
+			Name:              contentMakeDealRequest.Cid,
+			Size:              contentMakeDealRequest.Size,
+			Cid:               contentMakeDealRequest.Cid,
+			RequestingApiKey:  authParts[1],
+			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
+			ConnectionMode:    connMode,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+		node.DB.Create(&content)
+
+		//	assign a miner
+		if contentMakeDealRequest.Miner != "" {
+			contentMinerAssignment := model.ContentMiner{
+				Miner:     contentMakeDealRequest.Miner,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentMinerAssignment)
+		}
+
+		// 	assign a wallet_estuary
+		if contentMakeDealRequest.Wallet.KeyType != "" {
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = contentMakeDealRequest.Wallet.KeyType
+			hexedWallet.PrivateKey = hex.EncodeToString([]byte(contentMakeDealRequest.Wallet.PrivateKey))
+			walletByteArr, err := json.Marshal(hexedWallet)
+
+			if err != nil {
+				contentMakeDealResponses = append(contentMakeDealResponses, ContentMakeDealResponse{
+					Status:  "error",
+					Message: "Error pinning the file" + err.Error(),
+				})
+			}
+			contentWalletAssignment := model.ContentWallet{
+				Wallet:    string(walletByteArr),
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentWalletAssignment)
+		}
+
+		var dealProposalParam model.ContentDealProposalParameters
+		dealProposalParam.CreatedAt = time.Now()
+		dealProposalParam.UpdatedAt = time.Now()
+		dealProposalParam.Content = content.ID
+
+		if dealProposalParam.Duration == 0 {
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		} else {
+			dealProposalParam.Duration = contentMakeDealRequest.Duration
+		}
+
+		node.DB.Create(&dealProposalParam)
+
+		var dispatchJobs core.IProcessor
+		if pieceCommp.ID != 0 {
+			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+		}
+
+		node.Dispatcher.AddJob(dispatchJobs)
+
+		contentMakeDealResponses = append(contentMakeDealResponses, ContentMakeDealResponse{
+			Status:            "success",
+			Message:           "File uploaded and pinned successfully",
+			ContentID:         content.ID,
+			PieceCommitmentId: pieceCommp.ID,
+			Miner:             contentMakeDealRequest.Miner,
+			Meta:              contentMakeDealRequest,
+		})
+
+	}
+
+	node.Dispatcher.Start(len(contentMakeDealRequests))
+	c.JSON(http.StatusOK, contentMakeDealResponses)
+
 	return nil
 }
 
@@ -230,8 +347,15 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	authParts := strings.Split(authorizationString, " ")
 
 	//	validate the meta
-	c.Bind(&contentMakeDealRequest)
-	fmt.Println("contentMakeDealRequest", contentMakeDealRequest)
+	err := c.Bind(&contentMakeDealRequest)
+	if err != nil {
+		c.JSON(500, ContentMakeDealResponse{
+			Status:  "error",
+			Message: "Error pinning the file" + err.Error(),
+		})
+		return err
+	}
+
 	var connMode = contentMakeDealRequest.ConnectionMode
 	if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
 		connMode = "online"
@@ -305,9 +429,6 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
 
-	fmt.Println("contentMakeDealRequest.StartEpoch", contentMakeDealRequest.StartEpoch)
-
-	fmt.Println("duration", contentMakeDealRequest.Duration)
 	if dealProposalParam.Duration == 0 {
 		dealProposalParam.Duration = utils.DEFAULT_DURATION
 	} else {

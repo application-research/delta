@@ -167,6 +167,18 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	if propPhase == true && err != nil {
 
+		if strings.Contains(err.Error(), "failed to send request: stream reset") {
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
+				LastMessage: err.Error(),
+				Failed:      true, // mark it as failed
+			})
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+				LastMessage: err.Error(),
+			})
+			return nil
+		}
+
 		if strings.Contains(err.Error(), "deal proposal rejected") {
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
 				LastMessage: err.Error(),
@@ -329,15 +341,21 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			return nil
 		})
 		// subscribe to data transfer events
-		//i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 1)
-	}
+		i.LightNode.Dispatcher.AddJob(NewDataTransferStatusListenerProcessor(i.LightNode))
+		i.LightNode.Dispatcher.Start(1)
 
+	}
 	if propPhase == false && content.ConnectionMode == "offline" {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
 		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
+		deal.LastMessage = utils.CONTENT_DEAL_PROPOSAL_SENT
+		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
+			tx.Model(&model.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)
+			tx.Model(&model.Content{}).Where("id = ?", content.ID).Save(content)
+			tx.Model(&model.ContentDeal{}).Where("id = ?", deal.ID).Save(deal)
+			return nil
+		})
 	}
-
-	i.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferStatusListenerProcessor(i.LightNode), 10)
 
 	return nil
 
@@ -503,6 +521,10 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 				Size:     netprop.Piece.RawBlockSize,
 			}),
 		)
+	}
+
+	if err != nil {
+		i.LightNode.FilClient.Libp2pTransferMgr.CleanupPreparedRequest(i.Context, dbid, authToken)
 	}
 
 	return propPhase, err

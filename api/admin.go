@@ -2,6 +2,7 @@ package api
 
 import (
 	"delta/core"
+	"delta/core/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -12,6 +13,21 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminRepair := e.Group("/repair")
 	adminWallet := e.Group("/wallet")
 	adminDashboard := e.Group("/dashboard")
+	adminStats := e.Group("/stats")
+
+	adminStats.GET("/miner/:minerId", func(c echo.Context) error {
+
+		var contents []model.Content
+		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ?", c.Param("minerId")).Scan(&contents)
+
+		var contentMinerAssignment []model.ContentMiner
+		node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and cma.miner = ?", c.Param("minerId")).Scan(&contentMinerAssignment)
+
+		return c.JSON(200, map[string]interface{}{
+			"content": contents,
+			"cmas":    contentMinerAssignment,
+		})
+	})
 
 	// repair endpoints
 	adminRepair.GET("/deal", func(c echo.Context) error {

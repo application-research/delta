@@ -6,8 +6,10 @@ import (
 	c "delta/config"
 	"delta/core"
 	"delta/jobs"
+	"fmt"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
+	"time"
 )
 
 func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
@@ -53,7 +55,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			}
 
 			//	launch the dispatchers.
-			//go runProcessors(ln)
+			go runProcessors(ln)
 
 			//	launch clean up dispatch jobs
 			//	any failures due to the node shutdown will be retried after 1 day
@@ -93,28 +95,28 @@ func runCron(ln *core.DeltaNode) {
 
 }
 
-//
-//func runProcessors(ln *core.DeltaNode) {
-//
-//	// run the job every 10 seconds.
-//	jobDispatch := ln.Config.Dispatcher.DispatchJobsEvery
-//	jobDispatchWorker := ln.Config.Dispatcher.MaxDispatchWorkers
-//
-//	jobDispatchTick := time.NewTicker(time.Duration(jobDispatch) * time.Second)
-//
-//	for {
-//		select {
-//		case <-jobDispatchTick.C:
-//			go func() {
-//				ln.Dispatcher.AddJob(jobs.NewDataTransferStatusListenerProcessor(ln))
-//				ln.Dispatcher.Start(jobDispatchWorker)
-//				for {
-//					if ln.Dispatcher.Finished() {
-//						fmt.Printf("All jobs finished.\n")
-//						break
-//					}
-//				}
-//			}()
-//		}
-//	}
-//}
+// Run the dispatchers.
+func runProcessors(ln *core.DeltaNode) {
+
+	// run the job every 10 seconds.
+	jobDispatch := ln.Config.Dispatcher.DispatchJobsEvery
+	jobDispatchWorker := ln.Config.Dispatcher.MaxDispatchWorkers
+
+	jobDispatchTick := time.NewTicker(time.Duration(jobDispatch) * time.Second)
+
+	for {
+		select {
+		case <-jobDispatchTick.C:
+			go func() {
+				ln.Dispatcher.AddJob(jobs.NewDataTransferStatusListenerProcessor(ln))
+				ln.Dispatcher.Start(jobDispatchWorker)
+				for {
+					if ln.Dispatcher.Finished() {
+						fmt.Printf("All jobs finished.\n")
+						break
+					}
+				}
+			}()
+		}
+	}
+}

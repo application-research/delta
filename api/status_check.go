@@ -19,6 +19,7 @@ type StatusCheckResponse struct {
 }
 
 func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
+
 	e.GET("/status/:id", func(c echo.Context) error {
 
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -123,6 +124,23 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
+	e.GET("/stats/miner/:minerId", func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		var contents []model.Content
+		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contents)
+
+		var contentMinerAssignment []model.ContentMiner
+		node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
+
+		return c.JSON(200, map[string]interface{}{
+			"content": contents,
+			"cmas":    contentMinerAssignment,
+		})
+		return nil
+	})
+
 	e.GET("/stats", func(c echo.Context) error {
 
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -144,6 +162,5 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 			"deals":             contentDeal,
 			"piece_commitments": pieceCommitments,
 		})
-
 	})
 }

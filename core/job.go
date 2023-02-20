@@ -111,6 +111,7 @@ func (d *Dispatcher) AddJobAndDispatch(je IProcessor, numWorkers int) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()
 	d.jobCounter++
+	fmt.Printf("Number Of Jobs: %d\n", d.jobCounter)
 	d.Start(numWorkers)
 }
 

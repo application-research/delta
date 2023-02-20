@@ -23,6 +23,7 @@ func NewDataTransferStatusListenerProcessor(ln *core.DeltaNode) IProcessor {
 
 func (d DataTransferStatusListenerProcessor) Run() error {
 	d.LightNode.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
+		fmt.Println("Data Transfer Status Listener: ", fst.Status)
 		switch fst.Status {
 		case datatransfer.Requested:
 			d.LightNode.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
@@ -53,8 +54,9 @@ func (d DataTransferStatusListenerProcessor) Run() error {
 
 			d.LightNode.Dispatcher.AddJobAndDispatch(NewDataTransferRestartProcessor(d.LightNode, contentDeal), 1)
 		default:
-
 		}
 	})
+	fmt.Println("Data Transfer Status Listener Ended")
+
 	return nil
 }
