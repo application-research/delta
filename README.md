@@ -123,6 +123,32 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-pie
 }'
 ```
 
+### Upload a batch of commitment pieces
+```
+curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-pieces' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Content-Type: application/json' \
+--data-raw '[{
+    "cid":"bafybeiceuiutv7y2axqbmwbn4tgdzh6zlcmrofadokbqvt5i52l3o63a6e",
+    "connection_mode": "offline",
+    "miner": "f01963614",
+    "commp": {
+        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+        "padded_piece_size": 4294967296
+    },
+    "size":2500212773
+},{
+    "cid":"bafybeiceuiutv7y2axqbmwbn4tgdzh6zlcmrofadokbqvt5i52l3o63a6e",
+    "connection_mode": "offline",
+    "miner": "f01963614",
+    "commp": {
+        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+        "padded_piece_size": 4294967296
+    },
+    "size":2500212773
+}]'
+```
+
 ### Get the commp of a file using commp cli
 ```
 ./delta commp --file=<>
@@ -153,7 +179,7 @@ The output will be as follows
 
 ### Get the commp of a CAR file using commp cli and pass to the delta api to make an offline deal
 ```
-./delta commp-car --file=/Users/alvinreyes/Downloads/baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car --for-offline --delta-api-url=http://localhost:1414 --delta-api-key=[ESTUARY_API_KEY]
+./delta commp-car --file=baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car --for-offline --delta-api-url=http://localhost:1414 --delta-api-key=[ESTUARY_API_KEY]
 ```
 
 Output
