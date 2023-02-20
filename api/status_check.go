@@ -20,25 +20,6 @@ type StatusCheckResponse struct {
 
 func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
-	e.GET("/status/:id", func(c echo.Context) error {
-
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
-
-		var content model.Content
-		node.DB.Raw("select c.id, c.cid, c.status from contents as c where c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&content)
-
-		return c.JSON(200, StatusCheckResponse{
-			Content: struct {
-				ID      int64  `json:"id"`
-				Name    string `json:"name"`
-				Cid     string `json:"cid,omitempty"`
-				Status  string `json:"status"`
-				Message string `json:"message,omitempty"`
-			}{ID: content.ID, Name: content.Name, Status: content.Status, Cid: content.Cid},
-		})
-	})
-
 	e.GET("/list-all-cids", func(c echo.Context) error {
 
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -65,36 +46,54 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	e.GET("/stats/content/:id", func(c echo.Context) error {
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
+	e.GET("/stats/miner/:minerId/content", func(c echo.Context) error {
+		return handleGetContentsByMiner(c, node)
+	})
 
-		var content model.Content
-		node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&content)
+	e.GET("/stats/miner/:minerId/commitment-piece", func(c echo.Context) error {
+		return handleGetCommitmentPiecesByMiner(c, node)
+	})
 
-		var contentDeal []model.ContentDeal
-		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentDeal)
+	e.GET("/stats/miner/:minerId/deals", func(c echo.Context) error {
+		return handleGetDealsByMiner(c, node)
+	})
 
-		var pieceCommitments []model.PieceCommitment
-		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&pieceCommitments)
+	e.GET("/stats/miner/:minerId/deal-proposals", func(c echo.Context) error {
+		return handleGetDealProposalsByMiner(c, node)
+	})
 
-		var contentDealProposal []model.ContentDealProposalParameters
-		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentDealProposal)
+	e.GET("/stats/miner/:minerId/content/:contentId", func(c echo.Context) error {
+		return handleGetContentByMiner(c, node)
+	})
 
-		var contentMinerAssignment []model.ContentMiner
-		node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentMinerAssignment)
+	e.GET("/stats/miner/:minerId/commitment-piece/:commitmentPieceId", func(c echo.Context) error {
+		return handleGetCommitmentPieceByMiner(c, node)
+	})
 
-		var contentWalletAssignment []model.ContentWallet
-		node.DB.Raw("select cwa.* from content_wallet_assignments cwa, contents c where cwa.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("id"), authParts[1]).Scan(&contentWalletAssignment)
+	e.GET("/stats/miner/:minerId/deals/:dealId", func(c echo.Context) error {
+		return handleGetDealByMiner(c, node)
+	})
 
-		return c.JSON(200, map[string]interface{}{
-			"content": content,
-			"deals":   contentDeal,
-			"commps":  pieceCommitments,
-			"cdps":    contentDealProposal,
-			"cmas":    contentMinerAssignment,
-			"cwas":    contentWalletAssignment,
-		})
+	e.GET("/stats/miner/:minerId/deal-proposals/:dealProposalId", func(c echo.Context) error {
+		return handleGetDealProposalByMiner(c, node)
+	})
+
+	e.GET("/stats/content/:contentId", func(c echo.Context) error {
+		return handleGetStatsByContent(c, node)
+	})
+
+	e.GET("/stats/commitment-piece/:id", func(c echo.Context) error {
+
+		return nil
+	})
+
+	e.GET("/stats/deal/:id", func(c echo.Context) error {
+
+		return nil
+	})
+
+	e.GET("/stats/deal-proposal/:id", func(c echo.Context) error {
+
 		return nil
 	})
 
@@ -163,4 +162,265 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 			"piece_commitments": pieceCommitments,
 		})
 	})
+
+	e.GET("/stats/totals/info", func(c echo.Context) error {
+		return handleGetTotalsInfo(c, node)
+	})
+}
+
+// function to get all totals info
+func handleGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
+
+	var totalContentConsumed int64
+	node.DB.Raw("select count(*) from contents").Scan(&totalContentConsumed)
+
+	var totalTransferStarted int64
+	node.DB.Raw("select count(*) from contents where status = 'transfer-started'").Scan(&totalTransferStarted)
+
+	var totalTransferFinished int64
+	node.DB.Raw("select count(*) from contents where status = 'transfer-finished'").Scan(&totalTransferFinished)
+
+	var totalProposalMade int64
+	node.DB.Raw("select count(*) from deal_proposals").Scan(&totalProposalMade)
+
+	var totalPiece int64
+	node.DB.Raw("select count(*) from piece_commitments").Scan(&totalPiece)
+
+	var totalPieceCommitted int64
+	node.DB.Raw("select count(*) from piece_commitments where status = 'committed'").Scan(&totalPieceCommitted)
+
+	var totalMiners int64
+	node.DB.Raw("select distinct(miner) from content_miners").Count(&totalMiners)
+
+	var totalStorageAllocated int64
+	node.DB.Raw("select sum(size) from contents").Scan(&totalStorageAllocated)
+
+	var totalProposalSent int64
+	node.DB.Raw("select count(*) from contents where status = 'deal-proposal-sent'").Scan(&totalProposalSent)
+
+	c.JSON(200, map[string]interface{}{
+		"total_content_consumed":  totalContentConsumed,
+		"total_transfer_started":  totalTransferStarted,
+		"total_transfer_finished": totalTransferFinished,
+		"total_proposal_made":     totalProposalMade,
+		"total_piece":             totalPiece,
+		"total_piece_committed":   totalPieceCommitted,
+		"total_miners":            totalMiners,
+		"total_storage_allocated": totalStorageAllocated,
+		"total_proposal_sent":     totalProposalSent,
+	})
+	return nil
+}
+
+// function to get all stats given a content id and user api key
+func handleGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var content model.Content
+	node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&content)
+
+	var contentDeal []model.ContentDeal
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDeal)
+
+	var pieceCommitments []model.PieceCommitment
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&pieceCommitments)
+
+	var contentDealProposal []model.ContentDealProposalParameters
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDealProposal)
+
+	var contentMinerAssignment []model.ContentMiner
+	node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentMinerAssignment)
+
+	var contentWalletAssignment []model.ContentWallet
+	node.DB.Raw("select cwa.* from content_wallet_assignments cwa, contents c where cwa.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentWalletAssignment)
+
+	return c.JSON(200, map[string]interface{}{
+		"content": content,
+		"deals":   contentDeal,
+		"commps":  pieceCommitments,
+		"cdps":    contentDealProposal,
+		"cmas":    contentMinerAssignment,
+		"cwas":    contentWalletAssignment,
+	})
+}
+
+// function to get all contents of a given a miner
+func handleGetContentsByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contents []model.Content
+	node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contents)
+
+	c.JSON(200, map[string]interface{}{
+		"content": contents,
+	})
+
+	return nil
+}
+
+// function to get all commitment-piece of a given miner
+func handleGetCommitmentPiecesByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var pieceCommitments []model.PieceCommitment
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
+
+	c.JSON(200, map[string]interface{}{
+		"piece_commitments": pieceCommitments,
+	})
+
+	return nil
+}
+
+// function to get all deals of a given miner
+func handleGetDealsByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contentDeal []model.ContentDeal
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
+
+	c.JSON(200, map[string]interface{}{
+		"deals": contentDeal,
+	})
+
+	return nil
+}
+
+// function to get all deal-proposal of a given miner
+func handleGetDealProposalsByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contentMinerAssignment []model.ContentMiner
+	node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
+
+	c.JSON(200, map[string]interface{}{
+		"cmas": contentMinerAssignment,
+	})
+
+	return nil
+}
+
+// function to get all content of a given api key
+func handleGetContents(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var content []model.Content
+	node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
+
+	c.JSON(200, map[string]interface{}{
+		"content": content,
+	})
+
+	return nil
+}
+
+// function to get all commitment-piece of a given api key
+func handleGetCommitmentPieces(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var pieceCommitments []model.PieceCommitment
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
+
+	c.JSON(200, map[string]interface{}{
+		"piece_commitments": pieceCommitments,
+	})
+
+	return nil
+}
+
+// function to get all deals of a given api key
+func handleGetDeals(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contentDeal []model.ContentDeal
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
+
+	c.JSON(200, map[string]interface{}{
+		"deals": contentDeal,
+	})
+
+	return nil
+}
+
+// function to get all deal-proposal of a given api key
+func handleGetDealProposals(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contentMinerAssignment []model.ContentMiner
+	node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentMinerAssignment)
+
+	c.JSON(200, map[string]interface{}{
+		"cmas": contentMinerAssignment,
+	})
+
+	return nil
+}
+
+// function to get a specific content with a given miner
+func handleGetContentByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var content model.Content
+	node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = ? and cd.miner = ? and c.requesting_api_key = ?", c.Param("contentId"), c.Param("minerId"), authParts[1]).Scan(&content)
+
+	c.JSON(200, map[string]interface{}{
+		"content": content,
+	})
+
+	return nil
+}
+
+// function to get a specific commitment-piece with a given miner
+func handleGetCommitmentPieceByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var pieceCommitment model.PieceCommitment
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = ? and c.miner = ? and c.id = ? and c.requesting_api_key = ?", c.Param("commitmentPieceId"), c.Param("minerId"), authParts[1]).Scan(&pieceCommitment)
+
+	c.JSON(200, map[string]interface{}{
+		"piece_commitment": pieceCommitment,
+	})
+
+	return nil
+}
+
+// function to get a specific deal with a given miner
+func handleGetDealByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contentDeal model.ContentDeal
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.id = ? and cd.miner = ? and c.requesting_api_key = ?", c.Param("dealId"), c.Param("minerId"), authParts[1]).Scan(&contentDeal)
+
+	c.JSON(200, map[string]interface{}{
+		"deal": contentDeal,
+	})
+
+	return nil
+}
+
+// function to get a specific deal-proposal with a given miner
+func handleGetDealProposalByMiner(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	var contentMinerAssignment model.ContentMiner
+	node.DB.Raw("select cma.* from content_deal_proposals cdp, contents c where cdp.id = ? and cdp.miner = ? and c.requesting_api_key = ?", c.Param("dealProposalId"), c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
+
+	c.JSON(200, map[string]interface{}{
+		"cmas": contentMinerAssignment,
+	})
+
+	return nil
 }

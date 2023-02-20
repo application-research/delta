@@ -58,16 +58,39 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 	statsService := core.NewStatsStatsService(node)
 
 	dealMake := e.Group("/deal")
+	dealPrepare := dealMake.Group("/prepare")
+	dealAnnounce := dealMake.Group("/announce")
+	dealStatus := dealMake.Group("/status")
 
-	dealStatus := e.Group("/deal/status")
-
-	// Save content to the database
-	// Save default values for the content (default miner and wallet_estuary)
 	dealMake.POST("/content", func(c echo.Context) error {
 		return handleContentAdd(c, node, *statsService)
 	})
 	dealMake.POST("/commitment-piece", func(c echo.Context) error {
 		return handleCommPieceAdd(c, node, *statsService)
+	})
+
+	dealPrepare.POST("/content", func(c echo.Context) error {
+		return nil
+	})
+
+	dealPrepare.POST("/commitment-piece", func(c echo.Context) error {
+		return nil
+	})
+
+	dealPrepare.POST("/commitment-pieces", func(c echo.Context) error {
+		return nil
+	})
+
+	dealAnnounce.POST("/content", func(c echo.Context) error {
+		return nil
+	})
+
+	dealAnnounce.POST("/commitment-piece", func(c echo.Context) error {
+		return nil
+	})
+
+	dealAnnounce.POST("/commitment-pieces", func(c echo.Context) error {
+		return nil
 	})
 
 	// make commitment-pieces
