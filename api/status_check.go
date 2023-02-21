@@ -20,32 +20,6 @@ type StatusCheckResponse struct {
 
 func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
-	e.GET("/list-all-cids", func(c echo.Context) error {
-
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
-
-		var content []model.Content
-		node.DB.Raw("select c.name, c.id, c.cid, c.status,c.created_at,c.updated_at from contents as c where requesting_api_key = ?", authParts[1]).Scan(&content)
-
-		return c.JSON(200, content)
-
-	})
-
-	e.GET("/stats/commps", func(c echo.Context) error {
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
-
-		// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
-		var pieceCommitments []model.PieceCommitment
-		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?", authParts[1]).Scan(&pieceCommitments)
-
-		return c.JSON(200, map[string]interface{}{
-			"piece_commitments": pieceCommitments,
-		})
-		return nil
-	})
-
 	e.GET("/stats/miner/:minerId/content", func(c echo.Context) error {
 		return handleGetContentsByMiner(c, node)
 	})
@@ -82,13 +56,15 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetStatsByContent(c, node)
 	})
 
-	e.GET("/stats/commitment-piece/:id", func(c echo.Context) error {
-
-		return nil
+	e.GET("/stats/commitment-piece/:commitmentPieceId", func(c echo.Context) error {
+		return handleGetCommitmentPiece(c, node)
 	})
 
-	e.GET("/stats/deal/:id", func(c echo.Context) error {
+	e.GET("/stats/commitment-pieces", func(c echo.Context) error {
+		return handleGetCommitmentPieces(c, node)
+	})
 
+	e.GET("/stats/deal/:dealId", func(c echo.Context) error {
 		return nil
 	})
 
@@ -98,32 +74,15 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	e.GET("/stats/deals", func(c echo.Context) error {
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
-
-		var contentDeal []model.ContentDeal
-		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
-
-		return c.JSON(200, map[string]interface{}{
-			"deals": contentDeal,
-		})
-		return nil
+		return handleGetDeals(c, node)
 	})
 
 	e.GET("/stats/contents", func(c echo.Context) error {
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
-
-		var content []model.Content
-		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&content)
-
-		return c.JSON(200, map[string]interface{}{
-			"content": content,
-		})
-		return nil
+		return handleGetContents(c, node)
 	})
 
 	e.GET("/stats/miner/:minerId", func(c echo.Context) error {
+
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 
@@ -166,6 +125,20 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	e.GET("/stats/totals/info", func(c echo.Context) error {
 		return handleGetTotalsInfo(c, node)
 	})
+}
+
+func handleGetCommitmentPiece(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
+	var pieceCommitments []model.PieceCommitment
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = ? and c.requesting_api_key = ?", c.Param("commitmentPieceId"), authParts[1]).Scan(&pieceCommitments)
+
+	return c.JSON(200, map[string]interface{}{
+		"piece_commitments": pieceCommitments,
+	})
+	return nil
 }
 
 // function to get all totals info

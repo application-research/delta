@@ -41,6 +41,7 @@ type DeltaNode struct {
 	FilClient  *fc.FilClient
 	Config     *c.DeltaConfig
 	Dispatcher *Dispatcher
+	MetaInfo   *model.InstanceMeta
 }
 
 type LocalWallet struct {
@@ -135,6 +136,7 @@ func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, err
 
 	// job dispatcher
 	dispatcher := CreateNewDispatcher()
+	
 	// create the global light node.
 	return &DeltaNode{
 		Node:       whypfsPeer,

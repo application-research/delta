@@ -107,6 +107,16 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 }
 
+// handleContentStats returns the status of a content
+// @Summary returns the status of a content
+// @Description returns the status of a content
+// @Tags deal
+// @Accept  json
+// @Produce  json
+// @Param contentId path int true "Content ID"
+// @Success 200 {object} ContentMakeDealResponse
+// @Failure 500 {object} ContentMakeDealResponse
+// @Router /deal/content/{contentId} [post]
 func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsService) error {
 	var contentMakeDealRequest ContentMakeDealRequest
 
@@ -239,6 +249,12 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	return nil
 }
 
+// handleCommPiecesAdd handles the request to add a commp record.
+// @Summary Add a commp record
+// @Description Add a commp record
+// @Tags CommP
+// @Accept  json
+// @Produce  json
 func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
 	var contentMakeDealRequests []ContentMakeDealRequest
 
@@ -362,6 +378,12 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 	return nil
 }
 
+// handleCommPieceAdd handles the request to add a commp record.
+// @Summary Add a commp record
+// @Description Add a commp record
+// @Tags deals
+// @Accept  json
+// @Produce  json
 func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
 	var contentMakeDealRequest ContentMakeDealRequest
 

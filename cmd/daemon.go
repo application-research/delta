@@ -5,10 +5,13 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	"delta/core/model"
 	"delta/jobs"
 	"fmt"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
+	"runtime"
+	"syscall"
 	"time"
 )
 
@@ -50,9 +53,14 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Config:           cfg,
 			}
 			ln, err := core.NewLightNode(context.Background(), nodeParams)
+
 			if err != nil {
 				return err
 			}
+
+			// set the node global meta
+			meta := setGlobalNodeMeta(ln, repo)
+			ln.MetaInfo = meta
 
 			//	launch the dispatchers.
 			go runProcessors(ln)
@@ -77,7 +85,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 // Run the cron jobs.
 // The cron jobs are run every 12 hours and are responsible for cleaning up the database and the blockstore.
-// It also retries the failed tranfers.
+// It also retries the failed transfers.
 func runCron(ln *core.DeltaNode) {
 
 	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
@@ -119,4 +127,36 @@ func runProcessors(ln *core.DeltaNode) {
 			}()
 		}
 	}
+}
+
+func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
+
+	// get the 80% of the total memory usage
+	memStats := &runtime.MemStats{}
+	runtime.ReadMemStats(memStats)
+	totalMemory := memStats.Sys
+	totalMemory80 := totalMemory * 90 / 100
+
+	// get the 80% of the total disk usage
+	var stat syscall.Statfs_t
+	syscall.Statfs(repo, &stat)
+	totalStorage := stat.Blocks * uint64(stat.Bsize)
+	totalStorage90 := totalStorage * 90 / 100
+
+	// delete all data from the instance meta table
+	ln.DB.Unscoped().Delete(&model.InstanceMeta{})
+	// re-create
+	instanceMeta := &model.InstanceMeta{
+		MemoryLimit:                      totalMemory80,
+		StorageLimit:                     totalStorage90,
+		DisableRequest:                   false,
+		DisableCommitmentPieceGeneration: false,
+		DisableStorageDeal:               false,
+		DisableOnlineDeals:               false,
+		DisableOfflineDeals:              false,
+	}
+	ln.DB.Model(&model.InstanceMeta{}).Create(instanceMeta)
+
+	return instanceMeta
+
 }
