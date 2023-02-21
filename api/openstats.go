@@ -94,16 +94,16 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select sum(size) from contents where status in ('transfer-started','transfer-finished','deal-proposal-sent')").Scan(&totalSealedDealInBytes)
 
 	var totalOfflineDeals int64
-	node.DB.Raw("select count(*) from contents where status = 'offline'").Scan(&totalOfflineDeals)
+	node.DB.Raw("select count(*) from contents where connection_mode = 'offline'").Scan(&totalOfflineDeals)
 
 	var totalOnlineDeals int64
-	node.DB.Raw("select count(*) from contents where status = 'online'").Scan(&totalOnlineDeals)
+	node.DB.Raw("select count(*) from contents where connection_mode = 'online'").Scan(&totalOnlineDeals)
 
 	var totalOnlineDealsInBytes int64
-	node.DB.Raw("select sum(size) from contents where status = 'online'").Scan(&totalOnlineDealsInBytes)
+	node.DB.Raw("select sum(size) from contents where connection_mode = 'online'").Scan(&totalOnlineDealsInBytes)
 
 	var totalOfflineDealsInBytes int64
-	node.DB.Raw("select sum(size) from contents where status = 'offline'").Scan(&totalOfflineDealsInBytes)
+	node.DB.Raw("select sum(size) from contents where connection_mode = 'offline'").Scan(&totalOfflineDealsInBytes)
 
 	c.JSON(200, map[string]interface{}{
 		"total_content_consumed":       totalContentConsumed,
