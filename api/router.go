@@ -60,21 +60,21 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	adminApiGroup := e.Group("/admin")
 	ConfigureAdminRouter(adminApiGroup, ln)
 
-	apiGroup.Use(func(echo.HandlerFunc) echo.HandlerFunc {
-		// check if upload of this node is disabled.
-		if ln.MetaInfo.DisableRequest {
-			return func(c echo.Context) error {
-				return c.JSON(http.StatusForbidden, HttpErrorResponse{
-					Error: HttpError{
-						Code:    http.StatusForbidden,
-						Reason:  http.StatusText(http.StatusForbidden),
-						Details: "upload is disabled - due to memory or disk space limits",
-					},
-				})
-			}
-		}
-		return nil
-	})
+	//apiGroup.Use(func(echo.HandlerFunc) echo.HandlerFunc {
+	//	// check if upload of this node is disabled.
+	//	if ln.MetaInfo.DisableRequest {
+	//		return func(c echo.Context) error {
+	//			return c.JSON(http.StatusForbidden, HttpErrorResponse{
+	//				Error: HttpError{
+	//					Code:    http.StatusForbidden,
+	//					Reason:  http.StatusText(http.StatusForbidden),
+	//					Details: "upload is disabled - due to memory or disk space limits",
+	//				},
+	//			})
+	//		}
+	//	}
+	//	return nil
+	//})
 
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

@@ -61,7 +61,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	// any error here, fail the content
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
-	fmt.Println("miner address: ", minerAddress)
 	var filClient, err = i.GetAssignedWalletForContent(*content)
 	var dealProposal = i.GetDealProposalForContent(*content)
 
@@ -314,9 +313,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 	}
 
-	// Online - transfer it.
-
-	fmt.Println(propPhase)
 	if propPhase == false && content.ConnectionMode == "online" {
 
 		propCid, err := cid.Decode(deal.PropCid)
@@ -340,9 +336,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			tx.Model(&model.ContentDeal{}).Where("id = ?", deal.ID).Save(deal)
 			return nil
 		})
-		// subscribe to data transfer events
-		i.LightNode.Dispatcher.AddJob(NewDataTransferStatusListenerProcessor(i.LightNode))
-		i.LightNode.Dispatcher.Start(1)
 
 	}
 	if propPhase == false && content.ConnectionMode == "offline" {
@@ -372,7 +365,6 @@ type MinerAddress struct {
 func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Content) MinerAddress {
 	var storageMinerAssignment model.ContentMiner
 	i.LightNode.DB.Model(&model.ContentMiner{}).Where("content = ?", content.ID).Find(&storageMinerAssignment)
-	fmt.Println("storageMinerAssignment", storageMinerAssignment.ID)
 	if storageMinerAssignment.ID != 0 {
 		address.CurrentNetwork = address.Mainnet
 		a, err := address.NewFromString(storageMinerAssignment.Miner)

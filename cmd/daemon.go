@@ -7,10 +7,14 @@ import (
 	"delta/core"
 	"delta/core/model"
 	"delta/jobs"
+	"delta/utils"
 	"fmt"
+	"github.com/application-research/filclient"
+	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -62,12 +66,8 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			meta := setGlobalNodeMeta(ln, repo)
 			ln.MetaInfo = meta
 
-			//	launch the dispatchers.
-			go runProcessors(ln)
-
-			//	launch clean up dispatch jobs
-			//	any failures due to the node shutdown will be retried after 1 day
-			go runCron(ln)
+			runLib2pManagerListener(ln)
+			runScheduledCron(ln)
 
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln)
@@ -86,7 +86,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 // Run the cron jobs.
 // The cron jobs are run every 12 hours and are responsible for cleaning up the database and the blockstore.
 // It also retries the failed transfers.
-func runCron(ln *core.DeltaNode) {
+func runScheduledCron(ln *core.DeltaNode) {
 
 	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
 
@@ -103,30 +103,43 @@ func runCron(ln *core.DeltaNode) {
 
 }
 
-// Run the dispatchers.
-func runProcessors(ln *core.DeltaNode) {
+func runLib2pManagerListener(d *core.DeltaNode) {
+	d.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
+		switch fst.Status {
+		case datatransfer.Requested:
+			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
+			d.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
+				TransferStarted: time.Now(),
+			})
+		case datatransfer.TransferFinished, datatransfer.Completed:
+			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
+			transferId, err := strconv.Atoi(fst.TransferID)
+			if err != nil {
+				fmt.Println(err)
+			}
+			d.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
+				DealID:           int64(transferId),
+				TransferFinished: time.Now(),
+				SealedAt:         time.Now(),
+				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
+			})
+			d.DB.Model(&model.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(model.Content{
+				Status: utils.DEAL_STATUS_TRANSFER_FINISHED,
+			})
+		case datatransfer.Failed:
+			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
+			var contentDeal model.ContentDeal
+			d.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
+				FailedAt: time.Now(),
+			}).Find(&contentDeal)
+			d.DB.Model(&model.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(model.Content{
+				Status: utils.DEAL_STATUS_TRANSFER_FAILED,
+			})
 
-	// run the job every 10 seconds.
-	jobDispatch := ln.Config.Dispatcher.DispatchJobsEvery
-	jobDispatchWorker := ln.Config.Dispatcher.MaxDispatchWorkers
-
-	jobDispatchTick := time.NewTicker(time.Duration(jobDispatch) * time.Second)
-
-	for {
-		select {
-		case <-jobDispatchTick.C:
-			go func() {
-				ln.Dispatcher.AddJob(jobs.NewDataTransferStatusListenerProcessor(ln))
-				ln.Dispatcher.Start(jobDispatchWorker)
-				for {
-					if ln.Dispatcher.Finished() {
-						fmt.Printf("All jobs finished.\n")
-						break
-					}
-				}
-			}()
+			d.Dispatcher.AddJobAndDispatch(jobs.NewDataTransferRestartProcessor(d, contentDeal), 1)
+		default:
 		}
-	}
+	})
 }
 
 func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
