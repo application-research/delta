@@ -90,16 +90,20 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	var totalProposalSent int64
 	node.DB.Raw("select count(*) from contents where status = 'deal-proposal-sent'").Scan(&totalProposalSent)
 
+	var totalSealedDealInBytes int64
+	node.DB.Raw("select sum(size) from contents where status in ('transfer-started','transfer-finished','deal-proposal-sent')").Scan(&totalSealedDealInBytes)
+
 	c.JSON(200, map[string]interface{}{
-		"total_content_consumed":  totalContentConsumed,
-		"total_transfer_started":  totalTransferStarted,
-		"total_transfer_finished": totalTransferFinished,
-		"total_proposal_made":     totalProposalMade,
-		"total_piece":             totalPiece,
-		"total_piece_committed":   totalPieceCommitted,
-		"total_miners":            totalMiners,
-		"total_storage_allocated": totalStorageAllocated,
-		"total_proposal_sent":     totalProposalSent,
+		"total_content_consumed":     totalContentConsumed,
+		"total_transfer_started":     totalTransferStarted,
+		"total_transfer_finished":    totalTransferFinished,
+		"total_proposal_made":        totalProposalMade,
+		"total_piece":                totalPiece,
+		"total_piece_committed":      totalPieceCommitted,
+		"total_miners":               totalMiners,
+		"total_storage_allocated":    totalStorageAllocated,
+		"total_proposal_sent":        totalProposalSent,
+		"total_sealed_deal_in_bytes": totalSealedDealInBytes,
 	})
 	return nil
 }
