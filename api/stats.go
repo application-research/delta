@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type StatusCheckResponse struct {
+type StatsCheckResponse struct {
 	Content struct {
 		ID      int64  `json:"id"`
 		Name    string `json:"name"`
@@ -18,7 +18,7 @@ type StatusCheckResponse struct {
 	} `json:"content"`
 }
 
-func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
+func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/miner/:minerId/content", func(c echo.Context) error {
 		return handleGetContentsByMiner(c, node)
@@ -122,9 +122,6 @@ func ConfigureStatusCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		})
 	})
 
-	e.GET("/stats/totals/info", func(c echo.Context) error {
-		return handleGetTotalsInfo(c, node)
-	})
 }
 
 func handleGetCommitmentPiece(c echo.Context, node *core.DeltaNode) error {
@@ -137,50 +134,6 @@ func handleGetCommitmentPiece(c echo.Context, node *core.DeltaNode) error {
 
 	return c.JSON(200, map[string]interface{}{
 		"piece_commitments": pieceCommitments,
-	})
-	return nil
-}
-
-// function to get all totals info
-func handleGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
-
-	var totalContentConsumed int64
-	node.DB.Raw("select count(*) from contents").Scan(&totalContentConsumed)
-
-	var totalTransferStarted int64
-	node.DB.Raw("select count(*) from contents where status = 'transfer-started'").Scan(&totalTransferStarted)
-
-	var totalTransferFinished int64
-	node.DB.Raw("select count(*) from contents where status = 'transfer-finished'").Scan(&totalTransferFinished)
-
-	var totalProposalMade int64
-	node.DB.Raw("select count(*) from deal_proposals").Scan(&totalProposalMade)
-
-	var totalPiece int64
-	node.DB.Raw("select count(*) from piece_commitments").Scan(&totalPiece)
-
-	var totalPieceCommitted int64
-	node.DB.Raw("select count(*) from piece_commitments where status = 'committed'").Scan(&totalPieceCommitted)
-
-	var totalMiners int64
-	node.DB.Raw("select distinct(miner) from content_miners").Count(&totalMiners)
-
-	var totalStorageAllocated int64
-	node.DB.Raw("select sum(size) from contents").Scan(&totalStorageAllocated)
-
-	var totalProposalSent int64
-	node.DB.Raw("select count(*) from contents where status = 'deal-proposal-sent'").Scan(&totalProposalSent)
-
-	c.JSON(200, map[string]interface{}{
-		"total_content_consumed":  totalContentConsumed,
-		"total_transfer_started":  totalTransferStarted,
-		"total_transfer_finished": totalTransferFinished,
-		"total_proposal_made":     totalProposalMade,
-		"total_piece":             totalPiece,
-		"total_piece_committed":   totalPieceCommitted,
-		"total_miners":            totalMiners,
-		"total_storage_allocated": totalStorageAllocated,
-		"total_proposal_sent":     totalProposalSent,
 	})
 	return nil
 }
@@ -202,19 +155,11 @@ func handleGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	var contentDealProposal []model.ContentDealProposalParameters
 	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDealProposal)
 
-	var contentMinerAssignment []model.ContentMiner
-	node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentMinerAssignment)
-
-	var contentWalletAssignment []model.ContentWallet
-	node.DB.Raw("select cwa.* from content_wallet_assignments cwa, contents c where cwa.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentWalletAssignment)
-
 	return c.JSON(200, map[string]interface{}{
-		"content": content,
-		"deals":   contentDeal,
-		"commps":  pieceCommitments,
-		"cdps":    contentDealProposal,
-		"cmas":    contentMinerAssignment,
-		"cwas":    contentWalletAssignment,
+		"content":          content,
+		"deals":            contentDeal,
+		"commitment_piece": pieceCommitments,
+		"deal_proposals":   contentDealProposal,
 	})
 }
 
@@ -254,7 +199,7 @@ func handleGetDealsByMiner(c echo.Context, node *core.DeltaNode) error {
 	authParts := strings.Split(authorizationString, " ")
 
 	var contentDeal []model.ContentDeal
-	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentDeal)
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ? and cd.miner = ?", authParts[1], c.Param("minerId")).Scan(&contentDeal)
 
 	c.JSON(200, map[string]interface{}{
 		"deals": contentDeal,

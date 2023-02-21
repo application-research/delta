@@ -128,8 +128,9 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 
 	ConfigMetricsRouter(apiGroup)
 	DealRouter(apiGroup, ln)
-	ConfigureStatusCheckRouter(apiGroup, ln)
+	ConfigureStatsCheckRouter(apiGroup, ln)
 	ConfigureNodeInfoRouter(openApiGroup, ln)
+	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
 	ConfigureRepairRouter(apiGroup, ln)
 	ConfigureMinerRouter(apiGroup, ln)
 

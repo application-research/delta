@@ -157,7 +157,7 @@ func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
 	totalStorage90 := totalStorage * 90 / 100
 
 	// delete all data from the instance meta table
-	ln.DB.Unscoped().Delete(&model.InstanceMeta{})
+	ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)
 	// re-create
 	instanceMeta := &model.InstanceMeta{
 		MemoryLimit:                      totalMemory80,
