@@ -164,6 +164,17 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	// send the proposal.
 	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID))
 
+	if err != nil {
+		i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
+			LastMessage: err.Error(),
+			Failed:      true, // mark it as failed
+		})
+		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+			LastMessage: err.Error(),
+		})
+		return err
+	}
 	if propPhase == true && err != nil {
 
 		if strings.Contains(err.Error(), "failed to send request: stream reset") {
