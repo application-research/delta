@@ -185,7 +185,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	}
 
 	// 	assign a wallet_estuary
-	fmt.Println("contentMakeDealRequest.Wallet", contentMakeDealRequest.Wallet)
 	if contentMakeDealRequest.Wallet.KeyType != "" {
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = contentMakeDealRequest.Wallet.KeyType
@@ -359,7 +358,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
 		}
 
-		node.Dispatcher.AddJob(dispatchJobs)
+		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		contentMakeDealResponses = append(contentMakeDealResponses, ContentMakeDealResponse{
 			Status:            "success",
