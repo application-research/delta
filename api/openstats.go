@@ -51,7 +51,7 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 func handleOpenGetDealsByMiner(c echo.Context, node *core.DeltaNode) error {
 
 	var contentDeal []model.ContentDeal
-	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.miner = ?", c.Param("minerId")).Scan(&contentDeal)
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ?", c.Param("minerId")).Scan(&contentDeal)
 
 	c.JSON(200, map[string]interface{}{
 		"deals": contentDeal,
