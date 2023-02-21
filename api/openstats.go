@@ -73,10 +73,10 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select count(*) from contents where status = 'transfer-finished'").Scan(&totalTransferFinished)
 
 	var totalProposalMade int64
-	node.DB.Raw("select count(*) from deal_proposals").Scan(&totalProposalMade)
+	node.DB.Raw("select count(*) from content_deal_proposals").Scan(&totalProposalMade)
 
-	var totalPiece int64
-	node.DB.Raw("select count(*) from piece_commitments").Scan(&totalPiece)
+	var totalCommitmentPiece int64
+	node.DB.Raw("select count(*) from piece_commitments").Scan(&totalCommitmentPiece)
 
 	var totalPieceCommitted int64
 	node.DB.Raw("select count(*) from piece_commitments where status = 'committed'").Scan(&totalPieceCommitted)
@@ -93,17 +93,33 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	var totalSealedDealInBytes int64
 	node.DB.Raw("select sum(size) from contents where status in ('transfer-started','transfer-finished','deal-proposal-sent')").Scan(&totalSealedDealInBytes)
 
+	var totalOfflineDeals int64
+	node.DB.Raw("select count(*) from contents where status = 'offline'").Scan(&totalOfflineDeals)
+
+	var totalOnlineDeals int64
+	node.DB.Raw("select count(*) from contents where status = 'online'").Scan(&totalOnlineDeals)
+
+	var totalOnlineDealsInBytes int64
+	node.DB.Raw("select sum(size) from contents where status = 'online'").Scan(&totalOnlineDealsInBytes)
+
+	var totalOfflineDealsInBytes int64
+	node.DB.Raw("select sum(size) from contents where status = 'offline'").Scan(&totalOfflineDealsInBytes)
+
 	c.JSON(200, map[string]interface{}{
-		"total_content_consumed":     totalContentConsumed,
-		"total_transfer_started":     totalTransferStarted,
-		"total_transfer_finished":    totalTransferFinished,
-		"total_proposal_made":        totalProposalMade,
-		"total_piece":                totalPiece,
-		"total_piece_committed":      totalPieceCommitted,
-		"total_miners":               totalMiners,
-		"total_storage_allocated":    totalStorageAllocated,
-		"total_proposal_sent":        totalProposalSent,
-		"total_sealed_deal_in_bytes": totalSealedDealInBytes,
+		"total_content_consumed":       totalContentConsumed,
+		"total_transfer_started":       totalTransferStarted,
+		"total_transfer_finished":      totalTransferFinished,
+		"total_commitment_piece_made":  totalCommitmentPiece,
+		"total_piece_committed":        totalPieceCommitted,
+		"total_miners":                 totalMiners,
+		"total_storage_allocated":      totalStorageAllocated,
+		"total_proposal_made":          totalProposalMade,
+		"total_proposal_sent":          totalProposalSent,
+		"total_sealed_deal_in_bytes":   totalSealedDealInBytes,
+		"total_offline_deals":          totalOfflineDeals,
+		"total_online_deals":           totalOnlineDeals,
+		"total_online_deals_in_bytes":  totalOnlineDealsInBytes,
+		"total_offline_deals_in_bytes": totalOfflineDealsInBytes,
 	})
 	return nil
 }
