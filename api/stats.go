@@ -90,7 +90,7 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contents)
 
 		var contentMinerAssignment []model.ContentMiner
-		node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
+		node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
 
 		return c.JSON(200, map[string]interface{}{
 			"content": contents,
@@ -214,7 +214,7 @@ func handleGetDealProposalsByMiner(c echo.Context, node *core.DeltaNode) error {
 	authParts := strings.Split(authorizationString, " ")
 
 	var contentMinerAssignment []model.ContentMiner
-	node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
+	node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
 
 	c.JSON(200, map[string]interface{}{
 		"cmas": contentMinerAssignment,
@@ -274,7 +274,7 @@ func handleGetDealProposals(c echo.Context, node *core.DeltaNode) error {
 	authParts := strings.Split(authorizationString, " ")
 
 	var contentMinerAssignment []model.ContentMiner
-	node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentMinerAssignment)
+	node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and c.requesting_api_key = ?", authParts[1]).Scan(&contentMinerAssignment)
 
 	c.JSON(200, map[string]interface{}{
 		"cmas": contentMinerAssignment,

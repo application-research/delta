@@ -21,7 +21,7 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ?", c.Param("minerId")).Scan(&contents)
 
 		var contentMinerAssignment []model.ContentMiner
-		node.DB.Raw("select cma.* from content_miner_assignments cma, contents c where cma.content = c.id and cma.miner = ?", c.Param("minerId")).Scan(&contentMinerAssignment)
+		node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and cma.miner = ?", c.Param("minerId")).Scan(&contentMinerAssignment)
 
 		return c.JSON(200, map[string]interface{}{
 			"content": contents,

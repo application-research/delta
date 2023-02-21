@@ -7,7 +7,7 @@ import (
 )
 
 func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
-	
+
 	e.GET("/stats/miner/:minerId", func(c echo.Context) error {
 		return handleOpenStatsByMiner(c, node)
 	})
@@ -25,17 +25,17 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 
 	// get content consumed by miner
 	var content []model.Content
-	node.DB.Raw("select c.* from contents c, content_miner_assignments cma where c.id = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&content)
+	node.DB.Raw("select c.* from contents c, content_miner cma where c.id = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&content)
 
 	// get content deals by miner
 	var contentDeal []model.ContentDeal
-	node.DB.Raw("select cd.* from content_deals cd, content_miner_assignments cma where cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDeal)
+	node.DB.Raw("select cd.* from content_deals cd, content_miners cma where cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDeal)
 
 	var pieceCommitments []model.PieceCommitment
-	node.DB.Raw("select pc.* from piece_commitments pc, content_deals cd, content_miner_assignments cma where pc.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&pieceCommitments)
+	node.DB.Raw("select pc.* from piece_commitments pc, content_deals cd, content_miners cma where pc.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&pieceCommitments)
 
 	var contentDealProposal []model.ContentDealProposalParameters
-	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, content_deals cd, content_miner_assignments cma where cdp.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposal)
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, content_deals cd, content_miners cma where cdp.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposal)
 
 	return c.JSON(200, map[string]interface{}{
 		"content":          content,
