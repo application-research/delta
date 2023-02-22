@@ -1,9 +1,8 @@
-package utils
+package core
 
 import (
-	"delta/core"
 	"delta/core/model"
-	"delta/jobs"
+	"delta/utils"
 	"fmt"
 	fc "github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
@@ -11,7 +10,7 @@ import (
 	"time"
 )
 
-func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *core.DeltaNode) {
+func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *DeltaNode) {
 	filc.Libp2pTransferMgr.Subscribe(func(dbid uint, fst fc.ChannelState) {
 		switch fst.Status {
 		case datatransfer.Requested:
@@ -31,10 +30,10 @@ func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *core.DeltaNode) {
 				TransferFinished: time.Now(),
 				SealedAt:         time.Now(),
 				UpdatedAt:        time.Now(),
-				LastMessage:      DEAL_STATUS_TRANSFER_FINISHED,
+				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
 			})
 			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Updates(model.Content{
-				Status:    DEAL_STATUS_TRANSFER_FINISHED,
+				Status:    utils.DEAL_STATUS_TRANSFER_FINISHED,
 				UpdatedAt: time.Now(),
 			})
 		case datatransfer.Failed:
@@ -45,11 +44,11 @@ func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *core.DeltaNode) {
 				UpdatedAt: time.Now(),
 			}).Find(&contentDeal)
 			i.DB.Model(&model.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(model.Content{
-				Status:    DEAL_STATUS_TRANSFER_FAILED,
+				Status:    utils.DEAL_STATUS_TRANSFER_FAILED,
 				UpdatedAt: time.Now(),
 			})
 
-			i.Dispatcher.AddJobAndDispatch(jobs.NewDataTransferRestartProcessor(i, contentDeal), 1)
+			//i.Dispatcher.AddJobAndDispatch(jobs.NewDataTransferRestartProcessor(i, contentDeal), 1)
 		default:
 		}
 	})

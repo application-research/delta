@@ -7,7 +7,6 @@ import (
 	"delta/core"
 	"delta/core/model"
 	"delta/jobs"
-	"delta/utils"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
@@ -61,7 +60,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			meta := setGlobalNodeMeta(ln, repo)
 			ln.MetaInfo = meta
 
-			utils.SetFilclientLibp2pSubscribe(ln.FilClient, ln)
+			core.SetFilclientLibp2pSubscribe(ln.FilClient, ln)
 			runScheduledCron(ln)
 
 			// launch the API node
