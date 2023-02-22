@@ -8,15 +8,10 @@ import (
 	"delta/core/model"
 	"delta/jobs"
 	"delta/utils"
-	"fmt"
-	"github.com/application-research/filclient"
-	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
-	"strconv"
 	"syscall"
-	"time"
 )
 
 func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
@@ -66,7 +61,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			meta := setGlobalNodeMeta(ln, repo)
 			ln.MetaInfo = meta
 
-			runLib2pManagerListener(ln)
+			utils.SetFilclientLibp2pSubscribe(ln.FilClient, ln)
 			runScheduledCron(ln)
 
 			// launch the API node
@@ -102,46 +97,6 @@ func runScheduledCron(ln *core.DeltaNode) {
 	s.Start()
 
 }
-
-func runLib2pManagerListener(d *core.DeltaNode) {
-	d.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
-		switch fst.Status {
-		case datatransfer.Requested:
-			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
-			d.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
-				TransferStarted: time.Now(),
-			})
-		case datatransfer.TransferFinished, datatransfer.Completed:
-			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
-			transferId, err := strconv.Atoi(fst.TransferID)
-			if err != nil {
-				fmt.Println(err)
-			}
-			d.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
-				DealID:           int64(transferId),
-				TransferFinished: time.Now(),
-				SealedAt:         time.Now(),
-				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
-			})
-			d.DB.Model(&model.Content{}).Where("id = (select content from content_deals cd where cd.id = ?)", dbid).Updates(model.Content{
-				Status: utils.DEAL_STATUS_TRANSFER_FINISHED,
-			})
-		case datatransfer.Failed:
-			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
-			var contentDeal model.ContentDeal
-			d.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
-				FailedAt: time.Now(),
-			}).Find(&contentDeal)
-			d.DB.Model(&model.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(model.Content{
-				Status: utils.DEAL_STATUS_TRANSFER_FAILED,
-			})
-
-			d.Dispatcher.AddJobAndDispatch(jobs.NewDataTransferRestartProcessor(d, contentDeal), 1)
-		default:
-		}
-	})
-}
-
 func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
 
 	// get the 80% of the total memory usage

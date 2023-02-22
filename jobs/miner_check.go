@@ -27,8 +27,7 @@ func (m MinerCheckProcessor) Run() error {
 	// remove any record of the miner on the list
 	m.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 		// delete all
-		tx.Delete(model.MinerInfo{}).Where("1 = 1")
-		tx.Delete(model.MinerPrice{}).Where("1 = 1")
+		tx.Delete(model.MinerInfo{}).Where("id > 0")
 		return nil
 	})
 

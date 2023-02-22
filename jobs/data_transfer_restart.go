@@ -25,6 +25,7 @@ func (d DataTransferRestartListenerProcessor) Run() error {
 	channelId, err := d.ContentDeal.ChannelID()
 	st, err := d.LightNode.FilClient.TransferStatus(context.Background(), &channelId)
 	if err != nil && err != filclient.ErrNoTransferFound {
+		fmt.Println(err)
 		return err
 	}
 

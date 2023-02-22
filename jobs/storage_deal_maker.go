@@ -432,12 +432,13 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content model.Co
 			return nil, err
 		}
 		// new filclient just for this request
-		fc, err := fc.NewClient(i.LightNode.Node.Host, api, newWallet, newWalletAddr, i.LightNode.Node.Blockstore, i.LightNode.Node.Datastore, i.LightNode.Node.Config.DatastoreDir.Directory)
+		filclient, err := fc.NewClient(i.LightNode.Node.Host, api, newWallet, newWalletAddr, i.LightNode.Node.Blockstore, i.LightNode.Node.Datastore, i.LightNode.Node.Config.DatastoreDir.Directory)
 		if err != nil {
 			fmt.Println("error on filclient", err)
 			return nil, err
 		}
-		return fc, err
+		utils.SetFilclientLibp2pSubscribe(filclient, i.LightNode)
+		return filclient, err
 	}
 
 	return i.LightNode.FilClient, err

@@ -569,3 +569,29 @@ func ValidateMeta(meta string) ValidateMetaResult {
 		Message: "Meta is valid",
 	}
 }
+
+//
+//
+//{
+//"cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
+//"wallet": {},
+//"commp": {
+//"piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+//"padded_piece_size": 4294967296
+//},
+//"connection_mode": "offline",
+//"size": 2500366291,
+//"online_sign":false
+//}
+// "{ uuid:'','hexed_unsigned_deal_proposal'}"
+// "{ uuid:'','hexed_signed_deal_proposal'}"
+//
+///deal/prepare/content - prepare a proposal and send back the unsigned network proposal
+///deal/prepare/commitment-piece - prepare a proposal and send back the unsigned network proposal
+///deal/prepare/commitment-pieces - prepare a proposal and send back the unsigned network proposal
+//
+///deal/announce/content (accepts a signed HEX)
+///deal/announce/commitment-piece (accepts a signed HEX)
+///deal/announce/commitment-pieces (accepts a collection of signed HEX)
+
+// commp-sign --wallet=wallet.json --proposal-meta=// "{ uuid:'','hexed_unsigned_deal_proposal'}"

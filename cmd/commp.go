@@ -205,7 +205,7 @@ func CommpCmd() []*cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "files",
-				Usage: "specify the car files (comma delimited file paths)",
+				Usage: "specify the text file with car file paths",
 			},
 			&cli.BoolFlag{
 				Name:  "for-offline",
