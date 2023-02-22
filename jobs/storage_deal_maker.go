@@ -437,7 +437,7 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content model.Co
 			fmt.Println("error on filclient", err)
 			return nil, err
 		}
-		utils.SetFilclientLibp2pSubscribe(filclient, i.LightNode)
+		core.SetFilclientLibp2pSubscribe(filclient, i.LightNode)
 		return filclient, err
 	}
 
