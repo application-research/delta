@@ -82,7 +82,7 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select count(*) from piece_commitments where status = 'committed'").Scan(&totalPieceCommitted)
 
 	var totalMiners int64
-	node.DB.Raw("select distinct(miner) from content_miners").Count(&totalMiners)
+	totalMiners = node.DB.Raw("select distinct(miner) from content_miners").RowsAffected
 
 	var totalStorageAllocated int64
 	node.DB.Raw("select sum(size) from contents").Scan(&totalStorageAllocated)
