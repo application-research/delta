@@ -256,9 +256,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	}
 
 	// start epoch
-	if dealRequest.StartEpoch == 0 {
-		dealProposalParam.StartEpoch = utils.DEFAULT_DURATION
-	} else {
+	if dealRequest.StartEpoch != 0 {
 		dealProposalParam.StartEpoch = dealRequest.StartEpoch
 	}
 
@@ -434,9 +432,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 		}
 
 		// start epoch
-		if dealRequest.StartEpoch == 0 {
-			dealProposalParam.StartEpoch = utils.DEFAULT_DURATION
-		} else {
+		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
 		}
 
@@ -608,9 +604,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	}
 
 	// start epoch
-	if dealRequest.StartEpoch == 0 {
-		dealProposalParam.StartEpoch = utils.DEFAULT_DURATION
-	} else {
+	if dealRequest.StartEpoch != 0 {
 		dealProposalParam.StartEpoch = dealRequest.StartEpoch
 	}
 
