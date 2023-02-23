@@ -7,7 +7,7 @@ import (
 	"delta/utils"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"github.com/pkg/errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,36 +20,36 @@ type CidRequest struct {
 	Cids []string `json:"cids"`
 }
 
-type ContentMakeDealResponse struct {
-	Status            string                 `json:"status"`
-	Message           string                 `json:"message"`
-	ContentID         int64                  `json:"content_id,omitempty"`
-	PieceCommitmentId int64                  `json:"piece_commitment_id,omitempty"`
-	Miner             string                 `json:"miner,omitempty"`
-	Meta              ContentMakeDealRequest `json:"meta,omitempty"`
-}
-
 type WalletRequest struct {
 	KeyType    string `json:"key_type,omitempty"`
 	PrivateKey string `json:"private_key,omitempty"`
 }
 
 type PieceCommitmentRequest struct {
-	Piece             string `json:"piece,omitempty"`
+	Piece             string `json:"piece_cid,omitempty"`
 	PaddedPieceSize   uint64 `json:"padded_piece_size,omitempty"`
 	UnPaddedPieceSize uint64 `json:"unpadded_piece_size,omitempty"`
 }
 
-type ContentMakeDealRequest struct {
-	Cid             string                 `json:"cid,omitempty"`
-	Miner           string                 `json:"miner,omitempty"`
-	Duration        int64                  `json:"duration,omitempty"`
-	Wallet          WalletRequest          `json:"wallet,omitempty"`
-	PieceCommitment PieceCommitmentRequest `json:"commp,omitempty"`
-	ConnectionMode  string                 `json:"connection_mode,omitempty"`
-	Size            int64                  `json:"size,omitempty"`
-	StartEpoch      int64                  `json:"start_epoch,omitempty"`
-	Replication     int64                  `json:"replication,omitempty"`
+type DealRequest struct {
+	Cid                  string                 `json:"cid,omitempty"`
+	Miner                string                 `json:"miner,omitempty"`
+	Duration             int64                  `json:"duration,omitempty"`
+	Wallet               WalletRequest          `json:"wallet,omitempty"`
+	PieceCommitment      PieceCommitmentRequest `json:"piece_commitment,omitempty"`
+	ConnectionMode       string                 `json:"connection_mode,omitempty"`
+	Size                 int64                  `json:"size,omitempty"`
+	StartEpoch           int64                  `json:"start_epoch,omitempty"`
+	Replication          int64                  `json:"replication,omitempty"`
+	RemoveUnsealedCopies bool                   `json:"remove_unsealed_copies,omitempty"`
+	SkipIPNIAnnounce     bool                   `json:"skip_ipni_announce,omitempty"`
+}
+
+type DealResponse struct {
+	Status      string      `json:"status"`
+	Message     string      `json:"message"`
+	ContentId   int64       `json:"content_id,omitempty"`
+	DealRequest interface{} `json:"request_meta,omitempty"`
 }
 
 func DealRouter(e *echo.Group, node *core.DeltaNode) {
@@ -118,7 +118,7 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 // @Failure 500 {object} ContentMakeDealResponse
 // @Router /deal/content/{contentId} [post]
 func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsService) error {
-	var contentMakeDealRequest ContentMakeDealRequest
+	var dealRequest DealRequest
 
 	// lets record this.
 	authorizationString := c.Request().Header.Get("Authorization")
@@ -127,39 +127,71 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	meta := c.FormValue("metadata")
 
 	//	validate the meta
-	json.Unmarshal([]byte(meta), &contentMakeDealRequest)
-	var connMode = contentMakeDealRequest.ConnectionMode
-	if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
-		connMode = "online"
+	json.Unmarshal([]byte(meta), &dealRequest)
+
+	err = ValidateMeta(dealRequest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, DealResponse{
+			Status:      "error",
+			Message:     "Error validating the request: " + err.Error(),
+			DealRequest: dealRequest,
+		})
+		return err
 	}
 
+	// process the file
 	src, err := file.Open()
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
-			Status:  "error",
-			Message: "Error pinning the file" + err.Error(),
+		c.JSON(500, DealResponse{
+			Status:      "error",
+			Message:     "Error pinning the file" + err.Error(),
+			DealRequest: dealRequest,
 		})
 		return err
 	}
 
 	addNode, err := node.Node.AddPinFile(c.Request().Context(), src, nil)
+	if err != nil {
+		c.JSON(500, DealResponse{
+			Status:      "error",
+			Message:     "Error pinning the file" + err.Error(),
+			DealRequest: dealRequest,
+		})
+		return err
+	}
 
-	// if size is given, let's create a commp record for it.
+	// specify the connection mode
+	var connMode = dealRequest.ConnectionMode
+	if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
+		connMode = "e2e"
+	}
+
+	// let's create a commp but only if we have
+	// a cid, a piece_cid, a padded_piece_size, size
 	var pieceCommp model.PieceCommitment
-	if contentMakeDealRequest.PieceCommitment.Piece != "" {
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+		(dealRequest.PieceCommitment.PaddedPieceSize != 0 && dealRequest.PieceCommitment.UnPaddedPieceSize != 0) &&
+		(dealRequest.Size != 0) {
+
 		// if commp is there, make sure the piece and size are there. Use default duration.
 		pieceCommp.Cid = addNode.Cid().String()
-		pieceCommp.Piece = contentMakeDealRequest.PieceCommitment.Piece
+		pieceCommp.Piece = dealRequest.PieceCommitment.Piece
 		pieceCommp.Size = file.Size
-		pieceCommp.UnPaddedPieceSize = contentMakeDealRequest.PieceCommitment.UnPaddedPieceSize
-		pieceCommp.PaddedPieceSize = contentMakeDealRequest.PieceCommitment.PaddedPieceSize
+		pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+		pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
 		pieceCommp.CreatedAt = time.Now()
 		pieceCommp.UpdatedAt = time.Now()
 		pieceCommp.Status = utils.COMMP_STATUS_OPEN
 		node.DB.Create(&pieceCommp)
+
+		dealRequest.PieceCommitment = PieceCommitmentRequest{
+			Piece:             pieceCommp.Piece,
+			PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+			UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+		}
 	}
 
-	// save the file to the database.
+	// save the content to the DB with the piece_commitment_id
 	content := model.Content{
 		Name:              file.Filename,
 		Size:              file.Size,
@@ -172,27 +204,29 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 		UpdatedAt:         time.Now(),
 	}
 	node.DB.Create(&content)
+	dealRequest.Cid = content.Cid
 
 	//	assign a miner
-	if contentMakeDealRequest.Miner != "" {
+	if dealRequest.Miner != "" {
 		contentMinerAssignment := model.ContentMiner{
-			Miner:     contentMakeDealRequest.Miner,
+			Miner:     dealRequest.Miner,
 			Content:   content.ID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
 		node.DB.Create(&contentMinerAssignment)
+		dealRequest.Miner = contentMinerAssignment.Miner
 	}
 
 	// 	assign a wallet_estuary
-	if contentMakeDealRequest.Wallet.KeyType != "" {
+	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
 		var hexedWallet WalletRequest
-		hexedWallet.KeyType = contentMakeDealRequest.Wallet.KeyType
-		hexedWallet.PrivateKey = hex.EncodeToString([]byte(contentMakeDealRequest.Wallet.PrivateKey))
+		hexedWallet.KeyType = dealRequest.Wallet.KeyType
+		hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
 		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
-			c.JSON(500, ContentMakeDealResponse{
+			c.JSON(500, DealResponse{
 				Status:  "error",
 				Message: "Error pinning the file" + err.Error(),
 			})
@@ -204,6 +238,9 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 			UpdatedAt: time.Now(),
 		}
 		node.DB.Create(&contentWalletAssignment)
+		dealRequest.Wallet = WalletRequest{
+			KeyType: contentWalletAssignment.Wallet,
+		}
 	}
 
 	var dealProposalParam model.ContentDealProposalParameters
@@ -211,19 +248,36 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
 
-	if dealProposalParam.Duration == 0 {
+	// duration
+	if dealRequest.Duration == 0 {
 		dealProposalParam.Duration = utils.DEFAULT_DURATION
 	} else {
-		dealProposalParam.Duration = contentMakeDealRequest.Duration
+		dealProposalParam.Duration = dealRequest.Duration
 	}
 
+	// start epoch
+	if dealRequest.StartEpoch == 0 {
+		dealProposalParam.StartEpoch = utils.DEFAULT_DURATION
+	} else {
+		dealProposalParam.StartEpoch = dealRequest.StartEpoch
+	}
+
+	// remove unsealed copy
+	if dealRequest.RemoveUnsealedCopies == false {
+		dealProposalParam.RemoveUnsealedCopy = false
+	} else {
+		dealProposalParam.RemoveUnsealedCopy = true
+	}
+
+	// deal proposal parameters
 	node.DB.Create(&dealProposalParam)
 
-	//	error
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
-			Status:  "error",
-			Message: "Error pinning the file" + err.Error(),
+		c.JSON(500, DealResponse{
+			Status:      "error",
+			Message:     "Error pinning the file" + err.Error(),
+			ContentId:   content.ID,
+			DealRequest: dealRequest,
 		})
 	}
 
@@ -236,13 +290,11 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	c.JSON(200, ContentMakeDealResponse{
-		Status:            "success",
-		Message:           "File uploaded and pinned successfully",
-		ContentID:         content.ID,
-		PieceCommitmentId: pieceCommp.ID,
-		Miner:             contentMakeDealRequest.Miner,
-		Meta:              contentMakeDealRequest,
+	c.JSON(200, DealResponse{
+		Status:      "success",
+		Message:     "File uploaded and pinned successfully",
+		ContentId:   content.ID,
+		DealRequest: dealRequest,
 	})
 
 	return nil
@@ -255,49 +307,73 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 // @Accept  json
 // @Produce  json
 func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
-	var contentMakeDealRequests []ContentMakeDealRequest
+	var dealRequests []DealRequest
 
 	// lets record this.
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
 
 	//	validate the meta
-	err := c.Bind(&contentMakeDealRequests)
+	err := c.Bind(&dealRequests)
+
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
-			Status:  "error",
-			Message: "Error pinning the files" + err.Error(),
+		c.JSON(500, DealResponse{
+			Status:      "error",
+			Message:     "Error pinning the files" + err.Error(),
+			DealRequest: dealRequests,
 		})
 		return err
 	}
 
-	var contentMakeDealResponses []ContentMakeDealResponse
-	for _, contentMakeDealRequest := range contentMakeDealRequests {
-		var connMode = contentMakeDealRequest.ConnectionMode
-		if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
-			connMode = "online"
+	var dealResponses []DealResponse
+	for _, dealRequest := range dealRequests {
+
+		err = ValidateMeta(dealRequest)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, DealResponse{
+				Status:      "error",
+				Message:     "Error validating the request: " + err.Error(),
+				DealRequest: dealRequest,
+			})
+			return err
 		}
 
-		// if size is given, let's create a commp record for it.
+		// specify the connection mode
+		var connMode = dealRequest.ConnectionMode
+		if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
+			connMode = "e2e"
+		}
+
+		// let's create a commp but only if we have
+		// a cid, a piece_cid, a padded_piece_size, size
 		var pieceCommp model.PieceCommitment
-		if contentMakeDealRequest.PieceCommitment.Piece != "" {
+		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+			(dealRequest.PieceCommitment.PaddedPieceSize != 0 && dealRequest.PieceCommitment.UnPaddedPieceSize != 0) &&
+			(dealRequest.Size != 0) {
+
 			// if commp is there, make sure the piece and size are there. Use default duration.
-			pieceCommp.Cid = contentMakeDealRequest.Cid
-			pieceCommp.Piece = contentMakeDealRequest.PieceCommitment.Piece
-			pieceCommp.Size = contentMakeDealRequest.Size
-			pieceCommp.UnPaddedPieceSize = contentMakeDealRequest.PieceCommitment.UnPaddedPieceSize
-			pieceCommp.PaddedPieceSize = contentMakeDealRequest.PieceCommitment.PaddedPieceSize
+			pieceCommp.Cid = dealRequest.Cid
+			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+			pieceCommp.Size = dealRequest.Size
+			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
 			pieceCommp.CreatedAt = time.Now()
 			pieceCommp.UpdatedAt = time.Now()
 			pieceCommp.Status = utils.COMMP_STATUS_OPEN
 			node.DB.Create(&pieceCommp)
+
+			dealRequest.PieceCommitment = PieceCommitmentRequest{
+				Piece:             pieceCommp.Piece,
+				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+			}
 		}
 
-		// save the file to the database.
+		// save the content to the DB with the piece_commitment_id
 		content := model.Content{
-			Name:              contentMakeDealRequest.Cid,
-			Size:              contentMakeDealRequest.Size,
-			Cid:               contentMakeDealRequest.Cid,
+			Name:              dealRequest.Cid,
+			Size:              dealRequest.Size,
+			Cid:               dealRequest.Cid,
 			RequestingApiKey:  authParts[1],
 			PieceCommitmentId: pieceCommp.ID,
 			Status:            utils.CONTENT_PINNED,
@@ -306,27 +382,29 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 			UpdatedAt:         time.Now(),
 		}
 		node.DB.Create(&content)
+		dealRequest.Cid = content.Cid
 
 		//	assign a miner
-		if contentMakeDealRequest.Miner != "" {
+		if dealRequest.Miner != "" {
 			contentMinerAssignment := model.ContentMiner{
-				Miner:     contentMakeDealRequest.Miner,
+				Miner:     dealRequest.Miner,
 				Content:   content.ID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			}
 			node.DB.Create(&contentMinerAssignment)
+			dealRequest.Miner = contentMinerAssignment.Miner
 		}
 
 		// 	assign a wallet_estuary
-		if contentMakeDealRequest.Wallet.KeyType != "" {
+		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
 			var hexedWallet WalletRequest
-			hexedWallet.KeyType = contentMakeDealRequest.Wallet.KeyType
-			hexedWallet.PrivateKey = hex.EncodeToString([]byte(contentMakeDealRequest.Wallet.PrivateKey))
+			hexedWallet.KeyType = dealRequest.Wallet.KeyType
+			hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
 			walletByteArr, err := json.Marshal(hexedWallet)
 
 			if err != nil {
-				contentMakeDealResponses = append(contentMakeDealResponses, ContentMakeDealResponse{
+				c.JSON(500, DealResponse{
 					Status:  "error",
 					Message: "Error pinning the file" + err.Error(),
 				})
@@ -338,6 +416,9 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 				UpdatedAt: time.Now(),
 			}
 			node.DB.Create(&contentWalletAssignment)
+			dealRequest.Wallet = WalletRequest{
+				KeyType: contentWalletAssignment.Wallet,
+			}
 		}
 
 		var dealProposalParam model.ContentDealProposalParameters
@@ -345,13 +426,38 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
 
-		if dealProposalParam.Duration == 0 {
+		// duration
+		if dealRequest.Duration == 0 {
 			dealProposalParam.Duration = utils.DEFAULT_DURATION
 		} else {
-			dealProposalParam.Duration = contentMakeDealRequest.Duration
+			dealProposalParam.Duration = dealRequest.Duration
 		}
 
+		// start epoch
+		if dealRequest.StartEpoch == 0 {
+			dealProposalParam.StartEpoch = utils.DEFAULT_DURATION
+		} else {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+
+		// remove unsealed copy
+		if dealRequest.RemoveUnsealedCopies == false {
+			dealProposalParam.RemoveUnsealedCopy = false
+		} else {
+			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		// deal proposal parameters
 		node.DB.Create(&dealProposalParam)
+
+		if err != nil {
+			c.JSON(500, DealResponse{
+				Status:      "error",
+				Message:     "Error pinning the file" + err.Error(),
+				ContentId:   content.ID,
+				DealRequest: dealRequest,
+			})
+		}
 
 		var dispatchJobs core.IProcessor
 		if pieceCommp.ID != 0 {
@@ -360,19 +466,16 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 
 		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-		contentMakeDealResponses = append(contentMakeDealResponses, ContentMakeDealResponse{
-			Status:            "success",
-			Message:           "File uploaded and pinned successfully",
-			ContentID:         content.ID,
-			PieceCommitmentId: pieceCommp.ID,
-			Miner:             contentMakeDealRequest.Miner,
-			Meta:              contentMakeDealRequest,
+		dealResponses = append(dealResponses, DealResponse{
+			Status:      "success",
+			Message:     "File uploaded and pinned successfully",
+			DealRequest: dealRequest,
 		})
 
 	}
 
-	node.Dispatcher.Start(len(contentMakeDealRequests))
-	c.JSON(http.StatusOK, contentMakeDealResponses)
+	node.Dispatcher.Start(len(dealRequests))
+	c.JSON(http.StatusOK, dealResponses)
 
 	return nil
 }
@@ -384,47 +487,67 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 // @Accept  json
 // @Produce  json
 func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
-	var contentMakeDealRequest ContentMakeDealRequest
+	var dealRequest DealRequest
 
 	// lets record this.
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
+	err := c.Bind(&dealRequest)
 
-	//	validate the meta
-	err := c.Bind(&contentMakeDealRequest)
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
-			Status:  "error",
-			Message: "Error pinning the file" + err.Error(),
+		c.JSON(http.StatusBadRequest, DealResponse{
+			Status:      "error",
+			Message:     "Error parsing the request: " + err.Error(),
+			DealRequest: dealRequest,
+		})
+	}
+
+	err = ValidateMeta(dealRequest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, DealResponse{
+			Status:      "error",
+			Message:     "Error validating the request: " + err.Error(),
+			DealRequest: dealRequest,
 		})
 		return err
 	}
 
-	var connMode = contentMakeDealRequest.ConnectionMode
-	if connMode == "" || (connMode != utils.CONNECTION_MODE_ONLINE && connMode != utils.CONNECTION_MODE_OFFLINE) {
-		connMode = "online"
+	// specify the connection mode
+	var connMode = dealRequest.ConnectionMode
+	if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
+		connMode = "e2e"
 	}
 
-	// if size is given, let's create a commp record for it.
+	// let's create a commp but only if we have
+	// a cid, a piece_cid, a padded_piece_size, size
 	var pieceCommp model.PieceCommitment
-	if contentMakeDealRequest.PieceCommitment.Piece != "" {
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+		(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+		(dealRequest.Size != 0) {
+
 		// if commp is there, make sure the piece and size are there. Use default duration.
-		pieceCommp.Cid = contentMakeDealRequest.Cid
-		pieceCommp.Piece = contentMakeDealRequest.PieceCommitment.Piece
-		pieceCommp.Size = contentMakeDealRequest.Size
-		pieceCommp.UnPaddedPieceSize = contentMakeDealRequest.PieceCommitment.UnPaddedPieceSize
-		pieceCommp.PaddedPieceSize = contentMakeDealRequest.PieceCommitment.PaddedPieceSize
+		pieceCommp.Cid = dealRequest.Cid
+		pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+		pieceCommp.Size = dealRequest.Size
+		pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+		pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
 		pieceCommp.CreatedAt = time.Now()
 		pieceCommp.UpdatedAt = time.Now()
 		pieceCommp.Status = utils.COMMP_STATUS_OPEN
 		node.DB.Create(&pieceCommp)
+
+		dealRequest.PieceCommitment = PieceCommitmentRequest{
+			Piece:             pieceCommp.Piece,
+			PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+			UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+		}
 	}
 
-	// save the file to the database.
+	// save the content to the DB with the piece_commitment_id
 	content := model.Content{
-		Name:              contentMakeDealRequest.Cid,
-		Size:              contentMakeDealRequest.Size,
-		Cid:               contentMakeDealRequest.Cid,
+		Name:              dealRequest.Cid,
+		Size:              dealRequest.Size,
+		Cid:               dealRequest.Cid,
 		RequestingApiKey:  authParts[1],
 		PieceCommitmentId: pieceCommp.ID,
 		Status:            utils.CONTENT_PINNED,
@@ -433,28 +556,29 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 		UpdatedAt:         time.Now(),
 	}
 	node.DB.Create(&content)
+	dealRequest.Cid = content.Cid
 
 	//	assign a miner
-	if contentMakeDealRequest.Miner != "" {
+	if dealRequest.Miner != "" {
 		contentMinerAssignment := model.ContentMiner{
-			Miner:     contentMakeDealRequest.Miner,
+			Miner:     dealRequest.Miner,
 			Content:   content.ID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}
 		node.DB.Create(&contentMinerAssignment)
+		dealRequest.Miner = contentMinerAssignment.Miner
 	}
 
 	// 	assign a wallet_estuary
-	fmt.Println("contentMakeDealRequest.Wallet", contentMakeDealRequest.Wallet)
-	if contentMakeDealRequest.Wallet.KeyType != "" {
+	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
 		var hexedWallet WalletRequest
-		hexedWallet.KeyType = contentMakeDealRequest.Wallet.KeyType
-		hexedWallet.PrivateKey = hex.EncodeToString([]byte(contentMakeDealRequest.Wallet.PrivateKey))
+		hexedWallet.KeyType = dealRequest.Wallet.KeyType
+		hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
 		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
-			c.JSON(500, ContentMakeDealResponse{
+			c.JSON(500, DealResponse{
 				Status:  "error",
 				Message: "Error pinning the file" + err.Error(),
 			})
@@ -466,6 +590,9 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 			UpdatedAt: time.Now(),
 		}
 		node.DB.Create(&contentWalletAssignment)
+		dealRequest.Wallet = WalletRequest{
+			KeyType: contentWalletAssignment.Wallet,
+		}
 	}
 
 	var dealProposalParam model.ContentDealProposalParameters
@@ -473,13 +600,38 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
 
-	if dealProposalParam.Duration == 0 {
+	// duration
+	if dealRequest.Duration == 0 {
 		dealProposalParam.Duration = utils.DEFAULT_DURATION
 	} else {
-		dealProposalParam.Duration = contentMakeDealRequest.Duration
+		dealProposalParam.Duration = dealRequest.Duration
 	}
 
+	// start epoch
+	if dealRequest.StartEpoch == 0 {
+		dealProposalParam.StartEpoch = utils.DEFAULT_DURATION
+	} else {
+		dealProposalParam.StartEpoch = dealRequest.StartEpoch
+	}
+
+	// remove unsealed copy
+	if dealRequest.RemoveUnsealedCopies == false {
+		dealProposalParam.RemoveUnsealedCopy = false
+	} else {
+		dealProposalParam.RemoveUnsealedCopy = true
+	}
+
+	// deal proposal parameters
 	node.DB.Create(&dealProposalParam)
+
+	if err != nil {
+		c.JSON(500, DealResponse{
+			Status:      "error",
+			Message:     "Error pinning the file" + err.Error(),
+			ContentId:   content.ID,
+			DealRequest: dealRequest,
+		})
+	}
 
 	var dispatchJobs core.IProcessor
 	if pieceCommp.ID != 0 {
@@ -488,15 +640,12 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	c.JSON(200, ContentMakeDealResponse{
-		Status:            "success",
-		Message:           "File uploaded and pinned successfully",
-		ContentID:         content.ID,
-		PieceCommitmentId: pieceCommp.ID,
-		Miner:             contentMakeDealRequest.Miner,
-		Meta:              contentMakeDealRequest,
+	c.JSON(200, DealResponse{
+		Status:      "success",
+		Message:     "File uploaded and pinned successfully",
+		ContentId:   content.ID,
+		DealRequest: dealRequest,
 	})
-
 	return nil
 }
 
@@ -504,7 +653,7 @@ func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.
 	contentIdParam := c.Param("contentId")
 	contentId, err := strconv.Atoi(contentIdParam)
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
+		c.JSON(500, DealResponse{
 			Status:  "error",
 			Message: "Error looking up the status of the content" + err.Error(),
 		})
@@ -515,7 +664,7 @@ func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.
 	})
 
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
+		c.JSON(500, DealResponse{
 			Status:  "error",
 			Message: "Error looking up the status of the content" + err.Error(),
 		})
@@ -529,7 +678,7 @@ func handleCommitmentPieceStats(c echo.Context, node *core.DeltaNode, statsServi
 	pieceCommitmentIdParam := c.Param("piece-commitmentId")
 	pieceCommitmentId, err := strconv.Atoi(pieceCommitmentIdParam)
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
+		c.JSON(500, DealResponse{
 			Status:  "error",
 			Message: "Error looking up the status of the piece commitment" + err.Error(),
 		})
@@ -540,7 +689,7 @@ func handleCommitmentPieceStats(c echo.Context, node *core.DeltaNode, statsServi
 	})
 
 	if err != nil {
-		c.JSON(500, ContentMakeDealResponse{
+		c.JSON(500, DealResponse{
 			Status:  "error",
 			Message: "Error looking up the status of the piece commitment" + err.Error(),
 		})
@@ -554,20 +703,49 @@ type ValidateMetaResult struct {
 	Message string
 }
 
-func ValidateMeta(meta string) ValidateMetaResult {
-	var makeDealMeta ContentMakeDealRequest
-	err := json.Unmarshal([]byte(meta), &makeDealMeta)
-	if err != nil {
-		return ValidateMetaResult{
-			IsValid: false,
-			Message: "Invalid meta data",
-		}
+func ValidateMeta(dealRequest DealRequest) error {
+
+	if (DealRequest{} == dealRequest) {
+		return errors.New("invalid request")
+	}
+	// miner is required
+	if (DealRequest{} != dealRequest && dealRequest.Miner == "") {
+		return errors.New("miner is required")
 	}
 
-	return ValidateMetaResult{
-		IsValid: true,
-		Message: "Meta is valid",
+	if (DealRequest{} != dealRequest && (dealRequest.ConnectionMode != utils.CONNECTION_MODE_E2E && dealRequest.ConnectionMode != utils.CONNECTION_MODE_IMPORT)) {
+		return errors.New("connection mode can only be e2e or import")
 	}
+
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+		(dealRequest.PieceCommitment.PaddedPieceSize == 0 && dealRequest.PieceCommitment.UnPaddedPieceSize == 0) &&
+		(dealRequest.Size == 0) {
+		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
+
+	}
+	return nil
+}
+
+func handlePrepareContent() {
+
+}
+func handlePrepareCommitmentPiece() {
+
+}
+func handlePrepareCommitmentPieces() {
+
+}
+
+func handleAnnounceContent() {
+
+}
+
+func handleAnnounceCommitmentPiece() {
+
+}
+
+func handleAnnounceCommitmentPieces() {
+
 }
 
 //

@@ -7,11 +7,13 @@ import (
 )
 
 type ContentDealProposal struct {
-	ID       int64  `gorm:"primaryKey"`
-	Content  int64  `json:"content" gorm:"index:,option:CONCURRENTLY"`
-	Unsigned string `json:"unsigned"`
-	Signed   string `json:"signed"`
-	Meta     string `json:"meta"`
+	ID        int64     `gorm:"primaryKey"`
+	Content   int64     `json:"content" gorm:"index:,option:CONCURRENTLY"`
+	Unsigned  string    `json:"unsigned"`
+	Signed    string    `json:"signed"`
+	Meta      string    `json:"meta"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (u *ContentDealProposal) BeforeSave(tx *gorm.DB) (err error) {

@@ -17,6 +17,7 @@ import (
 	cborutil "github.com/filecoin-project/go-cbor-util"
 	"github.com/filecoin-project/go-fil-markets/storagemarket/network"
 	"github.com/filecoin-project/go-state-types/abi"
+	"github.com/filecoin-project/go-state-types/builtin/v9/market"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/wallet"
 	"github.com/google/uuid"
@@ -61,7 +62,8 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	// any error here, fail the content
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
-	var filClient, err = i.GetAssignedWalletForContent(*content)
+	var filClient, err = i.GetAssignedFilclientForContent(*content)
+	//var WallerSigner, err = i.GetAssignedWalletForContent(*content)
 	var dealProposal = i.GetDealProposalForContent(*content)
 
 	if err != nil {
@@ -90,9 +92,18 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	payloadCid, err := cid.Decode(pieceComm.Cid)
 	pieceCid, err := cid.Decode(pieceComm.Piece)
 
+	// label deal
+	label, err := market.NewLabelFromString(utils.DELTA_LABEL)
+	if err != nil {
+		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+			LastMessage: err.Error(),
+		})
+	}
 	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,
 		fc.DealWithVerified(true),
-		fc.DealWithFastRetrieval(false), // this should be a parameter.
+		fc.DealWithFastRetrieval(!dealProposal.RemoveUnsealedCopy),
+		fc.DealWithLabel(label),
 		fc.DealWithPieceInfo(fc.DealPieceInfo{
 			Cid:         pieceCid,
 			Size:        abi.PaddedPieceSize(pieceComm.PaddedPieceSize),
@@ -162,7 +173,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	})
 
 	// send the proposal.
-	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID))
+	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce)
 
 	if err != nil {
 		i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
@@ -399,7 +410,35 @@ func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Cont
 	return contentDealProposalParameters
 }
 
-func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content model.Content) (*fc.FilClient, error) {
+//	func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content model.Content) (*wallet.LocalWallet, error) {
+//		var storageWalletAssignment model.ContentWallet
+//		i.LightNode.DB.Model(&model.ContentWallet{}).Where("content = ?", content.ID).Find(&storageWalletAssignment)
+//
+//		if storageWalletAssignment.ID != 0 {
+//			newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
+//
+//			var walletMeta WalletMeta
+//
+//			json.Unmarshal([]byte(storageWalletAssignment.Wallet), &walletMeta)
+//			unhexPkey, err := hex.DecodeString(walletMeta.PrivateKey)
+//			decodedPkey, err := base64.StdEncoding.DecodeString(string(unhexPkey))
+//
+//			if err != nil {
+//				fmt.Println("error on unhex", err)
+//				return nil, err
+//			}
+//
+//			newWalletAddr, err := newWallet.WalletImport(context.Background(), &types.KeyInfo{
+//				Type:       types.KeyType(walletMeta.KeyType),
+//				PrivateKey: decodedPkey,
+//			})
+//			newWalletAddr.
+//			return newWallet, err
+//		}
+//
+//		return newWalletAddr, err
+//	}
+func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model.Content) (*fc.FilClient, error) {
 	api, _, err := core.LotusConnection(utils.LOTUS_API)
 	if err != nil {
 		return nil, err
@@ -444,6 +483,10 @@ func (i *StorageDealMakerProcessor) GetAssignedWalletForContent(content model.Co
 	return i.LightNode.FilClient, err
 }
 
+var mainnetMinerStrs = []string{
+	"f01963614",
+}
+
 func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 	var storageProviders []MinerAddress
 	for _, s := range mainnetMinerStrs {
@@ -457,11 +500,7 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 	return storageProviders
 }
 
-var mainnetMinerStrs = []string{
-	"f01963614",
-}
-
-func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint) (bool, error) {
+func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool) (bool, error) {
 	// Create an auth token to be used in the request
 	authToken, err := httptransport.GenerateAuthToken()
 	if err != nil {
@@ -499,12 +538,13 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 	// Send the deal proposal to the storage provider
 	var propPhase bool
 	//var err error
-	if i.Content.ConnectionMode == "offline" {
+	if i.Content.ConnectionMode == "import" {
 		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),
 			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
 			fc.ProposalV120WithOffline(true),
+			//fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
 				Type:     "libp2p",
 				ClientID: fmt.Sprintf("%d", dbid),
@@ -517,7 +557,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),
 			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
-			fc.ProposalV120WithSkipIPNIAnnounce(false),
+			//fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
 				Type:     "libp2p",
 				ClientID: fmt.Sprintf("%d", dbid),
