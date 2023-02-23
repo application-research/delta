@@ -544,7 +544,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 			fc.ProposalV120WithDealUUID(dealUUID),
 			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
 			fc.ProposalV120WithOffline(true),
-			//fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
+			fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
 				Type:     "libp2p",
 				ClientID: fmt.Sprintf("%d", dbid),
@@ -557,7 +557,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),
 			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
-			//fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
+			fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
 				Type:     "libp2p",
 				ClientID: fmt.Sprintf("%d", dbid),
