@@ -348,7 +348,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 	}
 
-	if propPhase == false && content.ConnectionMode == "online" {
+	if propPhase == false && content.ConnectionMode == "e2e" {
 
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
@@ -373,7 +373,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 
 	}
-	if propPhase == false && content.ConnectionMode == "offline" {
+	if propPhase == false && content.ConnectionMode == "import" {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
 		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
 		deal.LastMessage = utils.CONTENT_DEAL_PROPOSAL_SENT

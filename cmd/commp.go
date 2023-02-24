@@ -273,9 +273,9 @@ func CommpCmd() []*cli.Command {
 
 					// if for offline, add connection mode offline
 					if forOffline {
-						commpResult.ConnectionMode = "offline"
+						commpResult.ConnectionMode = "import"
 					} else {
-						commpResult.ConnectionMode = "online"
+						commpResult.ConnectionMode = "e2e"
 					}
 
 					size, err := fileNode.Size()
