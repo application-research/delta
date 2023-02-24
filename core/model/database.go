@@ -32,7 +32,7 @@ func OpenDatabase(dbDsn string) (*gorm.DB, error) {
 }
 
 func ConfigureModels(db *gorm.DB) {
-	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMiner{}, &ProcessContentCounter{}, &ContentWallet{}, &ContentDealProposalParameters{}, &Wallet{}, &ContentDealProposal{}, &InstanceMeta{})
+	db.AutoMigrate(&Content{}, &ContentDeal{}, &PieceCommitment{}, &MinerInfo{}, &MinerPrice{}, &LogEvent{}, &ContentMiner{}, &ProcessContentCounter{}, &ContentWallet{}, &ContentDealProposalParameters{}, &Wallet{}, &ContentDealProposal{}, &InstanceMeta{}, &RetryDealCount{})
 }
 
 type ProcessContentCounter struct {
@@ -54,14 +54,6 @@ type MinerInfo struct {
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }
-
-//type LogEventCommp
-//
-//log_event_commp
-//log_event_deal
-//log_event_miner
-//log_event_api_key
-//log_event_jobs
 
 type MinerPrice struct {
 	ID            int64     `gorm:"primaryKey"`
@@ -104,9 +96,9 @@ type LogEvent struct {
 
 type RetryDealCount struct {
 	ID        int64     `gorm:"primaryKey"`
-	DealUUID  string    `json:"deal_uuid"`
-	Count     int64     `json:"count"`
-	LastError string    `json:"last_error"`
+	Type      string    `json:"type"`
+	OldId     int64     `json:"old_id"`
+	NewId     int64     `json:"new_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
