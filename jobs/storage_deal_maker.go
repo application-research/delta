@@ -106,7 +106,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	// label deal
-	label, err := market.NewLabelFromString(utils.DELTA_LABEL)
+	label, err := market.NewLabelFromString(dealProposal.Label)
 	if err != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
@@ -415,7 +415,6 @@ type WalletMeta struct {
 func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Content) model.ContentDealProposalParameters {
 	var contentDealProposalParameters model.ContentDealProposalParameters
 	i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters)
-
 	return contentDealProposalParameters
 }
 

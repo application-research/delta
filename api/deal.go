@@ -231,6 +231,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	dealProposalParam.CreatedAt = time.Now()
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
+	dealProposalParam.Label = content.Cid
 
 	// duration
 	if dealRequest.Duration == 0 {
@@ -384,6 +385,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	dealProposalParam.CreatedAt = time.Now()
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
+	dealProposalParam.Label = content.Cid
 
 	// duration
 	if dealRequest.Duration == 0 {
@@ -539,6 +541,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
+		dealProposalParam.Label = content.Cid
 
 		// duration
 		if dealRequest.Duration == 0 {

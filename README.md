@@ -55,19 +55,25 @@ apt-get install -y cargo
 
 ## Build and run
 
+### Using `make` lang
+```
+make all
+./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
+```
+
 ### Using `go` lang
 ```
-go build -tags netgo -ldflags '-s -w' -o stg-dealer
-./stg-dealer daemon --repo=.whypfs
+go build -tags netgo -ldflags '-s -w' -o delta
+./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
 ### Using `docker`
 ```
-docker build -t stg-dealer .
-docker run -it --rm -p 1414:1414 stg-dealer
+docker build -t delta .
+docker run -it --rm -p 1414:1414 delta --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
-## Endpoints
+## REST API Endpoints
 
 ### Node information
 To get the node information, use the following endpoints
@@ -154,6 +160,21 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitme
 }]'
 ```
 
+### Stats (content, commps and deals)
+```
+curl --location --request GET 'http://localhost:1414/api/v1/stats' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+```
+
+### Stats of a specific content
+When you upload, it returns a content id, use that to get the stats of a specific content
+```
+curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]'
+```
+
+
+## CLI
 ### Get the commp of a file using commp cli
 ```
 ./delta commp --file=<>
@@ -208,19 +229,6 @@ Output
       "size":2500366291
    }
 }
-```
-
-### Stats (content, commps and deals) 
-```
-curl --location --request GET 'http://localhost:1414/api/v1/stats' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
-```
-
-### Stats of a specific content
-When you upload, it returns a content id, use that to get the stats of a specific content
-```
-curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]'
 ```
 
 ## Author
