@@ -7,6 +7,7 @@ import (
 	"delta/utils"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
 	"strconv"
@@ -69,6 +70,11 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleCommPieceAdd(c, node, *statsService)
 	})
 
+	// make commitment-pieces
+	dealMake.POST("/commitment-pieces", func(c echo.Context) error {
+		return handleCommPiecesAdd(c, node, *statsService)
+	})
+
 	dealPrepare.POST("/content", func(c echo.Context) error {
 		return nil
 	})
@@ -91,11 +97,6 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	dealAnnounce.POST("/commitment-pieces", func(c echo.Context) error {
 		return nil
-	})
-
-	// make commitment-pieces
-	dealMake.POST("/commitment-pieces", func(c echo.Context) error {
-		return handleCommPiecesAdd(c, node, *statsService)
 	})
 
 	dealStatus.POST("/content/:contentId", func(c echo.Context) error {
@@ -131,33 +132,19 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 
 	err = ValidateMeta(dealRequest)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, DealResponse{
-			Status:      "error",
-			Message:     "Error validating the request: " + err.Error(),
-			DealRequest: dealRequest,
-		})
+		// return the error from the validation
 		return err
 	}
 
 	// process the file
 	src, err := file.Open()
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:      "error",
-			Message:     "Error pinning the file" + err.Error(),
-			DealRequest: dealRequest,
-		})
-		return err
+		return errors.New("Error opening the file")
 	}
 
 	addNode, err := node.Node.AddPinFile(c.Request().Context(), src, nil)
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:      "error",
-			Message:     "Error pinning the file" + err.Error(),
-			DealRequest: dealRequest,
-		})
-		return err
+		return errors.New("Error pinning the file")
 	}
 
 	// specify the connection mode
@@ -226,10 +213,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
-			c.JSON(500, DealResponse{
-				Status:  "error",
-				Message: "Error pinning the file" + err.Error(),
-			})
+			return errors.New("Error encoding the wallet")
 		}
 		contentWalletAssignment := model.ContentWallet{
 			Wallet:    string(walletByteArr),
@@ -271,12 +255,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	node.DB.Create(&dealProposalParam)
 
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:      "error",
-			Message:     "Error pinning the file" + err.Error(),
-			ContentId:   content.ID,
-			DealRequest: dealRequest,
-		})
+		return errors.New("Error pinning the file")
 	}
 
 	var dispatchJobs core.IProcessor
@@ -298,184 +277,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	return nil
 }
 
-// handleCommPiecesAdd handles the request to add a commp record.
-// @Summary Add a commp record
-// @Description Add a commp record
-// @Tags CommP
-// @Accept  json
-// @Produce  json
-func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
-	var dealRequests []DealRequest
-
-	// lets record this.
-	authorizationString := c.Request().Header.Get("Authorization")
-	authParts := strings.Split(authorizationString, " ")
-
-	//	validate the meta
-	err := c.Bind(&dealRequests)
-
-	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:      "error",
-			Message:     "Error pinning the files" + err.Error(),
-			DealRequest: dealRequests,
-		})
-		return err
-	}
-
-	var dealResponses []DealResponse
-	for _, dealRequest := range dealRequests {
-
-		err = ValidateMeta(dealRequest)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, DealResponse{
-				Status:      "error",
-				Message:     "Error validating the request: " + err.Error(),
-				DealRequest: dealRequest,
-			})
-			return err
-		}
-
-		// specify the connection mode
-		var connMode = dealRequest.ConnectionMode
-		if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
-			connMode = "e2e"
-		}
-
-		// let's create a commp but only if we have
-		// a cid, a piece_cid, a padded_piece_size, size
-		var pieceCommp model.PieceCommitment
-		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
-			(dealRequest.PieceCommitment.PaddedPieceSize != 0 && dealRequest.PieceCommitment.UnPaddedPieceSize != 0) &&
-			(dealRequest.Size != 0) {
-
-			// if commp is there, make sure the piece and size are there. Use default duration.
-			pieceCommp.Cid = dealRequest.Cid
-			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
-			pieceCommp.Size = dealRequest.Size
-			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
-			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
-			pieceCommp.CreatedAt = time.Now()
-			pieceCommp.UpdatedAt = time.Now()
-			pieceCommp.Status = utils.COMMP_STATUS_OPEN
-			node.DB.Create(&pieceCommp)
-
-			dealRequest.PieceCommitment = PieceCommitmentRequest{
-				Piece:             pieceCommp.Piece,
-				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
-				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
-			}
-		}
-
-		// save the content to the DB with the piece_commitment_id
-		content := model.Content{
-			Name:              dealRequest.Cid,
-			Size:              dealRequest.Size,
-			Cid:               dealRequest.Cid,
-			RequestingApiKey:  authParts[1],
-			PieceCommitmentId: pieceCommp.ID,
-			Status:            utils.CONTENT_PINNED,
-			ConnectionMode:    connMode,
-			CreatedAt:         time.Now(),
-			UpdatedAt:         time.Now(),
-		}
-		node.DB.Create(&content)
-		dealRequest.Cid = content.Cid
-
-		//	assign a miner
-		if dealRequest.Miner != "" {
-			contentMinerAssignment := model.ContentMiner{
-				Miner:     dealRequest.Miner,
-				Content:   content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
-			node.DB.Create(&contentMinerAssignment)
-			dealRequest.Miner = contentMinerAssignment.Miner
-		}
-
-		// 	assign a wallet_estuary
-		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
-			var hexedWallet WalletRequest
-			hexedWallet.KeyType = dealRequest.Wallet.KeyType
-			hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
-			walletByteArr, err := json.Marshal(hexedWallet)
-
-			if err != nil {
-				c.JSON(500, DealResponse{
-					Status:  "error",
-					Message: "Error pinning the file" + err.Error(),
-				})
-			}
-			contentWalletAssignment := model.ContentWallet{
-				Wallet:    string(walletByteArr),
-				Content:   content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
-			node.DB.Create(&contentWalletAssignment)
-			dealRequest.Wallet = WalletRequest{
-				KeyType: contentWalletAssignment.Wallet,
-			}
-		}
-
-		var dealProposalParam model.ContentDealProposalParameters
-		dealProposalParam.CreatedAt = time.Now()
-		dealProposalParam.UpdatedAt = time.Now()
-		dealProposalParam.Content = content.ID
-
-		// duration
-		if dealRequest.Duration == 0 {
-			dealProposalParam.Duration = utils.DEFAULT_DURATION
-		} else {
-			dealProposalParam.Duration = dealRequest.Duration
-		}
-
-		// start epoch
-		if dealRequest.StartEpoch != 0 {
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
-
-		// remove unsealed copy
-		if dealRequest.RemoveUnsealedCopies == false {
-			dealProposalParam.RemoveUnsealedCopy = false
-		} else {
-			dealProposalParam.RemoveUnsealedCopy = true
-		}
-
-		// deal proposal parameters
-		node.DB.Create(&dealProposalParam)
-
-		if err != nil {
-			c.JSON(500, DealResponse{
-				Status:      "error",
-				Message:     "Error pinning the file" + err.Error(),
-				ContentId:   content.ID,
-				DealRequest: dealRequest,
-			})
-		}
-
-		var dispatchJobs core.IProcessor
-		if pieceCommp.ID != 0 {
-			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
-		}
-
-		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
-
-		dealResponses = append(dealResponses, DealResponse{
-			Status:      "success",
-			Message:     "File uploaded and pinned successfully",
-			DealRequest: dealRequest,
-		})
-
-	}
-
-	node.Dispatcher.Start(len(dealRequests))
-	c.JSON(http.StatusOK, dealResponses)
-
-	return nil
-}
-
 // handleCommPieceAdd handles the request to add a commp record.
 // @Summary Add a commp record
 // @Description Add a commp record
@@ -491,20 +292,11 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	err := c.Bind(&dealRequest)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, DealResponse{
-			Status:      "error",
-			Message:     "Error parsing the request: " + err.Error(),
-			DealRequest: dealRequest,
-		})
+		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
 	}
 
 	err = ValidateMeta(dealRequest)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, DealResponse{
-			Status:      "error",
-			Message:     "Error validating the request: " + err.Error(),
-			DealRequest: dealRequest,
-		})
 		return err
 	}
 
@@ -574,10 +366,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
-			c.JSON(500, DealResponse{
-				Status:  "error",
-				Message: "Error pinning the file" + err.Error(),
-			})
+			return errors.New("Error parsing the wallet")
 		}
 		contentWalletAssignment := model.ContentWallet{
 			Wallet:    string(walletByteArr),
@@ -619,12 +408,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	node.DB.Create(&dealProposalParam)
 
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:      "error",
-			Message:     "Error pinning the file" + err.Error(),
-			ContentId:   content.ID,
-			DealRequest: dealRequest,
-		})
+		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
 	}
 
 	var dispatchJobs core.IProcessor
@@ -643,14 +427,167 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 	return nil
 }
 
+// handleCommPiecesAdd handles the request to add a commp record.
+// @Summary Add a commp record
+// @Description Add a commp record
+// @Tags CommP
+// @Accept  json
+// @Produce  json
+func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
+	var dealRequests []DealRequest
+
+	// lets record this.
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	//	validate the meta
+	err := c.Bind(&dealRequests)
+
+	if err != nil {
+		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
+	}
+
+	var dealResponses []DealResponse
+	for _, dealRequest := range dealRequests {
+
+		err = ValidateMeta(dealRequest)
+		if err != nil {
+			return err
+		}
+
+		// specify the connection mode
+		var connMode = dealRequest.ConnectionMode
+		if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
+			connMode = "e2e"
+		}
+
+		// let's create a commp but only if we have
+		// a cid, a piece_cid, a padded_piece_size, size
+		var pieceCommp model.PieceCommitment
+		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+			(dealRequest.Size != 0) {
+
+			// if commp is there, make sure the piece and size are there. Use default duration.
+			pieceCommp.Cid = dealRequest.Cid
+			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+			pieceCommp.Size = dealRequest.Size
+			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+			pieceCommp.CreatedAt = time.Now()
+			pieceCommp.UpdatedAt = time.Now()
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+			node.DB.Create(&pieceCommp)
+
+			dealRequest.PieceCommitment = PieceCommitmentRequest{
+				Piece:             pieceCommp.Piece,
+				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+			}
+		}
+
+		// save the content to the DB with the piece_commitment_id
+		content := model.Content{
+			Name:              dealRequest.Cid,
+			Size:              dealRequest.Size,
+			Cid:               dealRequest.Cid,
+			RequestingApiKey:  authParts[1],
+			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
+			ConnectionMode:    connMode,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+		node.DB.Create(&content)
+		dealRequest.Cid = content.Cid
+
+		//	assign a miner
+		if dealRequest.Miner != "" {
+			contentMinerAssignment := model.ContentMiner{
+				Miner:     dealRequest.Miner,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentMinerAssignment)
+			dealRequest.Miner = contentMinerAssignment.Miner
+		}
+
+		// 	assign a wallet_estuary
+		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = dealRequest.Wallet.KeyType
+			hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
+			walletByteArr, err := json.Marshal(hexedWallet)
+
+			if err != nil {
+				return errors.New("Wallet could not be encoded")
+			}
+			contentWalletAssignment := model.ContentWallet{
+				Wallet:    string(walletByteArr),
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentWalletAssignment)
+			dealRequest.Wallet = WalletRequest{
+				KeyType: contentWalletAssignment.Wallet,
+			}
+		}
+
+		var dealProposalParam model.ContentDealProposalParameters
+		dealProposalParam.CreatedAt = time.Now()
+		dealProposalParam.UpdatedAt = time.Now()
+		dealProposalParam.Content = content.ID
+
+		// duration
+		if dealRequest.Duration == 0 {
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		} else {
+			dealProposalParam.Duration = dealRequest.Duration
+		}
+
+		// start epoch
+		if dealRequest.StartEpoch != 0 {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+
+		// remove unsealed copy
+		if dealRequest.RemoveUnsealedCopies == false {
+			dealProposalParam.RemoveUnsealedCopy = false
+		} else {
+			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		// deal proposal parameters
+		node.DB.Create(&dealProposalParam)
+
+		var dispatchJobs core.IProcessor
+		fmt.Println(pieceCommp.ID)
+		if pieceCommp.ID != 0 {
+			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+		}
+
+		node.Dispatcher.AddJob(dispatchJobs)
+
+		dealResponses = append(dealResponses, DealResponse{
+			Status:      "success",
+			Message:     "File uploaded and pinned successfully",
+			DealRequest: dealRequest,
+		})
+
+	}
+	node.Dispatcher.Start(len(dealRequests))
+	c.JSON(http.StatusOK, dealResponses)
+
+	return nil
+}
+
 func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
 	contentIdParam := c.Param("contentId")
 	contentId, err := strconv.Atoi(contentIdParam)
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:  "error",
-			Message: "Error looking up the status of the content" + err.Error(),
-		})
+		return errors.New("Error looking up the status of the content" + err.Error())
 	}
 
 	status, err := statsService.ContentStatus(core.ContentStatsParam{
@@ -658,10 +595,7 @@ func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.
 	})
 
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:  "error",
-			Message: "Error looking up the status of the content" + err.Error(),
-		})
+		return errors.New("Error looking up the status of the content" + err.Error())
 
 	}
 
@@ -672,10 +606,7 @@ func handleCommitmentPieceStats(c echo.Context, node *core.DeltaNode, statsServi
 	pieceCommitmentIdParam := c.Param("piece-commitmentId")
 	pieceCommitmentId, err := strconv.Atoi(pieceCommitmentIdParam)
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:  "error",
-			Message: "Error looking up the status of the piece commitment" + err.Error(),
-		})
+		return errors.New("Error looking up the status of the piece commitment" + err.Error())
 	}
 
 	status, err := statsService.PieceCommitmentStatus(core.PieceCommitmentStatsParam{
@@ -683,10 +614,7 @@ func handleCommitmentPieceStats(c echo.Context, node *core.DeltaNode, statsServi
 	})
 
 	if err != nil {
-		c.JSON(500, DealResponse{
-			Status:  "error",
-			Message: "Error looking up the status of the piece commitment" + err.Error(),
-		})
+		return errors.New("Error looking up the status of the piece commitment" + err.Error())
 	}
 
 	return c.JSON(200, status)

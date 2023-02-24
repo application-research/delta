@@ -20,9 +20,9 @@ import (
 
 type CommpResult struct {
 	Cid               string `json:"cid,omitempty"`
-	Commp             string `json:"commp,omitempty"`
-	PaddedPieceSize   uint64 `json:"padded-piece-size,omitempty"`
-	UnPaddedPieceSize uint64 `json:"un-padded-piece-size,omitempty"`
+	Commp             string `json:"piece_commitment,omitempty"`
+	PaddedPieceSize   uint64 `json:"padded_piece_size,omitempty"`
+	UnPaddedPieceSize uint64 `json:"unpadded_piece_size,omitempty"`
 }
 
 func CommpCmd() []*cli.Command {

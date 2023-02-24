@@ -60,6 +60,7 @@ func (i PieceCommpProcessor) Run() error {
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
 				LastMessage: err.Error(),
 			})
+			return err
 		}
 
 		pieceCid = pieceInfo.PieceCID
@@ -75,6 +76,7 @@ func (i PieceCommpProcessor) Run() error {
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
 				LastMessage: err.Error(),
 			})
+			return err
 		}
 	}
 

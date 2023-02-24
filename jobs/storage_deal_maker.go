@@ -36,15 +36,6 @@ type StorageDealMakerProcessor struct {
 	PieceComm *model.PieceCommitment
 }
 
-func (i StorageDealMakerProcessor) Run() error {
-	err := i.makeStorageDeal(i.Content, i.PieceComm)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	return nil
-}
-
 func NewStorageDealMakerProcessor(ln *core.DeltaNode, content model.Content, commitment model.PieceCommitment) IProcessor {
 	return &StorageDealMakerProcessor{
 		LightNode: ln,
@@ -52,6 +43,15 @@ func NewStorageDealMakerProcessor(ln *core.DeltaNode, content model.Content, com
 		PieceComm: &commitment,
 		Context:   context.Background(),
 	}
+}
+
+func (i StorageDealMakerProcessor) Run() error {
+	err := i.makeStorageDeal(i.Content, i.PieceComm)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }
 
 func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, pieceComm *model.PieceCommitment) error {
@@ -133,7 +133,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		return err
 	}
 
-	fmt.Println("prop", prop)
 	dealProp := prop.DealProposal
 	if dealProposal.StartEpoch != 0 {
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
@@ -141,7 +140,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	propnd, err := cborutil.AsIpld(dealProp)
-	fmt.Println("propnd", propnd)
 	if err != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
@@ -159,7 +157,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 		return err
 	}
-	fmt.Println("proto", proto)
 	deal := &model.ContentDeal{
 		Content:             content.ID,
 		PropCid:             propnd.Cid().String(),
