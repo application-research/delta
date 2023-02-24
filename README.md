@@ -30,8 +30,6 @@ DB_DSN=stg-deal-maker
 #REPO=/mnt/.whypfs # shared mounted repo
 
 # Frequencies
-DISPATCH_JOBS_EVERY=10
-MAX_DISPATCH_WORKERS=5000
 MAX_CLEANUP_WORKERS=1500
 ```
 
@@ -168,7 +166,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-pie
 
 if you want to get the commp of a CAR file for offline deal, use the following command
 ```
-./delta commp-car --file=<> --for-offline
+./delta commp-car --file=<> --for-import
 ```
 The output will be as follows
 ```
@@ -179,7 +177,7 @@ The output will be as follows
         "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
     },
-    "connection_mode": "offline",
+    "connection_mode": "import",
     "size": 2500366291
 }
 ```
@@ -206,7 +204,7 @@ Output
          "padded_piece_size":4294967296,
          "unpadded_piece_size":4261412864
       },
-      "connection_mode":"offline",
+      "connection_mode":"import",
       "size":2500366291
    }
 }

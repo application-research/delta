@@ -26,7 +26,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 
 	// clear up finished CID deals.
 	var contentsOnline []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "transfer-finished", "online").Find(&contentsOnline)
+	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "transfer-finished", "e2e").Find(&contentsOnline)
 
 	for _, content := range contentsOnline {
 		cidD, err := cid.Decode(content.Cid)
@@ -42,7 +42,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 	}
 
 	var contentsOffline []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "deal-proposal-sent", "offline").Find(&contentsOffline)
+	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "deal-proposal-sent", "import").Find(&contentsOffline)
 
 	for _, content := range contentsOnline {
 		cidD, err := cid.Decode(content.Cid)
