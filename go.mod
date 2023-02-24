@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
+	github.com/application-research/delta-db v0.0.0-20230224153134-e28b704b4e57
 	github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9
 	github.com/application-research/whypfs-core v0.1.1
 	github.com/caarlos0/env/v6 v6.10.1
@@ -33,9 +34,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/urfave/cli/v2 v2.24.4
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
-	gorm.io/driver/postgres v1.4.7
-	gorm.io/driver/sqlite v1.4.4
-	gorm.io/gorm v1.24.2
+	gorm.io/gorm v1.24.5
 )
 
 require (
@@ -176,7 +175,7 @@ require (
 	github.com/ipsn/go-secp256k1 v0.0.0-20180726113642-9d62b9f0bc52 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.2.0 // indirect
+	github.com/jackc/pgx/v5 v5.3.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/jbenet/go-random v0.0.0-20190219211222-123a90aedc0c // indirect
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
@@ -280,13 +279,13 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
-	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/exp v0.0.0-20230124142953-7f5a42a36c7e // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
@@ -295,8 +294,12 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/driver/postgres v1.4.8 // indirect
+	gorm.io/driver/sqlite v1.4.4 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
 replace github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
+
+replace github.com/application-research/delta-db => ../delta-events

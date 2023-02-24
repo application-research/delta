@@ -3,9 +3,9 @@ package jobs
 import (
 	"context"
 	"delta/core"
-	"delta/core/model"
 	"delta/utils"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/ipfs/go-cid"
 	"time"
 )

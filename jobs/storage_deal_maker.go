@@ -3,12 +3,12 @@ package jobs
 import (
 	"context"
 	"delta/core"
-	"delta/core/model"
 	"delta/utils"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	fc "github.com/application-research/filclient"
 	smtypes "github.com/filecoin-project/boost/storagemarket/types"
 	"github.com/filecoin-project/boost/transport/httptransport"
@@ -163,7 +163,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		DealUUID:            dealUUID.String(),
 		Miner:               minerAddress.String(),
 		Verified:            true,
-		DealProtocolVersion: proto,
+		DealProtocolVersion: string(proto),
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
 		//MinerVersion:        ask.MinerVersion,

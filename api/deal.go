@@ -2,12 +2,12 @@ package api
 
 import (
 	"delta/core"
-	"delta/core/model"
 	"delta/jobs"
 	"delta/utils"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/pkg/errors"
 	"net/http"
 	"strconv"
@@ -651,7 +651,7 @@ func ValidateMeta(dealRequest DealRequest) error {
 	return nil
 }
 
-func handlePrepareContent() {
+func handlePrepareContent(c echo.Context, node *core.DeltaNode, statsService core.StatsService) {
 
 }
 func handlePrepareCommitmentPiece() {

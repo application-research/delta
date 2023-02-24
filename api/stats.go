@@ -2,7 +2,7 @@ package api
 
 import (
 	"delta/core"
-	"delta/core/model"
+	model "github.com/application-research/delta-db/db_models"
 	"strings"
 
 	"github.com/labstack/echo/v4"

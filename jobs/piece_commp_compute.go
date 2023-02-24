@@ -3,8 +3,8 @@ package jobs
 import (
 	"context"
 	"delta/core"
-	"delta/core/model"
 	"delta/utils"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/filclient"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"

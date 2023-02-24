@@ -2,7 +2,7 @@ package jobs
 
 import (
 	"delta/core"
-	"delta/core/model"
+	model "github.com/application-research/delta-db/db_models"
 	"runtime"
 	"syscall"
 )

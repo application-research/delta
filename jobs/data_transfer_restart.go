@@ -3,8 +3,9 @@ package jobs
 import (
 	"context"
 	"delta/core"
-	"delta/core/model"
+	"delta/utils"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/filclient"
 )
 
@@ -22,7 +23,12 @@ func NewDataTransferRestartProcessor(ln *core.DeltaNode, contentDeal model.Conte
 
 func (d DataTransferRestartListenerProcessor) Run() error {
 	// get the deal data transfer state pull deals
-	channelId, err := d.ContentDeal.ChannelID()
+	dtChan, err := utils.GetChannelID(d.ContentDeal.DTChan)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	channelId := dtChan
 	st, err := d.LightNode.FilClient.TransferStatus(context.Background(), &channelId)
 	if err != nil && err != filclient.ErrNoTransferFound {
 		fmt.Println(err)

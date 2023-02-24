@@ -2,9 +2,9 @@ package jobs
 
 import (
 	"delta/core"
-	"delta/core/model"
 	"encoding/json"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"gorm.io/gorm"
 	"net/http"
 )
