@@ -66,12 +66,12 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 	dealMake.POST("/content", func(c echo.Context) error {
 		return handleContentAdd(c, node, *statsService)
 	})
-	dealMake.POST("/commitment-piece", func(c echo.Context) error {
+	dealMake.POST("/piece-commitment", func(c echo.Context) error {
 		return handleCommPieceAdd(c, node, *statsService)
 	})
 
-	// make commitment-pieces
-	dealMake.POST("/commitment-pieces", func(c echo.Context) error {
+	// make piece-commitments
+	dealMake.POST("/piece-commitments", func(c echo.Context) error {
 		return handleCommPiecesAdd(c, node, *statsService)
 	})
 
@@ -79,11 +79,11 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	dealPrepare.POST("/commitment-piece", func(c echo.Context) error {
+	dealPrepare.POST("/piece-commitment", func(c echo.Context) error {
 		return nil
 	})
 
-	dealPrepare.POST("/commitment-pieces", func(c echo.Context) error {
+	dealPrepare.POST("/piece-commitments", func(c echo.Context) error {
 		return nil
 	})
 
@@ -91,18 +91,18 @@ func DealRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	dealAnnounce.POST("/commitment-piece", func(c echo.Context) error {
+	dealAnnounce.POST("/piece-commitment", func(c echo.Context) error {
 		return nil
 	})
 
-	dealAnnounce.POST("/commitment-pieces", func(c echo.Context) error {
+	dealAnnounce.POST("/piece-commitments", func(c echo.Context) error {
 		return nil
 	})
 
 	dealStatus.POST("/content/:contentId", func(c echo.Context) error {
 		return handleContentStats(c, node, *statsService)
 	})
-	dealStatus.POST("/commitment-piece/:piece-commitmentId", func(c echo.Context) error {
+	dealStatus.POST("/piece-commitment/:piece-commitmentId", func(c echo.Context) error {
 		return handleCommitmentPieceStats(c, node, *statsService)
 
 	})
@@ -687,11 +687,11 @@ func handleAnnounceCommitmentPieces() {
 // "{ uuid:'','hexed_signed_deal_proposal'}"
 //
 ///deal/prepare/content - prepare a proposal and send back the unsigned network proposal
-///deal/prepare/commitment-piece - prepare a proposal and send back the unsigned network proposal
-///deal/prepare/commitment-pieces - prepare a proposal and send back the unsigned network proposal
+///deal/prepare/piece-commitment - prepare a proposal and send back the unsigned network proposal
+///deal/prepare/piece-commitments - prepare a proposal and send back the unsigned network proposal
 //
 ///deal/announce/content (accepts a signed HEX)
-///deal/announce/commitment-piece (accepts a signed HEX)
-///deal/announce/commitment-pieces (accepts a collection of signed HEX)
+///deal/announce/piece-commitment (accepts a signed HEX)
+///deal/announce/piece-commitments (accepts a collection of signed HEX)
 
 // commp-sign --wallet=wallet.json --proposal-meta=// "{ uuid:'','hexed_unsigned_deal_proposal'}"

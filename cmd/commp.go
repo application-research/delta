@@ -175,8 +175,8 @@ func CommpCmd() []*cli.Command {
 				if deltaApiUrl != "" && deltaApiKey != "" {
 					// send the result to delta api.
 					client := &http.Client{}
-					fmt.Println(deltaApiUrl + "/api/v1/deal/commitment-piece")
-					req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/commitment-piece", &buffer)
+					fmt.Println(deltaApiUrl + "/api/v1/deal/piece-commitment")
+					req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/piece-commitment", &buffer)
 					if err != nil {
 						fmt.Println(err)
 						return err
@@ -299,8 +299,8 @@ func CommpCmd() []*cli.Command {
 					if deltaApiUrl != "" && deltaApiKey != "" {
 						// send the result to delta api.
 						client := &http.Client{}
-						fmt.Println(deltaApiUrl + "/api/v1/deal/commitment-piece")
-						req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/commitment-piece", &buffer)
+						fmt.Println(deltaApiUrl + "/api/v1/deal/piece-commitment")
+						req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/piece-commitment", &buffer)
 						if err != nil {
 							fmt.Println(err)
 							return err
