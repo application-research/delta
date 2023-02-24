@@ -13,6 +13,7 @@ build:
 .PHONE: clean
 clean:
 	rm -f delta
+	git submodule deinit --all -f
 
 install:
 	install -C -m 0755 delta /usr/local/bin
