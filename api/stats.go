@@ -24,7 +24,7 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetContentsByMiner(c, node)
 	})
 
-	e.GET("/stats/miner/:minerId/commitment-piece", func(c echo.Context) error {
+	e.GET("/stats/miner/:minerId/piece-commitment", func(c echo.Context) error {
 		return handleGetCommitmentPiecesByMiner(c, node)
 	})
 
@@ -40,7 +40,7 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetContentByMiner(c, node)
 	})
 
-	e.GET("/stats/miner/:minerId/commitment-piece/:commitmentPieceId", func(c echo.Context) error {
+	e.GET("/stats/miner/:minerId/piece-commitment/:commitmentPieceId", func(c echo.Context) error {
 		return handleGetCommitmentPieceByMiner(c, node)
 	})
 
@@ -56,11 +56,11 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetStatsByContent(c, node)
 	})
 
-	e.GET("/stats/commitment-piece/:commitmentPieceId", func(c echo.Context) error {
+	e.GET("/stats/piece-commitment/:commitmentPieceId", func(c echo.Context) error {
 		return handleGetCommitmentPiece(c, node)
 	})
 
-	e.GET("/stats/commitment-pieces", func(c echo.Context) error {
+	e.GET("/stats/piece-commitments", func(c echo.Context) error {
 		return handleGetCommitmentPieces(c, node)
 	})
 
@@ -178,7 +178,7 @@ func handleGetContentsByMiner(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// function to get all commitment-piece of a given miner
+// function to get all piece-commitment of a given miner
 func handleGetCommitmentPiecesByMiner(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
@@ -238,7 +238,7 @@ func handleGetContents(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// function to get all commitment-piece of a given api key
+// function to get all piece-commitment of a given api key
 func handleGetCommitmentPieces(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
@@ -298,7 +298,7 @@ func handleGetContentByMiner(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// function to get a specific commitment-piece with a given miner
+// function to get a specific piece-commitment with a given miner
 func handleGetCommitmentPieceByMiner(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")

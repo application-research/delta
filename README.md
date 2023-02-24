@@ -93,7 +93,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
 ### Import mode (formerly known as offline deal)
 Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-piece' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitment' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -113,7 +113,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-pie
 ### Batch Import mode (formerly known as offline deals)
 The request body is an array of objects. The following is an example of a batch import request.
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/commitment-pieces' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitments' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '[{
