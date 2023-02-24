@@ -53,23 +53,31 @@ func (i PieceCommpProcessor) Run() error {
 	var unPaddedPieceSize abi.UnpaddedPieceSize
 	var paddedPieceSize abi.PaddedPieceSize
 
-	pieceInfo, err := i.CommpService.GenerateCommPCarV2(node)
-	if err != nil {
-		pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
-		paddedPieceSize = unPaddedPieceSize.Padded()
-		if err != nil {
-			log.Error(err)
+	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
+		pieceInfo, err := i.CommpService.GenerateCommPCarV2(node)
+		if pieceInfo == nil && err != nil {
+			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+				Status:      utils.CONTENT_FAILED_TO_PROCESS,
+				LastMessage: err.Error(),
+			})
+			return err
 		}
-	} else {
 
 		pieceCid = pieceInfo.PieceCID
 		paddedPieceSize = pieceInfo.Size
 		unPaddedPieceSize = pieceInfo.Size.Unpadded()
 
-		if err != nil {
-			log.Error(err)
-		}
 		payloadSize = uint64(len(bytesFromCar))
+	} else {
+		pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
+		paddedPieceSize = unPaddedPieceSize.Padded()
+		if err != nil {
+			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+				Status:      utils.CONTENT_FAILED_TO_PROCESS,
+				LastMessage: err.Error(),
+			})
+			return err
+		}
 	}
 
 	if err != nil {
