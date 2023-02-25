@@ -38,10 +38,10 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, content_deals cd, content_miners cma where cdp.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposal)
 
 	return c.JSON(200, map[string]interface{}{
-		"content":          content,
-		"deals":            contentDeal,
-		"commitment_piece": pieceCommitments,
-		"deal_proposals":   contentDealProposal,
+		"content":           content,
+		"deals":             contentDeal,
+		"piece_commitments": pieceCommitments,
+		"deal_proposals":    contentDealProposal,
 	})
 
 	return nil
@@ -109,7 +109,7 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 		"total_content_consumed":      totalContentConsumed,
 		"total_transfer_started":      totalTransferStarted,
 		"total_transfer_finished":     totalTransferFinished,
-		"total_commitment_piece_made": totalCommitmentPiece,
+		"total_piece_commitment_made": totalCommitmentPiece,
 		"total_piece_committed":       totalPieceCommitted,
 		"total_miners":                totalMiners,
 		"total_storage_allocated":     totalStorageAllocated,

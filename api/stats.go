@@ -156,10 +156,10 @@ func handleGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDealProposal)
 
 	return c.JSON(200, map[string]interface{}{
-		"content":          content,
-		"deals":            contentDeal,
-		"commitment_piece": pieceCommitments,
-		"deal_proposals":   contentDealProposal,
+		"content":           content,
+		"deals":             contentDeal,
+		"piece_commitments": pieceCommitments,
+		"deal_proposals":    contentDealProposal,
 	})
 }
 
