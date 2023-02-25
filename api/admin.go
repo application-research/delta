@@ -48,6 +48,7 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 
 	// add wallet_estuary endpoint
 	adminWallet.POST("/add", func(c echo.Context) error {
+
 		return nil
 	})
 

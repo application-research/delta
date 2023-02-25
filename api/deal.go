@@ -232,6 +232,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	dealProposalParam.UpdatedAt = time.Now()
 	dealProposalParam.Content = content.ID
 	dealProposalParam.Label = content.Cid
+	dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 
 	// duration
 	if dealRequest.Duration == 0 {
@@ -576,6 +577,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 		dealResponses = append(dealResponses, DealResponse{
 			Status:      "success",
 			Message:     "File uploaded and pinned successfully",
+			ContentId:   content.ID,
 			DealRequest: dealRequest,
 		})
 
