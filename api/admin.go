@@ -4,6 +4,7 @@ import (
 	"delta/core"
 	"encoding/hex"
 	model "github.com/application-research/delta-db/db_models"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"strings"
 	"time"
@@ -85,7 +86,14 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 			})
 		}
 
+		walletUuid, err := uuid.NewUUID()
+		if err != nil {
+			return c.JSON(500, map[string]interface{}{
+				"message": "failed to generate uuid",
+			})
+		}
 		newWallet := &model.Wallet{
+			UuId:       walletUuid.String(),
 			Addr:       addWalletRequest.Address,
 			Owner:      authParts[1],
 			KeyType:    addWalletRequest.KeyType,
@@ -97,8 +105,8 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 		node.DB.Model(&model.Wallet{}).Create(newWallet)
 
 		return c.JSON(200, map[string]interface{}{
-			"message":   "Successfully imported a wallet address",
-			"wallet_id": newWallet.ID,
+			"message":     "Successfully imported a wallet address. Please take note of the UUID.",
+			"wallet_uuid": newWallet.UuId,
 		})
 
 	})

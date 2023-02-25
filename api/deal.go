@@ -24,6 +24,7 @@ type CidRequest struct {
 type WalletRequest struct {
 	Id         uint64 `json:"id,omitempty"`
 	Address    string `json:"address,omitempty"`
+	Uuid       string `json:"uuid,omitempty"`
 	KeyType    string `json:"key_type,omitempty"`
 	PrivateKey string `json:"private_key,omitempty"`
 }
@@ -233,7 +234,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 
 		// get wallet from wallets database
 		var wallet model.Wallet
-		node.DB.Where("id = ?", dealRequest.Wallet.Id).First(&wallet)
+		node.DB.Where("uuid = ?", dealRequest.Wallet.Uuid).First(&wallet)
 
 		// create the wallet request object
 		var hexedWallet WalletRequest
@@ -419,7 +420,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 
 		// get wallet from wallets database
 		var wallet model.Wallet
-		node.DB.Where("id = ?", dealRequest.Wallet.Id).First(&wallet)
+		node.DB.Where("uuid = ?", dealRequest.Wallet.Uuid).First(&wallet)
 
 		// create the wallet request object
 		var hexedWallet WalletRequest
@@ -606,7 +607,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 
 			// get wallet from wallets database
 			var wallet model.Wallet
-			node.DB.Where("id = ?", dealRequest.Wallet.Id).First(&wallet)
+			node.DB.Where("uuid = ?", dealRequest.Wallet.Uuid).First(&wallet)
 
 			// create the wallet request object
 			var hexedWallet WalletRequest
