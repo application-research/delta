@@ -415,6 +415,37 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 		}
 	}
 
+	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+
+		// get wallet from wallets database
+		var wallet model.Wallet
+		node.DB.Where("id = ?", dealRequest.Wallet.Id).First(&wallet)
+
+		// create the wallet request object
+		var hexedWallet WalletRequest
+		hexedWallet.KeyType = wallet.KeyType
+		hexedWallet.PrivateKey = wallet.PrivateKey
+		walletByteArr, err := json.Marshal(hexedWallet)
+
+		if err != nil {
+			return errors.New("Error encoding the wallet")
+		}
+
+		// assign the wallet to the content
+		contentWalletAssignment := model.ContentWallet{
+			Wallet:    string(walletByteArr),
+			Content:   content.ID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		node.DB.Create(&contentWalletAssignment)
+
+		dealRequest.Wallet = WalletRequest{
+			Id:      dealRequest.Wallet.Id,
+			Address: wallet.Addr,
+		}
+	}
+
 	var dealProposalParam model.ContentDealProposalParameters
 	dealProposalParam.CreatedAt = time.Now()
 	dealProposalParam.UpdatedAt = time.Now()
@@ -568,6 +599,37 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 			node.DB.Create(&contentWalletAssignment)
 			dealRequest.Wallet = WalletRequest{
 				KeyType: contentWalletAssignment.Wallet,
+			}
+		}
+
+		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+
+			// get wallet from wallets database
+			var wallet model.Wallet
+			node.DB.Where("id = ?", dealRequest.Wallet.Id).First(&wallet)
+
+			// create the wallet request object
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = wallet.KeyType
+			hexedWallet.PrivateKey = wallet.PrivateKey
+			walletByteArr, err := json.Marshal(hexedWallet)
+
+			if err != nil {
+				return errors.New("Error encoding the wallet")
+			}
+
+			// assign the wallet to the content
+			contentWalletAssignment := model.ContentWallet{
+				Wallet:    string(walletByteArr),
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentWalletAssignment)
+
+			dealRequest.Wallet = WalletRequest{
+				Id:      dealRequest.Wallet.Id,
+				Address: wallet.Addr,
 			}
 		}
 
