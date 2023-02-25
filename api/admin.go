@@ -2,13 +2,30 @@ package api
 
 import (
 	"delta/core"
+	"encoding/hex"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
+	"strings"
+	"time"
 )
+
+// {
+//   "address":"",
+//   "key_type":"",
+//   "private_key:"",
+//
+
+type AddWalletRequest struct {
+	Address    string `json:"address"`
+	KeyType    string `json:"key_type"`
+	PrivateKey string `json:"private_key"`
+}
 
 // ConfigureAdminRouter configures the admin router
 // This is the router that is used to administer the node
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
+
+	//walletService := core.NewWalletService(node)
 
 	adminRepair := e.Group("/repair")
 	adminWallet := e.Group("/wallet")
@@ -46,13 +63,47 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 		return nil
 	})
 
-	// add wallet_estuary endpoint
-	adminWallet.POST("/add", func(c echo.Context) error {
+	// import wallet_estuary endpoint
+	adminWallet.POST("/import", func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+		var addWalletRequest AddWalletRequest
+		c.Bind(&addWalletRequest)
 
-		return nil
+		hexedWallet := hex.EncodeToString([]byte(addWalletRequest.PrivateKey))
+
+		if len(authParts) != 2 {
+			return c.JSON(401, map[string]interface{}{
+				"message": "unauthorized",
+			})
+		}
+
+		// validate, owner, keytype, address and private key are required
+		if addWalletRequest.Address == "" || addWalletRequest.KeyType == "" || addWalletRequest.PrivateKey == "" {
+			return c.JSON(400, map[string]interface{}{
+				"message": "address, key_type and private_key are required",
+			})
+		}
+
+		newWallet := &model.Wallet{
+			Addr:       addWalletRequest.Address,
+			Owner:      authParts[1],
+			KeyType:    addWalletRequest.KeyType,
+			PrivateKey: hexedWallet,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		}
+		// save on wallet table
+		node.DB.Model(&model.Wallet{}).Create(newWallet)
+
+		return c.JSON(200, map[string]interface{}{
+			"message":   "Successfully imported a wallet address",
+			"wallet_id": newWallet.ID,
+		})
+
 	})
 
-	adminWallet.POST("/import", func(c echo.Context) error {
+	adminWallet.POST("/add", func(c echo.Context) error {
 		return nil
 	})
 

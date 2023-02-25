@@ -22,6 +22,8 @@ type CidRequest struct {
 }
 
 type WalletRequest struct {
+	Id         uint64 `json:"id,omitempty"`
+	Address    string `json:"address,omitempty"`
 	KeyType    string `json:"key_type,omitempty"`
 	PrivateKey string `json:"private_key,omitempty"`
 }
@@ -157,7 +159,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	// a cid, a piece_cid, a padded_piece_size, size
 	var pieceCommp model.PieceCommitment
 	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
-		(dealRequest.PieceCommitment.PaddedPieceSize != 0 && dealRequest.PieceCommitment.UnPaddedPieceSize != 0) &&
+		(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
 		(dealRequest.Size != 0) {
 
 		// if commp is there, make sure the piece and size are there. Use default duration.
@@ -224,6 +226,37 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 		node.DB.Create(&contentWalletAssignment)
 		dealRequest.Wallet = WalletRequest{
 			KeyType: contentWalletAssignment.Wallet,
+		}
+	}
+
+	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+
+		// get wallet from wallets database
+		var wallet model.Wallet
+		node.DB.Where("id = ?", dealRequest.Wallet.Id).First(&wallet)
+
+		// create the wallet request object
+		var hexedWallet WalletRequest
+		hexedWallet.KeyType = wallet.KeyType
+		hexedWallet.PrivateKey = wallet.PrivateKey
+		walletByteArr, err := json.Marshal(hexedWallet)
+
+		if err != nil {
+			return errors.New("Error encoding the wallet")
+		}
+
+		// assign the wallet to the content
+		contentWalletAssignment := model.ContentWallet{
+			Wallet:    string(walletByteArr),
+			Content:   content.ID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		node.DB.Create(&contentWalletAssignment)
+
+		dealRequest.Wallet = WalletRequest{
+			Id:      dealRequest.Wallet.Id,
+			Address: wallet.Addr,
 		}
 	}
 

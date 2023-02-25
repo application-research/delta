@@ -56,10 +56,10 @@ type ImportWalletResult struct {
 
 type WalletService struct {
 	Context   context.Context
-	DeltaNode DeltaNode
+	DeltaNode *DeltaNode
 }
 
-func NewWalletService(dn DeltaNode) *WalletService {
+func NewWalletService(dn *DeltaNode) *WalletService {
 	return &WalletService{
 		DeltaNode: dn,
 	}
