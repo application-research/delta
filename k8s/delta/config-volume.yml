@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: PersistentVolume                        
+metadata:
+  name: config-pv-volume
+spec:
+  storageClassName: standard                    
+  capacity:
+    storage: 500Ki
+  accessModes:
+    - ReadWriteMany
+  hostPath:                                   
+    path: /config/
+  persistentVolumeReclaimPolicy: Retain
+--- 
+apiVersion: v1
+kind: PersistentVolumeClaim                   
+metadata:                                     
+  name: config-pv-claim
+spec:                                         
+  storageClassName: standard     
+  volumeMode: Filesystem               
+  accessModes:
+    - ReadWriteMany                           
+  resources:
+    requests:
+      storage: 500Ki

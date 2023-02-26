@@ -217,3 +217,117 @@ When you upload, it returns a content id, use that to get the stats of a specifi
 curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]'
 ```
+
+# Kubernetes
+## Prerequisites
+This repository provides all kubernetes deployment artifacts required for delta. It has been developed and tested in WSL, Git Bash (on Windows) and linux. All environments require the following:
+
+- git
+- make
+- [docker](https://www.docker.com/products/docker-desktop)
+
+## Development / Deployment Environments
+There is a kubernetes environment that can be quickly run from WSL or Git Bash (and probably less quickly from powershell). It is a docker-wrapped kubernetes cluster using the popular Kind library. This configuration produces a nicely emulated Kind "cluster", using containers instead of physical nodes which is really handy for testing and developing different cluster node configurations without having to leave your local machine.
+
+### Quick Start
+
+Calling the `k8s.setup` target will install all of the necessary kubernetes tools for developing against a local Kind cluster:
+
+`make k8s.setup`
+
+### Kubernetes YAML
+
+There is also a directory with the raw kuberenetes yaml files for development purposes. It follows the same workflow as the helm quickstart except it uses the `k8s.` prefixed make targets:
+
+`make k8s.up`
+
+`make k8s.down`
+
+## Kubernetes Installation
+
+Install the persistent volume, deployment, service and hpa artifacts onto an external kubernetes cluster via:
+
+`kubectl apply -f k8s/delta`
+
+## Make commands
+For convienience, a lot of the commands to manage the deployment have been bundled in a project Makefile. For development, the most common targets will be:
+
+- Start Cluster
+
+  `make cluster.start`
+
+- Generate TLS keys, deploy to kubernetes, wait for the pods/services/deployments to start and map the frontend to ports 80 and 443
+
+  `make k8s.up`
+
+- Delete the deployment from kubernetes
+
+  `make k8s.down`
+
+- Generate TLS keys, deploy to kubernetes, wait for the pods/services/deployments to start and map the frontend to ports 80 and 443
+
+  `make k8s.all`
+
+- Generate TLS keys, deploy to kubernetes
+
+  `make k8s.install`
+
+- Delete the deployment from kubernetes
+
+  `make k8s.uninstall`
+
+- Delete the generated keys and remove the deployment from kubernetes
+
+  `make k8s.clean`
+
+- Delete the generated keys
+
+  `make k8s.clean-local`
+
+- Run in a clean development container, mounting the current directory to /workspace
+
+  `make k8s.dev`
+
+- Open the k8s dashboard web app
+
+  `make dash.k8s`
+
+- Open the portainer dashboard web app
+
+  `make k8s.portainer`
+
+- Stop the local cluster instance
+
+  `cluster.stop`
+
+- Clean up the entire cluster from the system
+
+  `make cluster.delete`
+
+- generate tls keys and deploy them as a k8s tls secret for use in the nginx pod 
+
+  `make generate.keys`
+
+- Apply the kubernetes artifacts to the cluster
+
+  `make k8s.deploy`
+
+- Remove all components from kubernetes
+
+  `make k8s.delete`
+
+- Map the local port 8080 to cluster service port
+
+  `make k8s.start`
+
+- Start a local port-forward service mapping the k8s service to external port 8080
+
+  `make k8s.startd`
+
+- Stop the local service
+
+  `k8s.stopd`
+
+- Wait time for all services to start up
+
+  `k8s.wait`
