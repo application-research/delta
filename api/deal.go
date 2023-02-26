@@ -234,7 +234,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 
 		// get wallet from wallets database
 		var wallet model.Wallet
-		node.DB.Where("uuid = ?", dealRequest.Wallet.Uuid).First(&wallet)
+		node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
 
 		// create the wallet request object
 		var hexedWallet WalletRequest
@@ -420,7 +420,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 
 		// get wallet from wallets database
 		var wallet model.Wallet
-		node.DB.Where("uuid = ?", dealRequest.Wallet.Uuid).First(&wallet)
+		node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
 
 		// create the wallet request object
 		var hexedWallet WalletRequest
@@ -607,7 +607,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 
 			// get wallet from wallets database
 			var wallet model.Wallet
-			node.DB.Where("uuid = ?", dealRequest.Wallet.Uuid).First(&wallet)
+			node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
 
 			// create the wallet request object
 			var hexedWallet WalletRequest

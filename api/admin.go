@@ -26,11 +26,7 @@ type AddWalletRequest struct {
 // This is the router that is used to administer the node
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 
-	//walletService := core.NewWalletService(node)
-
-	adminRepair := e.Group("/repair")
 	adminWallet := e.Group("/wallet")
-	adminDashboard := e.Group("/dashboard")
 	adminStats := e.Group("/stats")
 
 	adminStats.GET("/miner/:minerId", func(c echo.Context) error {
@@ -45,23 +41,6 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 			"content": contents,
 			"cmas":    contentMinerAssignment,
 		})
-	})
-
-	// repair endpoints
-	adminRepair.GET("/deal", func(c echo.Context) error {
-		return nil
-	})
-
-	adminRepair.GET("/commp", func(c echo.Context) error {
-		return nil
-	})
-
-	adminRepair.GET("/run-cleanup", func(c echo.Context) error {
-		return nil
-	})
-
-	adminRepair.GET("/retry-deal-making-content", func(c echo.Context) error {
-		return nil
 	})
 
 	// import wallet_estuary endpoint
@@ -112,19 +91,44 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	adminWallet.POST("/add", func(c echo.Context) error {
-		return nil
-	})
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
 
-	// list wallet_estuary endpoint
-	adminWallet.GET("/list", func(c echo.Context) error {
-		return nil
-	})
+		if len(authParts) != 2 {
+			return c.JSON(401, map[string]interface{}{
+				"message": "unauthorized",
+			})
+		}
 
-	adminWallet.GET("/info", func(c echo.Context) error {
-		return nil
-	})
+		var createWalletParam core.CreateWalletParam
+		walletService := core.NewWalletService(node)
+		createWalletParam.RequestingApiKey = authParts[1]
+		create, err := walletService.Create(createWalletParam)
+		if err != nil {
+			return err
+		}
 
-	adminDashboard.GET("/index", func(c echo.Context) error {
-		return nil
+		walletUuid, err := uuid.NewUUID()
+		if err != nil {
+			return c.JSON(500, map[string]interface{}{
+				"message": "failed to generate uuid",
+			})
+		}
+		newWallet := &model.Wallet{
+			UuId:       walletUuid.String(),
+			Addr:       create.WalletAddress.String(),
+			Owner:      authParts[1],
+			KeyType:    create.Wallet.KeyType,
+			PrivateKey: create.Wallet.PrivateKey,
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		}
+		// save on wallet table
+		node.DB.Model(&model.Wallet{}).Create(newWallet)
+
+		return c.JSON(200, map[string]interface{}{
+			"message":     "Successfully imported a wallet address. Please take note of the UUID.",
+			"wallet_uuid": newWallet.UuId,
+		})
 	})
 }
