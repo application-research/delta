@@ -231,9 +231,17 @@ There is a kubernetes environment that can be quickly run from WSL or Git Bash (
 
 ### Quick Start
 
-Calling the `k8s.setup` target will install all of the necessary kubernetes tools for developing against a local Kind cluster:
+Calling the `cluster.setup` target will install all of the necessary kubernetes tools for developing against a local development [Kind](https://kind.sigs.k8s.io/) cluster:
 
-`make k8s.setup`
+`make cluster.setup`
+
+Instantiate the local Kind development cluster
+
+`make cluster.up`
+
+To uninstall all kubernetes manifests and create a fresh cluster (danger: you will lose all data)
+
+`make cluster.down`
 
 ### Kubernetes YAML
 
@@ -243,11 +251,20 @@ There is also a directory with the raw kuberenetes yaml files for development pu
 
 `make k8s.down`
 
+Expose the delta service port address
+`kubectl port-forward --address 0.0.0.0 svc/delta 1414:1414`
+
+Optionally expose the Portainer management tool service port address
+`kubectl port-forward --address 0.0.0.0 svc/delta 9000:9000`
+
 ## Kubernetes Installation
 
 Install the persistent volume, deployment, service and hpa artifacts onto an external kubernetes cluster via:
 
 `kubectl apply -f k8s/delta`
+
+Expose the delta service port address
+`kubectl port-forward --address 0.0.0.0 svc/delta 1414:1414`
 
 ## Make commands
 For convienience, a lot of the commands to manage the deployment have been bundled in a project Makefile. For development, the most common targets will be:

@@ -32,7 +32,7 @@ k8s.all: generate.keys k8s.deploy k8s.wait
 k8s.install: generate.keys k8s.deploy
 
 # setup
-k8s.setup:
+cluster.setup:
 	curl -ksLS https://get.arkade.dev | sudo sh;
 	grep -qxF PATH=\$$PATH:\$$HOME/.arkade/bin/ ~/.profile || echo PATH=\$$PATH:\$$HOME/.arkade/bin/ >> ~/.profile
 	source ~/.profile;
