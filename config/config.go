@@ -18,11 +18,7 @@ type DeltaConfig struct {
 	}
 
 	Dispatcher struct {
-		DispatchJobsEvery      int `env:"DISPATCH_JOBS_EVERY" envDefault:"10"`
-		MaxDispatchWorkers     int `env:"MAX_DISPATCH_WORKERS" envDefault:"5000"`
-		MaxCleanupWorkers      int `env:"MAX_CLEANUP_WORKERS" envDefault:"1500"`
-		MinerInfoUpdateJobFreq int `env:"MINER_INFO_UPDATE_JOB_FREQ" envDefault:"300"`
-		CleanUpJobFreq         int `env:"CLEAN_UP_JOB_FREQ" envDefault:"1"`
+		MaxCleanupWorkers int `env:"MAX_CLEANUP_WORKERS" envDefault:"1500"`
 	}
 
 	Common struct {

@@ -3,9 +3,9 @@ package jobs
 import (
 	"context"
 	"delta/core"
-	"delta/core/model"
 	"delta/utils"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/ipfs/go-cid"
 	"time"
 )
@@ -26,7 +26,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 
 	// clear up finished CID deals.
 	var contentsOnline []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "transfer-finished", "online").Find(&contentsOnline)
+	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "transfer-finished", "e2e").Find(&contentsOnline)
 
 	for _, content := range contentsOnline {
 		cidD, err := cid.Decode(content.Cid)
@@ -34,7 +34,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue
@@ -42,7 +42,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 	}
 
 	var contentsOffline []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "deal-proposal-sent", "offline").Find(&contentsOffline)
+	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "deal-proposal-sent", "import").Find(&contentsOffline)
 
 	for _, content := range contentsOnline {
 		cidD, err := cid.Decode(content.Cid)
@@ -50,7 +50,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue
@@ -69,7 +69,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.Blockstore.DeleteBlock(i.Context, cidD)
+		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue

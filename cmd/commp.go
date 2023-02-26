@@ -20,9 +20,9 @@ import (
 
 type CommpResult struct {
 	Cid               string `json:"cid,omitempty"`
-	Commp             string `json:"commp,omitempty"`
-	PaddedPieceSize   uint64 `json:"padded-piece-size,omitempty"`
-	UnPaddedPieceSize uint64 `json:"un-padded-piece-size,omitempty"`
+	Commp             string `json:"piece_commitment,omitempty"`
+	PaddedPieceSize   uint64 `json:"padded_piece_size,omitempty"`
+	UnPaddedPieceSize uint64 `json:"unpadded_piece_size,omitempty"`
 }
 
 func CommpCmd() []*cli.Command {
@@ -105,9 +105,9 @@ func CommpCmd() []*cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			var commpResult api.ContentMakeDealRequest
+			var commpResult api.DealRequest
 			car := c.String("file")
-			forOffline := c.Bool("for-offline")
+			forImport := c.Bool("for-import")
 			miner := c.String("miner")
 			//wallet := c.String("wallet")
 
@@ -148,10 +148,10 @@ func CommpCmd() []*cli.Command {
 				commpResult.PieceCommitment.UnPaddedPieceSize = uint64(pieceInfo.Size.Unpadded())
 
 				// if for offline, add connection mode offline
-				if forOffline {
-					commpResult.ConnectionMode = "offline"
+				if forImport {
+					commpResult.ConnectionMode = "import"
 				} else {
-					commpResult.ConnectionMode = "online"
+					commpResult.ConnectionMode = "e2e"
 				}
 
 				size, err := fileNode.Size()
@@ -175,8 +175,8 @@ func CommpCmd() []*cli.Command {
 				if deltaApiUrl != "" && deltaApiKey != "" {
 					// send the result to delta api.
 					client := &http.Client{}
-					fmt.Println(deltaApiUrl + "/api/v1/deal/commitment-piece")
-					req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/commitment-piece", &buffer)
+					fmt.Println(deltaApiUrl + "/api/v1/deal/piece-commitment")
+					req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/piece-commitment", &buffer)
 					if err != nil {
 						fmt.Println(err)
 						return err
@@ -222,7 +222,7 @@ func CommpCmd() []*cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			var commpResults []api.ContentMakeDealRequest
+			var commpResults []api.DealRequest
 			car := c.String("files")
 			forOffline := c.Bool("for-offline")
 			miner := c.String("miner")
@@ -240,7 +240,7 @@ func CommpCmd() []*cli.Command {
 			}
 
 			for _, car := range strings.Split(car, ",") {
-				var commpResult api.ContentMakeDealRequest
+				var commpResult api.DealRequest
 				openFile, err := os.Open(car)
 				reader := bufio.NewReader(openFile)
 				if err != nil {
@@ -273,9 +273,9 @@ func CommpCmd() []*cli.Command {
 
 					// if for offline, add connection mode offline
 					if forOffline {
-						commpResult.ConnectionMode = "offline"
+						commpResult.ConnectionMode = "import"
 					} else {
-						commpResult.ConnectionMode = "online"
+						commpResult.ConnectionMode = "e2e"
 					}
 
 					size, err := fileNode.Size()
@@ -299,8 +299,8 @@ func CommpCmd() []*cli.Command {
 					if deltaApiUrl != "" && deltaApiKey != "" {
 						// send the result to delta api.
 						client := &http.Client{}
-						fmt.Println(deltaApiUrl + "/api/v1/deal/commitment-piece")
-						req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/commitment-piece", &buffer)
+						fmt.Println(deltaApiUrl + "/api/v1/deal/piece-commitment")
+						req, err := http.NewRequest("POST", deltaApiUrl+"/api/v1/deal/piece-commitment", &buffer)
 						if err != nil {
 							fmt.Println(err)
 							return err

@@ -2,6 +2,7 @@ package utils
 
 // status
 const (
+	DELTA_LABEL               string = "seal-the-delta-deal"
 	CONTENT_PINNED            string = "pinned"
 	CONTENT_FAILED_TO_PIN     string = "failed-to-pin"
 	CONTENT_FAILED_TO_PROCESS string = "failed-to-process"
@@ -23,8 +24,8 @@ const (
 	COMMP_STATUS_OPEN     = "open"
 	COMMP_STATUS_COMITTED = "committed"
 
-	CONNECTION_MODE_ONLINE  = "online"
-	CONNECTION_MODE_OFFLINE = "offline"
+	CONNECTION_MODE_E2E    = "e2e"
+	CONNECTION_MODE_IMPORT = "import"
 
 	LOTUS_API = "http://api.chain.love"
 

@@ -2,9 +2,9 @@ package core
 
 import (
 	"context"
-	"delta/core/model"
 	"delta/utils"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -136,7 +136,7 @@ func NewLightNode(ctx context.Context, repo NewLightNodeParams) (*DeltaNode, err
 
 	// job dispatcher
 	dispatcher := CreateNewDispatcher()
-	
+
 	// create the global light node.
 	return &DeltaNode{
 		Node:       whypfsPeer,

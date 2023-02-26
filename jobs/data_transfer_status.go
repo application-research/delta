@@ -2,9 +2,9 @@ package jobs
 
 import (
 	"delta/core"
-	"delta/core/model"
 	"delta/utils"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"strconv"

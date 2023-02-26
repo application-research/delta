@@ -2,8 +2,8 @@ package core
 
 import (
 	"context"
-	"delta/core/model"
 	"encoding/hex"
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/wallet"
@@ -56,10 +56,10 @@ type ImportWalletResult struct {
 
 type WalletService struct {
 	Context   context.Context
-	DeltaNode DeltaNode
+	DeltaNode *DeltaNode
 }
 
-func NewWalletService(dn DeltaNode) *WalletService {
+func NewWalletService(dn *DeltaNode) *WalletService {
 	return &WalletService{
 		DeltaNode: dn,
 	}

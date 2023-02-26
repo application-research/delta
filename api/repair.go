@@ -10,11 +10,15 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 	repair := e.Group("/repair")
 
-	repair.GET("/deal", func(c echo.Context) error {
+	repair.GET("/deal/content", func(c echo.Context) error {
+
+		// retry the same content id
 		return nil
 	})
 
-	repair.GET("/commp", func(c echo.Context) error {
+	repair.GET("/piece-commitment", func(c echo.Context) error {
+
+		// retry the same piece-commitment
 		return nil
 	})
 

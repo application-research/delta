@@ -1,11 +1,13 @@
 package core
 
 import (
-	"delta/core/model"
+	"context"
 	"delta/utils"
 	"fmt"
+	model "github.com/application-research/delta-db/db_models"
 	fc "github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
+	"github.com/ipfs/go-cid"
 	"strconv"
 	"time"
 )
@@ -30,12 +32,19 @@ func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *DeltaNode) {
 				TransferFinished: time.Now(),
 				SealedAt:         time.Now(),
 				UpdatedAt:        time.Now(),
+				OnChainAt:        time.Now(),
 				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
 			})
-			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Updates(model.Content{
-				Status:    utils.DEAL_STATUS_TRANSFER_FINISHED,
-				UpdatedAt: time.Now(),
-			})
+			var content model.Content
+			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
+			content.Status = utils.DEAL_STATUS_TRANSFER_FINISHED
+			content.UpdatedAt = time.Now()
+			i.DB.Save(&content)
+
+			// remove from the blockstore
+			cidToDelete, err := cid.Decode(content.Cid)
+			go i.Node.DAGService.Remove(context.Background(), cidToDelete)
+
 		case datatransfer.Failed:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 			var contentDeal model.ContentDeal
@@ -47,8 +56,6 @@ func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *DeltaNode) {
 				Status:    utils.DEAL_STATUS_TRANSFER_FAILED,
 				UpdatedAt: time.Now(),
 			})
-
-			//i.Dispatcher.AddJobAndDispatch(jobs.NewDataTransferRestartProcessor(i, contentDeal), 1)
 		default:
 		}
 	})
