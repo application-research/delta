@@ -65,6 +65,7 @@ func NewWalletService(dn *DeltaNode) *WalletService {
 	}
 }
 
+// Creating a new wallet and saving it to the database.
 func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) {
 	newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
 	if err != nil {
@@ -94,6 +95,7 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 	}, nil
 }
 
+// Importing a wallet.
 func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, error) {
 	newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
 	if err != nil {
@@ -124,6 +126,8 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 	}, nil
 }
 
+// Deleting the wallet from the database.
+
 func (w WalletService) Remove(param RemoveWalletParam) (DeleteWalletResult, error) {
 	err := w.DeltaNode.DB.Delete(&model.Wallet{}).Where("owner = ? and addr = ?", param.RequestingApiKey, param.Address).Error
 	if err != nil {
@@ -138,10 +142,12 @@ func (w WalletService) Remove(param RemoveWalletParam) (DeleteWalletResult, erro
 	}, nil
 }
 
+// A function that takes a WalletParam and returns a list of model.Wallet and an error.
 func (w WalletService) List(param WalletParam) ([]model.Wallet, error) {
 	var wallets []model.Wallet
 	w.DeltaNode.DB.Model(&model.Wallet{}).Where("owner = ?", param.RequestingApiKey).Find(&wallets)
 	return wallets, nil
+	// Getting the wallet from the database.
 }
 
 func (w WalletService) Get(param GetWalletParam) (model.Wallet, error) {

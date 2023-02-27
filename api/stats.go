@@ -18,6 +18,7 @@ type StatsCheckResponse struct {
 	} `json:"content"`
 }
 
+// Creating a new router and adding a route to it.
 func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/miner/:minerId/content", func(c echo.Context) error {

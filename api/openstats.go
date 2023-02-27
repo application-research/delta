@@ -6,6 +6,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// It configures the router to handle the following routes:
+//
+// - `GET /stats/miner/:minerId`
+// - `GET /stats/miner/:minerId/deals`
+// - `GET /stats/totals/info`
+//
+// The first two routes are handled by the `handleOpenStatsByMiner` and `handleOpenGetDealsByMiner` functions,
+// respectively. The last route is handled by the `handleOpenGetTotalsInfo` function
 func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/miner/:minerId", func(c echo.Context) error {
@@ -93,17 +101,17 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	var totalSealedDealInBytes int64
 	node.DB.Raw("select sum(size) from contents where status in ('transfer-started','transfer-finished','deal-proposal-sent')").Scan(&totalSealedDealInBytes)
 
-	var totalOfflineDeals int64
-	node.DB.Raw("select count(*) from contents where connection_mode = 'import'").Scan(&totalOfflineDeals)
+	var totalImportDeals int64
+	node.DB.Raw("select count(*) from contents where connection_mode = 'import'").Scan(&totalImportDeals)
 
-	var totalOnlineDeals int64
-	node.DB.Raw("select count(*) from contents where connection_mode = 'e2e'").Scan(&totalOnlineDeals)
+	var totalE2EDeals int64
+	node.DB.Raw("select count(*) from contents where connection_mode = 'e2e'").Scan(&totalE2EDeals)
 
-	var totalOnlineDealsInBytes int64
-	node.DB.Raw("select sum(size) from contents where connection_mode = 'e2e'").Scan(&totalOnlineDealsInBytes)
+	var totalE2EDealsInBytes int64
+	node.DB.Raw("select sum(size) from contents where connection_mode = 'e2e'").Scan(&totalE2EDealsInBytes)
 
-	var totalOfflineDealsInBytes int64
-	node.DB.Raw("select sum(size) from contents where connection_mode = 'import'").Scan(&totalOfflineDealsInBytes)
+	var totalImportDealsInBytes int64
+	node.DB.Raw("select sum(size) from contents where connection_mode = 'import'").Scan(&totalImportDealsInBytes)
 
 	c.JSON(200, map[string]interface{}{
 		"total_content_consumed":      totalContentConsumed,
@@ -116,10 +124,10 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 		"total_proposal_made":         totalProposalMade,
 		"total_proposal_sent":         totalProposalSent,
 		"total_sealed_deal_in_bytes":  totalSealedDealInBytes,
-		"total_import_deals":          totalOfflineDeals,
-		"total_e2e_deals":             totalOnlineDeals,
-		"total_e2e_deals_in_bytes":    totalOnlineDealsInBytes,
-		"total_import_deals_in_bytes": totalOfflineDealsInBytes,
+		"total_import_deals":          totalImportDeals,
+		"total_e2e_deals":             totalE2EDeals,
+		"total_e2e_deals_in_bytes":    totalE2EDealsInBytes,
+		"total_import_deals_in_bytes": totalImportDealsInBytes,
 	})
 	return nil
 }

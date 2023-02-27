@@ -6,12 +6,11 @@ import (
 	"context"
 	"delta/api"
 	"delta/core"
-	"encoding/json"
+	"delta/utils"
 	"fmt"
 	"github.com/application-research/filclient"
 	"github.com/application-research/whypfs-core"
 	"github.com/urfave/cli/v2"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -25,6 +24,7 @@ type CommpResult struct {
 	UnPaddedPieceSize uint64 `json:"unpadded_piece_size,omitempty"`
 }
 
+// A CLI command that generates a piece commitment for a given file.
 func CommpCmd() []*cli.Command {
 	// add a command to run API node
 	var commpCommands []*cli.Command
@@ -162,7 +162,7 @@ func CommpCmd() []*cli.Command {
 				commpResult.Size = int64(size)
 
 				var buffer bytes.Buffer
-				err = PrettyEncode(commpResult, &buffer)
+				err = utils.PrettyEncode(commpResult, &buffer)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -286,7 +286,7 @@ func CommpCmd() []*cli.Command {
 					commpResult.Size = int64(size)
 
 					var buffer bytes.Buffer
-					err = PrettyEncode(commpResult, &buffer)
+					err = utils.PrettyEncode(commpResult, &buffer)
 					if err != nil {
 						fmt.Println(err)
 					}
@@ -333,13 +333,4 @@ func CommpCmd() []*cli.Command {
 
 	return commpCommands
 
-}
-
-func PrettyEncode(data interface{}, out io.Writer) error {
-	enc := json.NewEncoder(out)
-	enc.SetIndent("", "    ")
-	if err := enc.Encode(data); err != nil {
-		return err
-	}
-	return nil
 }

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"delta/api"
 	c "delta/config"
 	"delta/core"
@@ -13,6 +12,7 @@ import (
 	"syscall"
 )
 
+// Creating a new command called `daemon` that will run the API node.
 func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 	// add a command to run API node
 	var daemonCommands []*cli.Command
@@ -50,7 +50,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				DefaultWalletDir: walletDir,
 				Config:           cfg,
 			}
-			ln, err := core.NewLightNode(context.Background(), nodeParams)
+			ln, err := core.NewLightNode(nodeParams)
 
 			if err != nil {
 				return err
@@ -96,6 +96,8 @@ func runScheduledCron(ln *core.DeltaNode) {
 	s.Start()
 
 }
+
+// Setting the global node meta.
 func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
 
 	// get the 80% of the total memory usage

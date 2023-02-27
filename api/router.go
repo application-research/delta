@@ -45,6 +45,7 @@ type AuthResponse struct {
 	} `json:"result"`
 }
 
+// Initializing the router.
 func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	// Echo instance
 	e := echo.New()

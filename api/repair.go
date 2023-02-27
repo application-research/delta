@@ -5,7 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// repair deals (re-create or re-try)
+// ConfigureRepairRouter repair deals (re-create or re-try)
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 	repair := e.Group("/repair")

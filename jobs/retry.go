@@ -14,6 +14,7 @@ type RetryProcessor struct {
 	LightNode *core.DeltaNode
 }
 
+// `NewRetryProcessor` creates a new `RetryProcessor` instance
 func NewRetryProcessor(ln *core.DeltaNode) IProcessor {
 	return &RetryProcessor{
 		LightNode: ln,
@@ -21,6 +22,8 @@ func NewRetryProcessor(ln *core.DeltaNode) IProcessor {
 }
 
 // Run DB heavy process. We need to check the status of the content and requeue the job if needed.
+// Checking the status of the content and requeue the job if needed.
+// Checking the status of the content and requeue the job if needed.
 func (i RetryProcessor) Run() error {
 
 	// create the new logic again.

@@ -9,8 +9,12 @@ import (
 	"github.com/application-research/filclient"
 )
 
+// `DataTransferRestartListenerProcessor` is a struct that contains a `LightNode` and a `ContentDeal`.
+// @property LightNode - The light node that is used to send the data transfer restart message.
+// @property ContentDeal - The content deal that is being processed.
 type DataTransferRestartListenerProcessor struct {
-	LightNode   *core.DeltaNode
+	LightNode *core.DeltaNode
+	// `NewDataTransferRestartProcessor` is a function that returns a `DataTransferRestartListenerProcessor` struct
 	ContentDeal model.ContentDeal
 }
 
@@ -21,6 +25,7 @@ func NewDataTransferRestartProcessor(ln *core.DeltaNode, contentDeal model.Conte
 	}
 }
 
+// Restarting the data transfer.
 func (d DataTransferRestartListenerProcessor) Run() error {
 	// get the deal data transfer state pull deals
 	dtChan, err := utils.GetChannelID(d.ContentDeal.DTChan)

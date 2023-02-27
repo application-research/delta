@@ -11,16 +11,20 @@ import (
 	"time"
 )
 
+// It's a struct that contains a pointer to a DeltaNode.
+// @property LightNode - This is the DeltaNode that will be used to process the data transfer.
 type DataTransferStatusListenerProcessor struct {
 	LightNode *core.DeltaNode
 }
 
+// It creates a new instance of the `DataTransferStatusListenerProcessor` struct, and returns a pointer to it
 func NewDataTransferStatusListenerProcessor(ln *core.DeltaNode) IProcessor {
 	return &DataTransferStatusListenerProcessor{
 		LightNode: ln,
 	}
 }
 
+// It's a function that is called when the data transfer status changes.
 func (d DataTransferStatusListenerProcessor) Run() error {
 	d.LightNode.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst filclient.ChannelState) {
 		fmt.Println("Data Transfer Status Listener: ", fst.Status)

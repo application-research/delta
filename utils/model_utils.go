@@ -7,6 +7,7 @@ import (
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 )
 
+// `GetChannelID` takes a string and returns a `datatransfer.ChannelID` and an error
 func GetChannelID(dtChannel string) (datatransfer.ChannelID, error) {
 	if dtChannel == "" {
 		return datatransfer.ChannelID{}, db_models.ErrNoChannelID

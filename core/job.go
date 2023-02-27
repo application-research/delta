@@ -1,3 +1,4 @@
+// Create a dispatcher, add jobs to it, and then start it with a number of workers
 package core
 
 import (
@@ -21,6 +22,7 @@ type Worker struct {
 	Quit           chan bool
 }
 
+// Creating a new worker and adding it to the workerQueue.
 func CreateNewWorker(id int, workerQueue chan *Worker, jobQueue chan *Job, dStatus chan *DispatchStatus) *Worker {
 	w := &Worker{
 		ID:             id,
@@ -32,6 +34,8 @@ func CreateNewWorker(id int, workerQueue chan *Worker, jobQueue chan *Job, dStat
 	return w
 }
 
+// It's a goroutine that is waiting for a job to be added to the worker's job channel.
+// When a job is added, it is executed and then the worker sends a quit message to the dispatcher.
 func (w *Worker) Start() {
 	go func() {
 		for {
@@ -62,6 +66,7 @@ type Dispatcher struct {
 	workerQueue    chan *Worker         // channel of workers
 }
 
+// Create a new dispatcher, and return a pointer to it
 func CreateNewDispatcher() *Dispatcher {
 	d := &Dispatcher{
 		jobCounter:     0,
@@ -73,6 +78,8 @@ func CreateNewDispatcher() *Dispatcher {
 	return d
 }
 
+// Creating a number of workers and then waiting for jobs to be added to the jobQueue.
+// When a job is added, it is sent to the workQueue, which is the channel that the workers are listening to.
 func (d *Dispatcher) Start(numWorkers int) {
 	// Create numWorkers:
 	for i := 0; i < numWorkers; i++ {
@@ -100,6 +107,7 @@ func (d *Dispatcher) Start(numWorkers int) {
 	}()
 }
 
+// Adding a job to the jobQueue.
 func (d *Dispatcher) AddJob(je IProcessor) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()
@@ -107,6 +115,7 @@ func (d *Dispatcher) AddJob(je IProcessor) {
 	fmt.Printf("Number Of Jobs: %d\n", d.jobCounter)
 }
 
+// Adding a job to the jobQueue, and then starting the dispatcher with a number of workers.
 func (d *Dispatcher) AddJobAndDispatch(je IProcessor, numWorkers int) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()
@@ -115,6 +124,7 @@ func (d *Dispatcher) AddJobAndDispatch(je IProcessor, numWorkers int) {
 	d.Start(numWorkers)
 }
 
+// It's a method that returns true if the jobCounter is less than 1.
 func (d *Dispatcher) Finished() bool {
 	if d.jobCounter < 1 {
 		return true

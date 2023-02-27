@@ -29,13 +29,40 @@ import (
 	"time"
 )
 
+// `WalletMeta` is a struct with two fields, `KeyType` and `PrivateKey`, both of which are strings.
+// @property {string} KeyType - The type of key used to sign the transaction.
+// @property {string} PrivateKey - The private key of the wallet.
+type WalletMeta struct {
+	KeyType    string `json:"key_type"`
+	PrivateKey string `json:"private_key"`
+}
+
+// `MinerAddress` is a type that represents a miner address.
+// @property Address - The address of the miner.
+type MinerAddress struct {
+	Address address.Address
+}
+
+// Genesis Miner
+var mainnetMinerStrs = []string{
+	"f01963614",
+}
+
+// `StorageDealMakerProcessor` is a struct that contains a `context.Context`, a `*core.DeltaNode`, a `*model.Content`, and
+// a `*model.PieceCommitment`.
+// @property Context - The context of the deal maker processor.
+// @property LightNode - The light node that is making the deal.
+// @property Content - The content that the storage deal is for.
+// @property PieceComm - The piece commitment that the miner is trying to prove.
 type StorageDealMakerProcessor struct {
+	// It creates a new `StorageDealMakerProcessor` object, which is a type of `IProcessor` object
 	Context   context.Context
 	LightNode *core.DeltaNode
 	Content   *model.Content
 	PieceComm *model.PieceCommitment
 }
 
+// It creates a new `StorageDealMakerProcessor` object, which is a type of `IProcessor` object
 func NewStorageDealMakerProcessor(ln *core.DeltaNode, content model.Content, commitment model.PieceCommitment) IProcessor {
 	return &StorageDealMakerProcessor{
 		LightNode: ln,
@@ -45,6 +72,8 @@ func NewStorageDealMakerProcessor(ln *core.DeltaNode, content model.Content, com
 	}
 }
 
+// The above code is a function that is part of the StorageDealMakerProcessor struct. It is a function that is called when
+// the StorageDealMakerProcessor is run. It calls the makeStorageDeal function, which is defined in the same file.
 func (i StorageDealMakerProcessor) Run() error {
 	err := i.makeStorageDeal(i.Content, i.PieceComm)
 	if err != nil {
@@ -54,8 +83,9 @@ func (i StorageDealMakerProcessor) Run() error {
 	return nil
 }
 
+// Making a deal with the miner.
 func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, pieceComm *model.PieceCommitment) error {
-
+	
 	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 		Status: utils.CONTENT_DEAL_MAKING_PROPOSAL, //"making-deal-proposal",
 	})
@@ -389,10 +419,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 }
 
-type MinerAddress struct {
-	Address address.Address
-}
-
+// Getting the miner address for the content.
 func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Content) MinerAddress {
 	var storageMinerAssignment model.ContentMiner
 	i.LightNode.DB.Model(&model.ContentMiner{}).Where("content = ?", content.ID).Find(&storageMinerAssignment)
@@ -407,11 +434,8 @@ func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Con
 	return i.GetStorageProviders()[0]
 }
 
-type WalletMeta struct {
-	KeyType    string `json:"key_type"`
-	PrivateKey string `json:"private_key"`
-}
-
+// Getting the content deal proposal parameters for a given content.
+// Getting the content deal proposal parameters for a given content.
 func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Content) model.ContentDealProposalParameters {
 	var contentDealProposalParameters model.ContentDealProposalParameters
 	i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters)
@@ -463,10 +487,6 @@ func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model
 	return i.LightNode.FilClient, err
 }
 
-var mainnetMinerStrs = []string{
-	"f01963614",
-}
-
 func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 	var storageProviders []MinerAddress
 	for _, s := range mainnetMinerStrs {
@@ -480,6 +500,7 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 	return storageProviders
 }
 
+// Sending a proposal to the peer.
 func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool) (bool, error) {
 	// Create an auth token to be used in the request
 	authToken, err := httptransport.GenerateAuthToken()

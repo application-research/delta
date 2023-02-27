@@ -15,6 +15,7 @@ import (
 	promclient "github.com/prometheus/client_golang/prometheus"
 )
 
+// It creates a Prometheus exporter that exports the metrics from the default Prometheus registry
 func Exporter() http.Handler {
 	// Prometheus globals are exposed as interfaces, but the prometheus
 	// OpenCensus exporter expects a concrete *Registry. The concrete type of

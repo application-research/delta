@@ -24,6 +24,7 @@ func (s *StatusLogger) UpdateContentStatus(content model.Content, status string)
 	return nil
 }
 
+// Updating the status of a piece commitment object.
 func (s *StatusLogger) UpdatePieceCommStatus(pieceCommp model.PieceCommitment, status string) error {
 	tx := s.LightNode.DB.Model(&pieceCommp).Update("status", status)
 	if tx.Error != nil {
@@ -32,6 +33,7 @@ func (s *StatusLogger) UpdatePieceCommStatus(pieceCommp model.PieceCommitment, s
 	return nil
 }
 
+// Updating the status of a content deal object.
 func (s *StatusLogger) UpdateContentDealStatus(pieceCommp model.ContentDeal, status string) error {
 	tx := s.LightNode.DB.Model(&pieceCommp).Update("status", status)
 	if tx.Error != nil {

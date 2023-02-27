@@ -1,3 +1,4 @@
+// Importing the api package.
 package api
 
 import (
@@ -56,6 +57,8 @@ type DealResponse struct {
 	DealRequest interface{} `json:"request_meta,omitempty"`
 }
 
+// It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
+// to the echo.Group
 func DealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	//	inject the stats service
@@ -234,7 +237,14 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 
 		// get wallet from wallets database
 		var wallet model.Wallet
-		node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+
+		if dealRequest.Wallet.Address != "" {
+			node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+		} else if dealRequest.Wallet.Uuid != "" {
+			node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+		} else {
+			node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+		}
 
 		// create the wallet request object
 		var hexedWallet WalletRequest
@@ -420,7 +430,13 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 
 		// get wallet from wallets database
 		var wallet model.Wallet
-		node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+		if dealRequest.Wallet.Address != "" {
+			node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+		} else if dealRequest.Wallet.Uuid != "" {
+			node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+		} else {
+			node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+		}
 
 		// create the wallet request object
 		var hexedWallet WalletRequest
@@ -607,7 +623,13 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 
 			// get wallet from wallets database
 			var wallet model.Wallet
-			node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+			if dealRequest.Wallet.Address != "" {
+				node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+			} else if dealRequest.Wallet.Uuid != "" {
+				node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+			} else {
+				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+			}
 
 			// create the wallet request object
 			var hexedWallet WalletRequest
@@ -684,6 +706,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 	return nil
 }
 
+// It takes a contentId as a parameter, looks up the status of the content, and returns the status as JSON
 func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
 	contentIdParam := c.Param("contentId")
 	contentId, err := strconv.Atoi(contentIdParam)
@@ -703,6 +726,7 @@ func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.
 	return c.JSON(200, status)
 }
 
+// It takes a piece commitment ID, looks up the status of the piece commitment, and returns the status
 func handleCommitmentPieceStats(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
 	pieceCommitmentIdParam := c.Param("piece-commitmentId")
 	pieceCommitmentId, err := strconv.Atoi(pieceCommitmentIdParam)
@@ -726,6 +750,7 @@ type ValidateMetaResult struct {
 	Message string
 }
 
+// `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
 func ValidateMeta(dealRequest DealRequest) error {
 
 	if (DealRequest{} == dealRequest) {
@@ -749,23 +774,31 @@ func ValidateMeta(dealRequest DealRequest) error {
 	return nil
 }
 
+// It takes a request, and returns a response
 func handlePrepareContent(c echo.Context, node *core.DeltaNode, statsService core.StatsService) {
 
+	// > This function is called when a node receives a `PrepareCommitmentPiece` message
 }
 func handlePrepareCommitmentPiece() {
 
+	// > This function is called when the user clicks the "Prepare Commitment Pieces" button. It takes the user's input and
+	// prepares the commitment pieces
 }
 func handlePrepareCommitmentPieces() {
 
+	// This function handles the announcement of content.
 }
 
 func handleAnnounceContent() {
 
 }
 
+// > The function `handleAnnounceCommitmentPiece` is called when a `AnnounceCommitmentPiece` message is received
 func handleAnnounceCommitmentPiece() {
 
 }
+
+// > This function is called when a commitment piece is received from a peer
 
 func handleAnnounceCommitmentPieces() {
 

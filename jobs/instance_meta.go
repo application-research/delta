@@ -7,16 +7,20 @@ import (
 	"syscall"
 )
 
+// It's a struct that contains a pointer to a DeltaNode.
+// @property LightNode - This is the node that is being processed.
 type InstanceMetaProcessor struct {
 	LightNode *core.DeltaNode
 }
 
+// > This function creates a new instance of the `InstanceMetaProcessor` struct and returns it as an `IProcessor` interface
 func NewInstanceMetaProcessor(ln *core.DeltaNode, contentDeal model.ContentDeal) IProcessor {
 	return &InstanceMetaProcessor{
 		LightNode: ln,
 	}
 }
 
+// It's checking if the CPU or Mem is above the meta set.
 func (d InstanceMetaProcessor) Run() error {
 	// check if CPU or Mem is above the meta set
 	memStats := &runtime.MemStats{}

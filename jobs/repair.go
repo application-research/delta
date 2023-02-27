@@ -8,6 +8,7 @@ type RepairProcessor struct {
 	LightNode *core.DeltaNode
 }
 
+// `NewRepairProcessor` creates a new `RepairProcessor` struct and returns it
 func NewRepairProcessor(ln *core.DeltaNode) IProcessor {
 	return &RepairProcessor{
 		LightNode: ln,
