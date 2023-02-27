@@ -453,6 +453,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode, stats core.S
 			node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
 		}
 
+		fmt.Println("wallet", wallet)
 		// create the wallet request object
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = wallet.KeyType
@@ -1042,7 +1043,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 			if dealRequest.Wallet.Address != "" {
 				node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
 			} else if dealRequest.Wallet.Uuid != "" {
-				node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+				node.DB.Where("uu_id = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
 			} else {
 				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
 			}
