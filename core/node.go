@@ -5,6 +5,7 @@ import (
 	"delta/utils"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
+	"github.com/application-research/delta-db/messaging"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -32,14 +33,15 @@ import (
 )
 
 type DeltaNode struct {
-	Context    context.Context
-	Node       *whypfs.Node
-	Api        url.URL
-	DB         *gorm.DB
-	FilClient  *fc.FilClient
-	Config     *c.DeltaConfig
-	Dispatcher *Dispatcher
-	MetaInfo   *model.InstanceMeta
+	Context     context.Context
+	Node        *whypfs.Node
+	Api         url.URL
+	DB          *gorm.DB
+	FilClient   *fc.FilClient
+	Config      *c.DeltaConfig
+	Dispatcher  *Dispatcher
+	DeltaTracer *messaging.DeltaMetricsTracer
+	MetaInfo    *model.InstanceMeta
 }
 
 type LocalWallet struct {
@@ -61,6 +63,7 @@ type NewLightNodeParams struct {
 	Config           *c.DeltaConfig
 }
 
+// NewLightNode Creating a new light node.
 func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	//	database
 	db, err := model.OpenDatabase(repo.Config.Common.DBDSN)
@@ -107,16 +110,21 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	// job dispatcher
 	dispatcher := CreateNewDispatcher()
 
+	tracer := messaging.NewDeltaMetricsTracer()
+
 	// create the global light node.
 	return &DeltaNode{
-		Node:       whypfsPeer,
-		DB:         db,
-		FilClient:  fc,
-		Dispatcher: dispatcher,
-		Config:     repo.Config,
+		Node:        whypfsPeer,
+		DB:          db,
+		FilClient:   fc,
+		Dispatcher:  dispatcher,
+		Config:      repo.Config,
+		DeltaTracer: tracer,
 	}, nil
 }
 
+// LotusConnection It takes a string that contains the Lotus full node API address and returns a `v1api.FullNode` interface, a
+// `jsonrpc.ClientCloser` interface, and an error
 func LotusConnection(fullNodeApiInfo string) (v1api.FullNode, jsonrpc.ClientCloser, error) {
 	info := cliutil.ParseApiInfo(fullNodeApiInfo)
 
@@ -136,6 +144,7 @@ func LotusConnection(fullNodeApiInfo string) (v1api.FullNode, jsonrpc.ClientClos
 	return api, closer, nil
 }
 
+// SetupWallet Creating a new wallet and setting it as the default wallet.
 func SetupWallet(dir string) (*wallet.LocalWallet, error) {
 	kstore, err := keystore.OpenOrInitKeystore(dir)
 	if err != nil {
@@ -166,6 +175,7 @@ func SetupWallet(dir string) (*wallet.LocalWallet, error) {
 	return wallet, nil
 }
 
+// GetPublicIP Getting the public IP of the node.
 func GetPublicIP() (string, error) {
 	resp, err := http.Get("https://ifconfig.me") // important to get the public ip if possible.
 	if err != nil {

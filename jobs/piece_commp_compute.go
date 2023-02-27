@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// `PieceCommpProcessor` is a struct that contains a `context.Context`, a `*core.DeltaNode`, a `model.Content`, a
+// PieceCommpProcessor `PieceCommpProcessor` is a struct that contains a `context.Context`, a `*core.DeltaNode`, a `model.Content`, a
 // `filclient.DealConfig`, and a `*core.CommpService`.
 // @property Context - The context of the current request
 // @property LightNode - The light node that is currently being processed
@@ -30,7 +30,7 @@ type PieceCommpProcessor struct {
 	CommpService    *core.CommpService
 }
 
-// `NewPieceCommpProcessor` is a function that returns a `PieceCommpProcessor` struct
+// NewPieceCommpProcessor `NewPieceCommpProcessor` is a function that returns a `PieceCommpProcessor` struct
 func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcessor {
 	commpService := new(core.CommpService)
 	return &PieceCommpProcessor{
@@ -41,7 +41,7 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcesso
 	}
 }
 
-// The process of generating the commp.
+// Run The process of generating the commp.
 func (i PieceCommpProcessor) Run() error {
 
 	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_COMPUTING})

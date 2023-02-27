@@ -22,6 +22,7 @@ func ConfigureMinerRouter(e *echo.Group, node *core.DeltaNode) {
 	//	get the stats of miner and content id
 }
 
+// A function that returns a function that takes a context and returns an error.
 func handleMinerStats(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		minerId := c.Param("minerId")

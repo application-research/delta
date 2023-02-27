@@ -45,7 +45,7 @@ type AuthResponse struct {
 	} `json:"result"`
 }
 
-// Initializing the router.
+// InitializeEchoRouterConfig Initializing the router.
 func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	// Echo instance
 	e := echo.New()
@@ -130,18 +130,22 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 		}
 	})
 
+	// api
 	ConfigMetricsRouter(apiGroup)
-	DealRouter(apiGroup, ln)
+	ConfigureDealRouter(apiGroup, ln)
 	ConfigureStatsCheckRouter(apiGroup, ln)
-	ConfigureNodeInfoRouter(openApiGroup, ln)
-	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
 	ConfigureRepairRouter(apiGroup, ln)
 	ConfigureMinerRouter(apiGroup, ln)
+
+	// open api
+	ConfigureNodeInfoRouter(openApiGroup, ln)
+	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
 }
 
+// GetAuthResponse It's making a request to the auth API to check if the API key is valid.
 func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
 
 	jsonBody := AuthResponse{}
@@ -163,6 +167,7 @@ func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
 	return jsonBody, nil
 }
 
+// ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
 	var httpRespErr *HttpError
 	if xerrors.As(err, &httpRespErr) {
@@ -203,6 +208,7 @@ func ErrorHandler(err error, c echo.Context) {
 }
 
 // LoopForever on signal processing
+// It's a function that is called when an error occurs.
 func LoopForever() {
 	fmt.Printf("Entering infinite loop\n")
 

@@ -43,7 +43,7 @@ func InitConfig() DeltaConfig {
 	return cfg
 }
 
-// Creating a list of multiaddresses that are used to bootstrap the network.
+// BootstrapEstuaryPeers Creating a list of multiaddresses that are used to bootstrap the network.
 func BootstrapEstuaryPeers() []peer.AddrInfo {
 
 	for _, s := range []string{

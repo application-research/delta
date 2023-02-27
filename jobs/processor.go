@@ -13,7 +13,7 @@ type IProcessor interface {
 	Run() error
 }
 
-// `Processor` is a struct that contains a `context.Context` and a `*core.DeltaNode`.
+// Processor `Processor` is a struct that contains a `context.Context` and a `*core.DeltaNode`.
 // @property Context - The context of the processor.
 // @property LightNode - This is the node that is being processed.
 type Processor struct {

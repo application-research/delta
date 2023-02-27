@@ -18,7 +18,7 @@ type StatsCheckResponse struct {
 	} `json:"content"`
 }
 
-// Creating a new router and adding a route to it.
+// ConfigureStatsCheckRouter Creating a new router and adding a route to it.
 func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/miner/:minerId/content", func(c echo.Context) error {
@@ -125,6 +125,7 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 }
 
+// A function that takes in a commitment and a piece number and returns the piece of the commitment.
 func handleGetCommitmentPiece(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")

@@ -59,6 +59,7 @@ type WalletService struct {
 	DeltaNode *DeltaNode
 }
 
+// Creating a new wallet service.
 func NewWalletService(dn *DeltaNode) *WalletService {
 	return &WalletService{
 		DeltaNode: dn,

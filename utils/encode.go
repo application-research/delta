@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-// Encoding the data into JSON format and writing it to the output stream.
+// PrettyEncode Encoding the data into JSON format and writing it to the output stream.
 func PrettyEncode(data interface{}, out io.Writer) error {
 	enc := json.NewEncoder(out)
 	enc.SetIndent("", "    ")
