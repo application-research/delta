@@ -440,7 +440,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode, stats core.S
 		}
 	}
 
-	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+	if (WalletRequest{} != dealRequest.Wallet) {
 
 		// get wallet from wallets database
 		var wallet model.Wallet
@@ -649,7 +649,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 		}
 	}
 
-	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+	if (WalletRequest{} != dealRequest.Wallet) {
 
 		// get wallet from wallets database
 		var wallet model.Wallet
@@ -842,7 +842,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 		}
 	}
 
-	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+	if (WalletRequest{} != dealRequest.Wallet) {
 
 		// get wallet from wallets database
 		var wallet model.Wallet
@@ -1035,7 +1035,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 			}
 		}
 
-		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+		if (WalletRequest{} != dealRequest.Wallet) {
 
 			// get wallet from wallets database
 			var wallet model.Wallet
