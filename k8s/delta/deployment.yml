@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delta
+  labels:
+    app: delta
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delta
+  template:
+    metadata:
+      labels:
+        app: delta
+    spec:    
+      containers:
+        - name: delta
+          image: 0utercore/delta:v0.0.1
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /root/config
+              name: persistent-config
+          ports:
+            - containerPort: 1414
+      volumes:                                      
+        - name: persistent-config
+          persistentVolumeClaim:
+            claimName: config-pv-claim
