@@ -172,7 +172,49 @@ When you upload, it returns a content id, use that to get the stats of a specifi
 curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]'
 ```
+### Import a wallet and use it to make a deal
+```
+curl --location --request POST 'http://localhost:1414/admin/wallet/register' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+"address":"<public key>",
+"key_type":"bls",
+"private_key":"<private_key>"
+}'
+```
 
+Get the response and use the wallet id to make a deal
+```
+{
+    "message": "Successfully imported a wallet address. Please take note of the UUID.",
+    "wallet_addr": "<public address>",
+    "wallet_uuid": "ff0e8640-b662-11ed-860a-9e0bf0c70138"
+}
+```
+
+### Make a deal using the registered wallet
+```
+curl --location --request POST 'http://shuttle-4-bs1.estuary.tech:1414/api/v1/deal/piece-commitments' \
+--header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Content-Type: application/json' \
+--data-raw '[{
+    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
+    "miner":"f01963614",
+    "wallet": {
+        "address":"<public address after registering>",
+        "uuid":"<wallet id after registering>" // optional
+    },
+    "piece_commitment": {
+        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+        "padded_piece_size": 4294967296
+    },
+    "connection_mode": "import",
+    "size": 2500366291,
+    "remove_unsealed_copies":true, 
+    "skip_ipni_announce": true
+}]'
+```
 
 ## CLI
 ### Get the commp of a file using commp cli
