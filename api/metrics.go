@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// Configuring the metrics router.
 func ConfigMetricsRouter(e *echo.Group) {
 	// metrics
 	phandle := promhttp.Handler()

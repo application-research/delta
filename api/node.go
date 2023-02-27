@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// It configures the router to handle requests for node information
+// ConfigureNodeInfoRouter It configures the router to handle requests for node information
 func ConfigureNodeInfoRouter(e *echo.Group, node *core.DeltaNode) {
 	nodeGroup := e.Group("/node")
 	nodeGroup.GET("/info", handleNodeInfo(node))

@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-// `WalletMeta` is a struct with two fields, `KeyType` and `PrivateKey`, both of which are strings.
+// WalletMeta `WalletMeta` is a struct with two fields, `KeyType` and `PrivateKey`, both of which are strings.
 // @property {string} KeyType - The type of key used to sign the transaction.
 // @property {string} PrivateKey - The private key of the wallet.
 type WalletMeta struct {
@@ -37,7 +37,7 @@ type WalletMeta struct {
 	PrivateKey string `json:"private_key"`
 }
 
-// `MinerAddress` is a type that represents a miner address.
+// MinerAddress `MinerAddress` is a type that represents a miner address.
 // @property Address - The address of the miner.
 type MinerAddress struct {
 	Address address.Address
@@ -48,7 +48,7 @@ var mainnetMinerStrs = []string{
 	"f01963614",
 }
 
-// `StorageDealMakerProcessor` is a struct that contains a `context.Context`, a `*core.DeltaNode`, a `*model.Content`, and
+// StorageDealMakerProcessor `StorageDealMakerProcessor` is a struct that contains a `context.Context`, a `*core.DeltaNode`, a `*model.Content`, and
 // a `*model.PieceCommitment`.
 // @property Context - The context of the deal maker processor.
 // @property LightNode - The light node that is making the deal.
@@ -62,7 +62,7 @@ type StorageDealMakerProcessor struct {
 	PieceComm *model.PieceCommitment
 }
 
-// It creates a new `StorageDealMakerProcessor` object, which is a type of `IProcessor` object
+// NewStorageDealMakerProcessor It creates a new `StorageDealMakerProcessor` object, which is a type of `IProcessor` object
 func NewStorageDealMakerProcessor(ln *core.DeltaNode, content model.Content, commitment model.PieceCommitment) IProcessor {
 	return &StorageDealMakerProcessor{
 		LightNode: ln,
@@ -72,7 +72,7 @@ func NewStorageDealMakerProcessor(ln *core.DeltaNode, content model.Content, com
 	}
 }
 
-// The above code is a function that is part of the StorageDealMakerProcessor struct. It is a function that is called when
+// Run The above code is a function that is part of the StorageDealMakerProcessor struct. It is a function that is called when
 // the StorageDealMakerProcessor is run. It calls the makeStorageDeal function, which is defined in the same file.
 func (i StorageDealMakerProcessor) Run() error {
 	err := i.makeStorageDeal(i.Content, i.PieceComm)
@@ -85,7 +85,7 @@ func (i StorageDealMakerProcessor) Run() error {
 
 // Making a deal with the miner.
 func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, pieceComm *model.PieceCommitment) error {
-	
+
 	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 		Status: utils.CONTENT_DEAL_MAKING_PROPOSAL, //"making-deal-proposal",
 	})
@@ -419,7 +419,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 }
 
-// Getting the miner address for the content.
+// GetAssignedMinerForContent Getting the miner address for the content.
 func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Content) MinerAddress {
 	var storageMinerAssignment model.ContentMiner
 	i.LightNode.DB.Model(&model.ContentMiner{}).Where("content = ?", content.ID).Find(&storageMinerAssignment)
@@ -442,6 +442,7 @@ func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Cont
 	return contentDealProposalParameters
 }
 
+// *|CURSOR_MARCADOR|*
 func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model.Content) (*fc.FilClient, error) {
 	api, _, err := core.LotusConnection(utils.LOTUS_API)
 	if err != nil {
@@ -487,6 +488,7 @@ func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model
 	return i.LightNode.FilClient, err
 }
 
+// GetStorageProviders Getting the storage providers.
 func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 	var storageProviders []MinerAddress
 	for _, s := range mainnetMinerStrs {

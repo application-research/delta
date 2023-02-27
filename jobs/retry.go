@@ -14,7 +14,7 @@ type RetryProcessor struct {
 	LightNode *core.DeltaNode
 }
 
-// `NewRetryProcessor` creates a new `RetryProcessor` instance
+// NewRetryProcessor `NewRetryProcessor` creates a new `RetryProcessor` instance
 func NewRetryProcessor(ln *core.DeltaNode) IProcessor {
 	return &RetryProcessor{
 		LightNode: ln,
@@ -23,17 +23,19 @@ func NewRetryProcessor(ln *core.DeltaNode) IProcessor {
 
 // Run DB heavy process. We need to check the status of the content and requeue the job if needed.
 // Checking the status of the content and requeue the job if needed.
-// Checking the status of the content and requeue the job if needed.
 func (i RetryProcessor) Run() error {
 
 	// create the new logic again.
-	// if transfer-started but older than 3 days, then requeue the job.
+	// Finding all the contents that are not in the status of `transfer-finished` or `deal-proposal-sent` and created_at is
+	// less than 1 day ago.
 	var contents []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status <> ? and created_at < ? and created_at <> updated_at", "transfer-finished", time.Now().AddDate(0, 0, -1)).Find(&contents)
+	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?) and created_at < ? and created_at <> updated_at", "transfer-finished", "deal-proposal-sent", time.Now().AddDate(0, 0, -1)).Find(&contents)
 
+	// Checking the status of the content and requeue the job if needed.
 	for _, content := range contents {
 
 		// get the piece
+		// This is the retry logic.
 		if content.Status == utils.CONTENT_PINNED || content.Status == utils.CONTENT_PIECE_COMPUTING {
 
 			// record the retry as a piece-commp
@@ -46,7 +48,7 @@ func (i RetryProcessor) Run() error {
 
 			i.LightNode.Dispatcher.AddJobAndDispatch(NewPieceCommpProcessor(i.LightNode, content), 1)
 
-		} else if content.Status == utils.CONTENT_PIECE_COMPUTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.CONTENT_DEAL_SENDING_PROPOSAL || content.Status == utils.CONTENT_DEAL_MAKING_PROPOSAL {
+		} else if content.Status == utils.CONTENT_PIECE_COMPUTED || content.Status == utils.CONTENT_DEAL_SENDING_PROPOSAL || content.Status == utils.CONTENT_DEAL_MAKING_PROPOSAL {
 			var pieceCommp model.PieceCommitment
 			i.LightNode.DB.Model(&model.PieceCommitment{}).Where("id = (select piece_commitment_id from contents c where c.id = ?)", content.ID).Find(&pieceCommp)
 

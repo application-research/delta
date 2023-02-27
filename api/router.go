@@ -1,6 +1,7 @@
 package api
 
 import (
+	"delta/config"
 	"delta/core"
 	"encoding/json"
 	"fmt"
@@ -45,8 +46,8 @@ type AuthResponse struct {
 	} `json:"result"`
 }
 
-// Initializing the router.
-func InitializeEchoRouterConfig(ln *core.DeltaNode) {
+// InitializeEchoRouterConfig Initializing the router.
+func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	// Echo instance
 	e := echo.New()
 
@@ -62,86 +63,108 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode) {
 	apiGroup := e.Group("/api/v1")
 	openApiGroup := e.Group("/open")
 	adminApiGroup := e.Group("/admin")
-	ConfigureAdminRouter(adminApiGroup, ln)
 
-	//apiGroup.Use(func(echo.HandlerFunc) echo.HandlerFunc {
-	//	// check if upload of this node is disabled.
-	//	if ln.MetaInfo.DisableRequest {
-	//		return func(c echo.Context) error {
-	//			return c.JSON(http.StatusForbidden, HttpErrorResponse{
-	//				Error: HttpError{
-	//					Code:    http.StatusForbidden,
-	//					Reason:  http.StatusText(http.StatusForbidden),
-	//					Details: "upload is disabled - due to memory or disk space limits",
-	//				},
-	//			})
-	//		}
-	//	}
-	//	return nil
-	//})
+	if config.Common.Mode == "standalone" {
+		apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				authorizationString := c.Request().Header.Get("Authorization")
+				authParts := strings.Split(authorizationString, " ")
 
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			authorizationString := c.Request().Header.Get("Authorization")
-			authParts := strings.Split(authorizationString, " ")
+				// at least validate it
+				if len(authParts) != 2 {
+					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+						Error: HttpError{
+							Code:    http.StatusUnauthorized,
+							Reason:  http.StatusText(http.StatusUnauthorized),
+							Details: "Invalid authorization header",
+						},
+					})
+				}
 
-			response, err := http.Post(
-				"https://estuary-auth-api.onrender.com/check-api-key",
-				"application/json",
-				strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
-			)
-
-			if err != nil {
-				log.Errorf("handler error: %s", err)
-				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
-					Error: HttpError{
-						Code:    http.StatusInternalServerError,
-						Reason:  http.StatusText(http.StatusInternalServerError),
-						Details: err.Error(),
-					},
-				})
-			}
-
-			authResp, err := GetAuthResponse(response)
-			if err != nil {
-				log.Errorf("handler error: %s", err)
-				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
-					Error: HttpError{
-						Code:    http.StatusInternalServerError,
-						Reason:  http.StatusText(http.StatusInternalServerError),
-						Details: err.Error(),
-					},
-				})
-			}
-
-			if authResp.Result.Validated == false {
-				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
-					Error: HttpError{
-						Code:    http.StatusUnauthorized,
-						Reason:  http.StatusText(http.StatusUnauthorized),
-						Details: authResp.Result.Details,
-					},
-				})
-			}
-			if authResp.Result.Validated == true {
+				// validate the token
+				if authParts[1] != config.Standalone.APIKey {
+					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+						Error: HttpError{
+							Code:    http.StatusUnauthorized,
+							Reason:  http.StatusText(http.StatusUnauthorized),
+							Details: "Invalid authorization header",
+						},
+					})
+				}
 				return next(c)
 			}
-			return next(c)
-		}
-	})
+		})
+	} else {
+		apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				authorizationString := c.Request().Header.Get("Authorization")
+				authParts := strings.Split(authorizationString, " ")
 
+				response, err := http.Post(
+					"https://auth.estuary.tech/check-api-key",
+					"application/json",
+					strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
+				)
+
+				if err != nil {
+					log.Errorf("handler error: %s", err)
+					return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
+						Error: HttpError{
+							Code:    http.StatusInternalServerError,
+							Reason:  http.StatusText(http.StatusInternalServerError),
+							Details: err.Error(),
+						},
+					})
+				}
+
+				authResp, err := GetAuthResponse(response)
+				if err != nil {
+					log.Errorf("handler error: %s", err)
+					return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
+						Error: HttpError{
+							Code:    http.StatusInternalServerError,
+							Reason:  http.StatusText(http.StatusInternalServerError),
+							Details: err.Error(),
+						},
+					})
+				}
+
+				if authResp.Result.Validated == false {
+					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+						Error: HttpError{
+							Code:    http.StatusUnauthorized,
+							Reason:  http.StatusText(http.StatusUnauthorized),
+							Details: authResp.Result.Details,
+						},
+					})
+				}
+				if authResp.Result.Validated == true {
+					return next(c)
+				}
+				return next(c)
+			}
+		})
+	}
+
+	// admin api
+	ConfigureAdminRouter(adminApiGroup, ln)
+
+	// api
 	ConfigMetricsRouter(apiGroup)
-	DealRouter(apiGroup, ln)
+	ConfigureDealRouter(apiGroup, ln)
 	ConfigureStatsCheckRouter(apiGroup, ln)
-	ConfigureNodeInfoRouter(openApiGroup, ln)
-	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
 	ConfigureRepairRouter(apiGroup, ln)
 	ConfigureMinerRouter(apiGroup, ln)
+
+	// open api
+	ConfigureNodeInfoRouter(openApiGroup, ln)
+	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
 }
 
+// GetAuthResponse It's making a request to the auth API to check if the API key is valid.
 func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
 
 	jsonBody := AuthResponse{}
@@ -163,6 +186,7 @@ func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
 	return jsonBody, nil
 }
 
+// ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
 	var httpRespErr *HttpError
 	if xerrors.As(err, &httpRespErr) {
@@ -203,6 +227,7 @@ func ErrorHandler(err error, c echo.Context) {
 }
 
 // LoopForever on signal processing
+// It's a function that is called when an error occurs.
 func LoopForever() {
 	fmt.Printf("Entering infinite loop\n")
 

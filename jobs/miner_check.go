@@ -13,7 +13,7 @@ type MinerCheckProcessor struct {
 	Processor
 }
 
-// job run to get updated miner list and their piece sizes
+// NewMinerCheckProcessor job run to get updated miner list and their piece sizes
 // `NewMinerCheckProcessor` creates a new `MinerCheckProcessor` object and returns it
 func NewMinerCheckProcessor(ln *core.DeltaNode) IProcessor {
 	return &MinerCheckProcessor{
@@ -23,7 +23,7 @@ func NewMinerCheckProcessor(ln *core.DeltaNode) IProcessor {
 	}
 }
 
-// Getting the list of miners and their prices from the API and storing them in the database.
+// Run Getting the list of miners and their prices from the API and storing them in the database.
 func (m MinerCheckProcessor) Run() error {
 
 	// remove any record of the miner on the list

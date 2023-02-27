@@ -29,6 +29,8 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 }
 
+// Getting the content consumed by a miner, the content deals by a miner, the piece commitments by a miner, and the content
+// deal proposals by a miner.
 func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 
 	// get content consumed by miner
@@ -90,7 +92,16 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select count(*) from piece_commitments where status = 'committed'").Scan(&totalPieceCommitted)
 
 	var totalMiners int64
-	totalMiners = node.DB.Raw("select distinct(miner) from content_miners").RowsAffected
+	rows, err := node.DB.Raw("select distinct(miner) from content_miners").Rows()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var miner string
+		rows.Scan(&miner)
+		totalMiners++
+	}
 
 	var totalStorageAllocated int64
 	node.DB.Raw("select sum(size) from contents").Scan(&totalStorageAllocated)

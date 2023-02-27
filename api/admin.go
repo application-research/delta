@@ -26,7 +26,9 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminWallet.POST("/create", handleAdminCreateWallet(node))
 }
 
+// It creates a new wallet address and saves it to the database
 func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
+
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
@@ -70,6 +72,7 @@ func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
+// Creating a new wallet address and saving it to the database.
 func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -119,6 +122,7 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 	}
 }
 
+// A function that returns a function that returns an error.
 func handleAdminStatsMiner(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 

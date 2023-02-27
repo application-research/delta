@@ -5,7 +5,7 @@ import (
 	model "github.com/application-research/delta-db/db_models"
 )
 
-// `LogEventProcessor` is a struct that contains a `LightNode` and a `LogEvent`.
+// LogEventProcessor `LogEventProcessor` is a struct that contains a `LightNode` and a `LogEvent`.
 // @property LightNode - The node that the event is being processed for.
 // @property LogEvent - This is the event that we want to process.
 type LogEventProcessor struct {
@@ -13,7 +13,7 @@ type LogEventProcessor struct {
 	LogEvent  model.LogEvent
 }
 
-// > This function creates a new LogEventProcessor object and returns it
+// NewLogEvent > This function creates a new LogEventProcessor object and returns it
 func NewLogEvent(ln *core.DeltaNode, logEvent model.LogEvent) IProcessor {
 	return &LogEventProcessor{
 		LightNode: ln,
@@ -21,7 +21,7 @@ func NewLogEvent(ln *core.DeltaNode, logEvent model.LogEvent) IProcessor {
 	}
 }
 
-// Saving the log event to the database.
+// Run Saving the log event to the database.
 func (l LogEventProcessor) Run() error {
 	// save log event
 	l.LightNode.DB.Create(&l.LogEvent)

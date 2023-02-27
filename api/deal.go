@@ -1,4 +1,3 @@
-// Importing the api package.
 package api
 
 import (
@@ -52,6 +51,7 @@ type DealRequest struct {
 	SkipIPNIAnnounce     bool                   `json:"skip_ipni_announce,omitempty"`
 }
 
+// DealResponse Creating a new struct called DealResponse and then returning it.
 type DealResponse struct {
 	Status      string      `json:"status"`
 	Message     string      `json:"message"`
@@ -59,9 +59,9 @@ type DealResponse struct {
 	DealRequest interface{} `json:"request_meta,omitempty"`
 }
 
-// It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
+// ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
 // to the echo.Group
-func DealRouter(e *echo.Group, node *core.DeltaNode) {
+func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	//	inject the stats service
 	statsService := core.NewStatsStatsService(node)
@@ -981,6 +981,13 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
 
 	}
+
+	// catch any panics
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
 	return nil
 }
 
