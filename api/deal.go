@@ -79,6 +79,10 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleExistingContentAdd(c, node, *statsService)
 	})
 
+	//dealMake.POST("/existing/contents", func(c echo.Context) error {
+	//	return handleExistingContentsAdd(c, node, *statsService)
+	//})
+
 	dealMake.POST("/piece-commitment", func(c echo.Context) error {
 		return handleCommPieceAdd(c, node, *statsService)
 	})
@@ -124,6 +128,208 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	})
 }
+
+//func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode, stats core.StatsService) error {
+//	var dealRequests []DealRequest
+//
+//	// lets record this.
+//	authorizationString := c.Request().Header.Get("Authorization")
+//	authParts := strings.Split(authorizationString, " ")
+//	err := c.Bind(&dealRequests)
+//
+//	for _, dealRequest := range dealRequests {
+//
+//		err = ValidateMeta(dealRequest)
+//		if err != nil {
+//			// return the error from the validation
+//			return err
+//		}
+//
+//		decodeCid, err := cid.Decode(dealRequest.Cid)
+//		if err != nil {
+//			return errors.New("Error decoding the cid")
+//		}
+//
+//		addNode, err := node.Node.Get(context.Background(), decodeCid)
+//		if err != nil {
+//			return errors.New("Error pinning the file")
+//		}
+//
+//		// specify the connection mode
+//		var connMode = dealRequest.ConnectionMode
+//		if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
+//			connMode = "e2e"
+//		}
+//
+//		// let's create a commp but only if we have
+//		// a cid, a piece_cid, a padded_piece_size, size
+//		var pieceCommp model.PieceCommitment
+//		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+//			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+//			(dealRequest.Size != 0) {
+//
+//			// if commp is there, make sure the piece and size are there. Use default duration.
+//			pieceCommp.Cid = addNode.Cid().String()
+//			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+//			pieceCommp.Size = dealRequest.Size
+//			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+//			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+//			pieceCommp.CreatedAt = time.Now()
+//			pieceCommp.UpdatedAt = time.Now()
+//			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+//			node.DB.Create(&pieceCommp)
+//
+//			dealRequest.PieceCommitment = PieceCommitmentRequest{
+//				Piece:             pieceCommp.Piece,
+//				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+//				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+//			}
+//		}
+//
+//		// save the content to the DB with the piece_commitment_id
+//		cidName := addNode.Cid().String()
+//		cidSize, err := addNode.Size()
+//		if err != nil {
+//			return errors.New("Error getting the size of the cid")
+//		}
+//		content := model.Content{
+//			Name:              cidName,
+//			Size:              int64(cidSize),
+//			Cid:               addNode.Cid().String(),
+//			RequestingApiKey:  authParts[1],
+//			PieceCommitmentId: pieceCommp.ID,
+//			Status:            utils.CONTENT_PINNED,
+//			ConnectionMode:    connMode,
+//			CreatedAt:         time.Now(),
+//			UpdatedAt:         time.Now(),
+//		}
+//		node.DB.Create(&content)
+//		dealRequest.Cid = content.Cid
+//
+//		//	assign a miner
+//		if dealRequest.Miner != "" {
+//			contentMinerAssignment := model.ContentMiner{
+//				Miner:     dealRequest.Miner,
+//				Content:   content.ID,
+//				CreatedAt: time.Now(),
+//				UpdatedAt: time.Now(),
+//			}
+//			node.DB.Create(&contentMinerAssignment)
+//			dealRequest.Miner = contentMinerAssignment.Miner
+//		}
+//
+//		// 	assign a wallet_estuary
+//		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
+//			var hexedWallet WalletRequest
+//			hexedWallet.KeyType = dealRequest.Wallet.KeyType
+//			hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
+//			walletByteArr, err := json.Marshal(hexedWallet)
+//
+//			if err != nil {
+//				return errors.New("Error encoding the wallet")
+//			}
+//			contentWalletAssignment := model.ContentWallet{
+//				Wallet:    string(walletByteArr),
+//				Content:   content.ID,
+//				CreatedAt: time.Now(),
+//				UpdatedAt: time.Now(),
+//			}
+//			node.DB.Create(&contentWalletAssignment)
+//			dealRequest.Wallet = WalletRequest{
+//				KeyType: contentWalletAssignment.Wallet,
+//			}
+//		}
+//
+//		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Id != 0) {
+//
+//			// get wallet from wallets database
+//			var wallet model.Wallet
+//
+//			if dealRequest.Wallet.Address != "" {
+//				node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+//			} else if dealRequest.Wallet.Uuid != "" {
+//				node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+//			} else {
+//				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+//			}
+//
+//			// create the wallet request object
+//			var hexedWallet WalletRequest
+//			hexedWallet.KeyType = wallet.KeyType
+//			hexedWallet.PrivateKey = wallet.PrivateKey
+//			walletByteArr, err := json.Marshal(hexedWallet)
+//
+//			if err != nil {
+//				return errors.New("Error encoding the wallet")
+//			}
+//
+//			// assign the wallet to the content
+//			contentWalletAssignment := model.ContentWallet{
+//				Wallet:    string(walletByteArr),
+//				Content:   content.ID,
+//				CreatedAt: time.Now(),
+//				UpdatedAt: time.Now(),
+//			}
+//			node.DB.Create(&contentWalletAssignment)
+//
+//			dealRequest.Wallet = WalletRequest{
+//				Id:      dealRequest.Wallet.Id,
+//				Address: wallet.Addr,
+//			}
+//		}
+//
+//		var dealProposalParam model.ContentDealProposalParameters
+//		dealProposalParam.CreatedAt = time.Now()
+//		dealProposalParam.UpdatedAt = time.Now()
+//		dealProposalParam.Content = content.ID
+//		dealProposalParam.Label = content.Cid
+//		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+//
+//		// duration
+//		if dealRequest.Duration == 0 {
+//			dealProposalParam.Duration = utils.DEFAULT_DURATION
+//		} else {
+//			dealProposalParam.Duration = dealRequest.Duration
+//		}
+//
+//		// start epoch
+//		if dealRequest.StartEpoch != 0 {
+//			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+//		}
+//
+//		// remove unsealed copy
+//		if dealRequest.RemoveUnsealedCopies == false {
+//			dealProposalParam.RemoveUnsealedCopy = false
+//		} else {
+//			dealProposalParam.RemoveUnsealedCopy = true
+//		}
+//
+//		// deal proposal parameters
+//		node.DB.Create(&dealProposalParam)
+//
+//		if err != nil {
+//			return errors.New("Error pinning the file")
+//		}
+//
+//		var dispatchJobs core.IProcessor
+//		if pieceCommp.ID != 0 {
+//			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+//		} else {
+//			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+//		}
+//
+//		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
+//
+//	}
+//	c.JSON(200, DealResponse{
+//		Status:      "success",
+//		Message:     "File uploaded and pinned successfully",
+//		ContentId:   content.ID,
+//		DealRequest: dealRequest,
+//	})
+//
+//	return nil
+//}
 
 // Adding a new event listener to the existing content.
 func handleExistingContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsService) error {

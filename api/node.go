@@ -13,6 +13,22 @@ func ConfigureNodeInfoRouter(e *echo.Group, node *core.DeltaNode) {
 	nodeGroup.GET("/addr", handleNodeAddr(node))
 	nodeGroup.GET("/peers", handleNodePeers(node))
 	nodeGroup.GET("/host", handleNodeHost(node))
+	nodeGroup.GET("/api-key", handleNodeHostApiKey(node))
+}
+
+// If the node is in standalone mode, return the API key
+func handleNodeHostApiKey(node *core.DeltaNode) func(c echo.Context) error {
+
+	if node.Config.Common.Mode != "standalone" {
+		return func(c echo.Context) error {
+			return c.JSON(200, "This is not a standalone node")
+		}
+	}
+
+	// return the api key if standalone mode.
+	return func(c echo.Context) error {
+		return c.JSON(200, map[string]string{"standalone_api_key": node.Config.Standalone.APIKey})
+	}
 }
 
 // It returns a function that takes a `DeltaNode` and returns a function that takes an `echo.Context` and returns an
