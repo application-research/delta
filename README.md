@@ -5,7 +5,7 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 
 
 ## Features
-- Creates a deal for large files. The recommended size is 1GB. 
+- Creates a deal for large files. The recommended size is 1GB.
 - Shows all the deals made for specific user
 
 This is strictly a deal-making service. It'll pin the files/CIDs but it won't keep the files. Once a deal is made, the CID will be removed from the blockstore. For retrievals, use the retrieval-deal microservice.
@@ -34,9 +34,6 @@ MAX_CLEANUP_WORKERS=1500
 ```
 
 Running this the first time will generate a wallet. Make sure to get FIL from the [faucet](https://verify.glif.io/) and fund the wallet
-
-
-
 
 ## Install the following pre-req
 - go 1.18
@@ -73,6 +70,28 @@ docker build -t delta .
 docker run -it --rm -p 1414:1414 delta --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
+## Standalone mode
+By default, delta will run on cluster mode but users can standup a `standalone`mode. `standalone` mode primarily for those who want to run delta in an isolated environment. This mode will create a local database and a local static API key for all requests.
+```
+./delta daemon --mode=standalone
+...
+Your Standalone API key is:  DELc4d43054-b6d7-11ed-a08a-9e0bf0c70138TA
+```
+
+## Cluster mode
+By default, delta will run on cluster mode. This mode will create a local database that can be reconfigured to use a remote HA database and estuary-auth as the authentication and authorizatio component.
+
+When running in cluster mode, users need to register for an ESTUARY_API_KEY using the following command.
+```
+curl --location --request GET 'https://auth.estuary.tech/register-new-token'
+
+...
+{
+    "expires": "2123-02-03T21:12:15.632368998Z",
+    "token": "<ESTUARY_API_KEY>"
+}
+```
+
 ## REST API Endpoints
 
 ### Node information
@@ -88,7 +107,7 @@ Use the following endpoint to upload a file. The process will automatically comp
 and transfer
 - miner is required
 - connection_mode is optional. Default is `e2e` (formerly known as online deals)
-- 
+-
 ```
 curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
@@ -273,7 +292,7 @@ Output
 }
 ```
 
-### Stats (content, commps and deals) 
+### Stats (content, commps and deals)
 ```
 curl --location --request GET 'http://localhost:1414/api/v1/stats' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
@@ -389,7 +408,7 @@ For convienience, a lot of the commands to manage the deployment have been bundl
 
   `make cluster.delete`
 
-- generate tls keys and deploy them as a k8s tls secret for use in the nginx pod 
+- generate tls keys and deploy them as a k8s tls secret for use in the nginx pod
 
   `make generate.keys`
 
