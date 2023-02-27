@@ -132,12 +132,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode, stats core.S
 	// lets record this.
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
-	file, err := c.FormFile("data") // file
-	meta := c.FormValue("metadata")
-
-	//	validate the meta
-	json.Unmarshal([]byte(meta), &dealRequest)
-
+	err := c.Bind(&dealRequest)
 	err = ValidateMeta(dealRequest)
 	if err != nil {
 		// return the error from the validation
@@ -170,7 +165,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode, stats core.S
 		// if commp is there, make sure the piece and size are there. Use default duration.
 		pieceCommp.Cid = addNode.Cid().String()
 		pieceCommp.Piece = dealRequest.PieceCommitment.Piece
-		pieceCommp.Size = file.Size
+		pieceCommp.Size = dealRequest.Size
 		pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
 		pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
 		pieceCommp.CreatedAt = time.Now()
@@ -186,9 +181,14 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode, stats core.S
 	}
 
 	// save the content to the DB with the piece_commitment_id
+	cidName := addNode.Cid().String()
+	cidSize, err := addNode.Size()
+	if err != nil {
+		return errors.New("Error getting the size of the cid")
+	}
 	content := model.Content{
-		Name:              file.Filename,
-		Size:              file.Size,
+		Name:              cidName,
+		Size:              int64(cidSize),
 		Cid:               addNode.Cid().String(),
 		RequestingApiKey:  authParts[1],
 		PieceCommitmentId: pieceCommp.ID,
