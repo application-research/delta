@@ -28,6 +28,10 @@ type DeltaConfig struct {
 		Mode  string `env:"MODE" envDefault:"standalone"`
 		DBDSN string `env:"DB_DSN" envDefault:"stg-deal-maker"`
 	}
+
+	Standalone struct {
+		APIKey string `env:"API_KEY" envDefault:"standalone"`
+	}
 }
 
 func InitConfig() DeltaConfig {

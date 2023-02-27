@@ -24,7 +24,7 @@ type CommpResult struct {
 	UnPaddedPieceSize uint64 `json:"unpadded_piece_size,omitempty"`
 }
 
-// A CLI command that generates a piece commitment for a given file.
+// CommpCmd A CLI command that generates a piece commitment for a given file.
 func CommpCmd() []*cli.Command {
 	// add a command to run API node
 	var commpCommands []*cli.Command

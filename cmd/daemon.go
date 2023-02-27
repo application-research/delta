@@ -1,18 +1,22 @@
 package cmd
 
 import (
+	"bytes"
 	"delta/api"
 	c "delta/config"
 	"delta/core"
 	"delta/jobs"
+	"delta/utils"
+	"fmt"
 	model "github.com/application-research/delta-db/db_models"
+	"github.com/google/uuid"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
 	"syscall"
 )
 
-// Creating a new command called `daemon` that will run the API node.
+// DaemonCmd Creating a new command called `daemon` that will run the API node.
 func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 	// add a command to run API node
 	var daemonCommands []*cli.Command
@@ -30,11 +34,17 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "wallet-dir",
 				Usage: "specify the wallet_estuary directory path of the node. ",
 			},
+
+			&cli.StringFlag{
+				Name:  "mode",
+				Usage: "standalone or cluster mode",
+			},
 		},
 		Action: func(c *cli.Context) error {
 
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
+			mode := c.String("mode")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -44,12 +54,19 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				walletDir = "./wallet_estuary"
 			}
 
+			if mode == "" {
+				cfg.Common.Mode = "cluster"
+			} else {
+				cfg.Common.Mode = mode
+			}
+
 			// create the node (with whypfs, db, filclient)
 			nodeParams := core.NewLightNodeParams{
 				Repo:             repo,
 				DefaultWalletDir: walletDir,
 				Config:           cfg,
 			}
+
 			ln, err := core.NewLightNode(nodeParams)
 
 			if err != nil {
@@ -63,8 +80,31 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			core.SetFilclientLibp2pSubscribe(ln.FilClient, ln)
 			runScheduledCron(ln)
 
+			// generate the API key for standalone mode
+			if cfg.Common.Mode == "standalone" {
+				uuid, err := uuid.NewUUID()
+				if err != nil {
+					return err
+				}
+				apiKey := "DEL" + uuid.String() + "TA"
+				cfg.Standalone.APIKey = apiKey
+				//fmt.Println("Your standalone API key is: ", apiKey)
+				// api key output
+				commpResult := map[string]interface{}{
+					"api_key": apiKey,
+				}
+				var buffer bytes.Buffer
+				err = utils.PrettyEncode(commpResult, &buffer)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println(buffer.String())
+
+			}
+
 			// launch the API node
-			api.InitializeEchoRouterConfig(ln)
+			api.InitializeEchoRouterConfig(ln, *cfg)
+
 			api.LoopForever()
 
 			return nil
