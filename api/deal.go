@@ -769,6 +769,11 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 		connMode = "e2e"
 	}
 
+	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+	if err != nil {
+		return err
+	}
+
 	// let's create a commp but only if we have
 	// a cid, a piece_cid, a padded_piece_size, size
 	var pieceCommp model.PieceCommitment
@@ -960,6 +965,11 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 		var connMode = dealRequest.ConnectionMode
 		if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
 			connMode = "e2e"
+		}
+
+		err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+		if err != nil {
+			return err
 		}
 
 		// let's create a commp but only if we have
@@ -1168,10 +1178,19 @@ type ValidateMetaResult struct {
 }
 
 // `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
+
+func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest) error {
+	if (PieceCommitmentRequest{} == pieceCommitmentRequest) {
+		return errors.New("invalid piece_commitment request. piece_commitment is required")
+	}
+
+	return nil
+}
+
 func ValidateMeta(dealRequest DealRequest) error {
 
 	if (DealRequest{} == dealRequest) {
-		return errors.New("invalid request")
+		return errors.New("invalid deal request")
 	}
 	// miner is required
 	if (DealRequest{} != dealRequest && dealRequest.Miner == "") {
@@ -1182,11 +1201,19 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("connection mode can only be e2e or import")
 	}
 
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece == "") {
+		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
+	}
+
 	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
 		(dealRequest.PieceCommitment.PaddedPieceSize == 0 && dealRequest.PieceCommitment.UnPaddedPieceSize == 0) &&
 		(dealRequest.Size == 0) {
 		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
 
+	}
+
+	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Address == "") {
+		return errors.New("wallet address is required")
 	}
 
 	// catch any panics

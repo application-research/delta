@@ -66,8 +66,9 @@ func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 		node.DB.Model(&model.Wallet{}).Create(newWallet)
 
 		return c.JSON(200, map[string]interface{}{
-			"message":     "Successfully imported a wallet address. Please take note of the UUID.",
+			"message":     "Successfully imported a wallet address. Please take note of the following information.",
 			"wallet_uuid": newWallet.UuId,
+			"wallet_addr": newWallet.Addr,
 		})
 	}
 }
@@ -114,7 +115,7 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 		node.DB.Model(&model.Wallet{}).Create(newWallet)
 
 		return c.JSON(200, map[string]interface{}{
-			"message":     "Successfully imported a wallet address. Please take note of the UUID.",
+			"message":     "Successfully imported a wallet address. Please take note of the following information.",
 			"wallet_addr": addWalletRequest.Address,
 			"wallet_uuid": newWallet.UuId,
 		})
