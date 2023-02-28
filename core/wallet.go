@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/wallet"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -31,7 +32,7 @@ type CreateWalletParam struct {
 
 type ImportWalletParam struct {
 	WalletParam
-	KeyType    types.KeyType
+	KeyType    types.KeyType `json:"key_type"`
 	PrivateKey []byte
 }
 
@@ -102,6 +103,9 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 	if err != nil {
 		return ImportWalletResult{}, err
 	}
+
+	hexedWallet := hex.EncodeToString(param.PrivateKey)
+
 	address, err := newWallet.WalletImport(w.Context, &types.KeyInfo{
 		Type:       param.KeyType,
 		PrivateKey: param.PrivateKey,
@@ -111,11 +115,16 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 	}
 
 	// save it on the DB
+	walletUuid, err := uuid.NewUUID()
+	if err != nil {
+		return ImportWalletResult{}, err
+	}
 	walletToDb := &model.Wallet{
+		UuId:       walletUuid.String(),
 		Addr:       address.String(),
 		Owner:      param.RequestingApiKey,
 		KeyType:    string(param.KeyType),
-		PrivateKey: string(param.PrivateKey),
+		PrivateKey: hexedWallet,
 		CreatedAt:  time.Time{},
 		UpdatedAt:  time.Time{},
 	}

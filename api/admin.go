@@ -2,8 +2,9 @@ package api
 
 import (
 	"delta/core"
-	"encoding/hex"
+	"encoding/base64"
 	model "github.com/application-research/delta-db/db_models"
+	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"strings"
@@ -16,6 +17,11 @@ type AddWalletRequest struct {
 	PrivateKey string `json:"private_key"`
 }
 
+type ImportWalletRequest struct {
+	KeyType    string `json:"key_type"`
+	PrivateKey string `json:"private_key"`
+}
+
 // It creates a new wallet and saves it to the database
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 
@@ -24,6 +30,7 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminStats.GET("/miner/:minerId", handleAdminStatsMiner(node))
 	adminWallet.POST("/register", handleAdminRegisterWallet(node))
 	adminWallet.POST("/create", handleAdminCreateWallet(node))
+	adminWallet.GET("/list", handleAdminListWallets(node))
 }
 
 // It creates a new wallet address and saves it to the database
@@ -78,10 +85,9 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
-		var addWalletRequest AddWalletRequest
-		c.Bind(&addWalletRequest)
-
-		hexedWallet := hex.EncodeToString([]byte(addWalletRequest.PrivateKey))
+		walletService := core.NewWalletService(node)
+		var importWalletRequest ImportWalletRequest
+		c.Bind(&importWalletRequest)
 
 		if len(authParts) != 2 {
 			return c.JSON(401, map[string]interface{}{
@@ -90,36 +96,60 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 		}
 
 		// validate, owner, keytype, address and private key are required
-		if addWalletRequest.Address == "" || addWalletRequest.KeyType == "" || addWalletRequest.PrivateKey == "" {
+		if importWalletRequest.KeyType == "" || string(importWalletRequest.PrivateKey) == "" {
 			return c.JSON(400, map[string]interface{}{
-				"message": "address, key_type and private_key are required",
+				"message": "key_type and private_key are required",
 			})
 		}
-
-		walletUuid, err := uuid.NewUUID()
+		decodedPrivateKey, err := base64.StdEncoding.DecodeString(importWalletRequest.PrivateKey)
+		if err != nil {
+			return c.JSON(400, map[string]interface{}{
+				"message": "failed to decode private key",
+				"error":   err.Error(),
+			})
+		}
+		importedWallet, err := walletService.Import(core.ImportWalletParam{
+			WalletParam: core.WalletParam{
+				RequestingApiKey: authParts[1],
+			},
+			KeyType:    types.KeyType(importWalletRequest.KeyType),
+			PrivateKey: decodedPrivateKey,
+		})
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{
-				"message": "failed to generate uuid",
+				"message": "failed to import wallet",
+				"error":   err.Error(),
 			})
 		}
-		newWallet := &model.Wallet{
-			UuId:       walletUuid.String(),
-			Addr:       addWalletRequest.Address,
-			Owner:      authParts[1],
-			KeyType:    addWalletRequest.KeyType,
-			PrivateKey: hexedWallet,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-		}
-		// save on wallet table
-		node.DB.Model(&model.Wallet{}).Create(newWallet)
 
 		return c.JSON(200, map[string]interface{}{
 			"message":     "Successfully imported a wallet address. Please take note of the following information.",
-			"wallet_addr": addWalletRequest.Address,
-			"wallet_uuid": newWallet.UuId,
+			"wallet_addr": importedWallet.WalletAddress.String(),
+			"wallet_uuid": importedWallet.Wallet.UuId,
 		})
 
+	}
+}
+
+// It takes the authorization header from the request, splits it into two parts, and then uses the second part to find all
+// wallets owned by the user
+func handleAdminListWallets(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		if len(authParts) != 2 {
+			return c.JSON(401, map[string]interface{}{
+				"message": "unauthorized",
+			})
+		}
+
+		var wallets []model.Wallet
+		node.DB.Where("owner = ?", authParts[1]).Find(&wallets)
+
+		return c.JSON(200, map[string]interface{}{
+			"wallets": wallets,
+		})
 	}
 }
 

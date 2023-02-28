@@ -39,12 +39,18 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "mode",
 				Usage: "standalone or cluster mode",
 			},
+
+			&cli.StringFlag{
+				Name:  "enable-websocket",
+				Usage: "standalone or cluster mode",
+			},
 		},
 		Action: func(c *cli.Context) error {
 
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
 			mode := c.String("mode")
+			enableWebsocket := c.String("enable-websocket")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -58,6 +64,12 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.Mode = "cluster"
 			} else {
 				cfg.Common.Mode = mode
+			}
+
+			if enableWebsocket == "" {
+				cfg.Common.EnableWebsocket = false
+			} else {
+				cfg.Common.EnableWebsocket = true
 			}
 
 			// create the node (with whypfs, db, filclient)

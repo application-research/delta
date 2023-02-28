@@ -146,6 +146,12 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 		})
 	}
 
+	if config.Common.EnableWebsocket {
+		// websocket
+		ConfigureWebsocketRouter(e)
+
+	}
+
 	// admin api
 	ConfigureAdminRouter(adminApiGroup, ln)
 
