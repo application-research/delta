@@ -197,7 +197,6 @@ curl --location --request POST 'http://localhost:1414/admin/wallet/register' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-"address":"<public key>",
 "key_type":"bls",
 "private_key":"<private_key>"
 }'
@@ -206,9 +205,9 @@ curl --location --request POST 'http://localhost:1414/admin/wallet/register' \
 Get the response and use the wallet id to make a deal
 ```
 {
-    "message": "Successfully imported a wallet address. Please take note of the UUID.",
+    "message": "Successfully imported a wallet address. Please take note of the following information.",
     "wallet_addr": "<public address>",
-    "wallet_uuid": "ff0e8640-b662-11ed-860a-9e0bf0c70138"
+    "wallet_uuid": "ca7c3690-b714-11ed-b97a-9e0bf0c70138"
 }
 ```
 
@@ -222,7 +221,6 @@ curl --location --request POST 'http://shuttle-4-bs1.estuary.tech:1414/api/v1/de
     "miner":"f01963614",
     "wallet": {
         "address":"<public address after registering>",
-        "uuid":"<wallet id after registering>" // optional
     },
     "piece_commitment": {
         "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
