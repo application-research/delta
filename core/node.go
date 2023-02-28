@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	c "delta/config"
 	"delta/utils"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
@@ -11,8 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-
-	c "delta/config"
 
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
@@ -34,16 +33,35 @@ import (
 )
 
 type DeltaNode struct {
-	Context     context.Context
-	Node        *whypfs.Node
-	Api         url.URL
-	DB          *gorm.DB
-	FilClient   *fc.FilClient
-	Config      *c.DeltaConfig
-	Dispatcher  *Dispatcher
-	DeltaTracer *messaging.DeltaMetricsTracer
-	MetaInfo    *model.InstanceMeta
-	Websocket   *websocket.Conn
+	Context            context.Context
+	Node               *whypfs.Node
+	Api                url.URL
+	DB                 *gorm.DB
+	FilClient          *fc.FilClient
+	Config             *c.DeltaConfig
+	Dispatcher         *Dispatcher
+	DeltaTracer        *messaging.DeltaMetricsTracer
+	MetaInfo           *model.InstanceMeta
+	WebsocketBroadcast WebsocketBroadcast
+}
+
+type WebsocketBroadcast struct {
+	ContentChannel         ContentChannel
+	PieceCommitmentChannel PieceCommitmentChannel
+	ContentDealChannel     ContentDealChannel
+}
+type ContentChannel struct {
+	Clients map[*websocket.Conn]bool
+	Channel chan model.Content
+}
+type PieceCommitmentChannel struct {
+	Clients map[*websocket.Conn]bool
+	Channel chan model.PieceCommitment
+}
+
+type ContentDealChannel struct {
+	Clients map[*websocket.Conn]bool
+	Channel chan model.ContentDeal
 }
 
 type LocalWallet struct {
@@ -67,6 +85,7 @@ type NewLightNodeParams struct {
 
 // NewLightNode Creating a new light node.
 func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
+
 	//	database
 	db, err := model.OpenDatabase(repo.Config.Common.DBDSN)
 	publicIp, err := GetPublicIP()
@@ -112,6 +131,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	// job dispatcher
 	dispatcher := CreateNewDispatcher()
 
+	// delta metrics tracer
 	tracer := messaging.NewDeltaMetricsTracer()
 
 	// create the global light node.

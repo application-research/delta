@@ -42,7 +42,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 			&cli.StringFlag{
 				Name:  "enable-websocket",
-				Usage: "standalone or cluster mode",
+				Usage: "enable websocket or not",
 			},
 		},
 		Action: func(c *cli.Context) error {

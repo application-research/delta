@@ -149,7 +149,12 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	// It's checking if the websocket is enabled.
 	if config.Common.EnableWebsocket {
 		// websocket
-		// It's a function that is called when an error occurs.
+		fmt.Println("Websocket enabled")
+		ws := core.NewWebsocketService(ln)
+		go ws.HandlePieceCommitmentMessages()
+		go ws.HandleContentDealMessages()
+		go ws.HandleContentMessages()
+
 		ConfigureWebsocketRouter(openApiGroup, ln)
 	}
 

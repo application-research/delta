@@ -27,7 +27,7 @@ type DeltaConfig struct {
 	Common struct {
 		Mode            string `env:"MODE" envDefault:"standalone"`
 		DBDSN           string `env:"DB_DSN" envDefault:"stg-deal-maker"`
-		EnableWebsocket bool   `env:"ENABLE_WEBSOCKET" envDefault:"true"`
+		EnableWebsocket bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
 	}
 
 	Standalone struct {
