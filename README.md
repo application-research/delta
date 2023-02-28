@@ -255,8 +255,8 @@ The output will be as follows
 {
     "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
     "wallet": {},
-    "commp": {
-        "piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+    "piece_commitment": {
+        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
     },
     "connection_mode": "import",
@@ -266,7 +266,7 @@ The output will be as follows
 
 ### Get the commp of a CAR file using commp cli and pass to the delta api to make an offline deal
 ```
-./delta commp-car --file=baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car --for-offline --delta-api-url=http://localhost:1414 --delta-api-key=[ESTUARY_API_KEY]
+./delta commp-car --file=baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car --for-import --delta-api-url=http://localhost:1414 --delta-api-key=[ESTUARY_API_KEY]
 ```
 
 Output
@@ -281,8 +281,8 @@ Output
       "wallet":{
          
       },
-      "commp":{
-         "piece":"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
+      "piece_commitment":{
+         "piece_cid":"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
          "padded_piece_size":4294967296,
          "unpadded_piece_size":4261412864
       },
