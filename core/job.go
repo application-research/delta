@@ -116,6 +116,7 @@ func (d *Dispatcher) AddJob(je IProcessor) {
 }
 
 // AddJobAndDispatch Adding a job to the jobQueue, and then starting the dispatcher with a number of workers.
+// It's adding a job to the jobQueue, and then starting the dispatcher with a number of workers.
 func (d *Dispatcher) AddJobAndDispatch(je IProcessor, numWorkers int) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()
@@ -125,6 +126,7 @@ func (d *Dispatcher) AddJobAndDispatch(je IProcessor, numWorkers int) {
 }
 
 // Finished It's a method that returns true if the jobCounter is less than 1.
+// It's a method that returns true if the jobCounter is less than 1.
 func (d *Dispatcher) Finished() bool {
 	if d.jobCounter < 1 {
 		return true

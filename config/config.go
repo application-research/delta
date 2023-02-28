@@ -15,7 +15,7 @@ var (
 
 type DeltaConfig struct {
 	Node struct {
-		Name        string `env:"NODE_NAME" envDefault:"stg-deal-maker"`
+		Name        string `env:"NODE_NAME" envDefault:"delta-deal-maker"`
 		Description string `env:"NODE_DESCRIPTION"`
 		Type        string `env:"NODE_TYPE"`
 	}

@@ -19,6 +19,7 @@ type StatsCheckResponse struct {
 }
 
 // ConfigureStatsCheckRouter Creating a new router and adding a route to it.
+// It configures the router for the stats check API
 func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/miner/:minerId/content", func(c echo.Context) error {
@@ -70,7 +71,6 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	e.GET("/stats/deal-proposal/:id", func(c echo.Context) error {
-
 		return nil
 	})
 
@@ -82,25 +82,14 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetContents(c, node)
 	})
 
-	e.GET("/stats/miner/:minerId", func(c echo.Context) error {
+	e.GET("/stats/miner/:minerId", handleMinerStats(node))
 
-		authorizationString := c.Request().Header.Get("Authorization")
-		authParts := strings.Split(authorizationString, " ")
+	e.GET("/stats", handleStats(node))
 
-		var contents []model.Content
-		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contents)
+}
 
-		var contentMinerAssignment []model.ContentMiner
-		node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
-
-		return c.JSON(200, map[string]interface{}{
-			"content": contents,
-			"cmas":    contentMinerAssignment,
-		})
-		return nil
-	})
-
-	e.GET("/stats", func(c echo.Context) error {
+func handleStats(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
 
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
@@ -121,8 +110,31 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 			"deals":             contentDeal,
 			"piece_commitments": pieceCommitments,
 		})
-	})
+	}
+}
 
+// `handleMinerStats` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context` and
+// returns an `error`
+// `handleMinerStats` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context` and
+// returns an `error`
+func handleMinerStats(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
+		var contents []model.Content
+		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contents)
+
+		var contentMinerAssignment []model.ContentMiner
+		node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and cma.miner = ? and c.requesting_api_key = ?", c.Param("minerId"), authParts[1]).Scan(&contentMinerAssignment)
+
+		return c.JSON(200, map[string]interface{}{
+			"content": contents,
+			"cmas":    contentMinerAssignment,
+		})
+		return nil
+	}
 }
 
 // A function that takes in a commitment and a piece number and returns the piece of the commitment.

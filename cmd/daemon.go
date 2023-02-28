@@ -116,7 +116,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln, *cfg)
-
 			api.LoopForever()
 
 			return nil
@@ -132,6 +131,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 // Run the cron jobs.
 // The cron jobs are run every 12 hours and are responsible for cleaning up the database and the blockstore.
 // It also retries the failed transfers.
+// `runScheduledCron` is a function that runs a cron job on a node
 func runScheduledCron(ln *core.DeltaNode) {
 
 	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
@@ -141,8 +141,7 @@ func runScheduledCron(ln *core.DeltaNode) {
 		dispatcher := core.CreateNewDispatcher()
 		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
 		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
-		dispatcher.AddJob(jobs.NewMinerCheckProcessor(ln))
-		dispatcher.Start(maxCleanUpJobs) // fix 100 workers for now.
+		dispatcher.Start(maxCleanUpJobs)
 	})
 
 	s.Start()
@@ -150,6 +149,7 @@ func runScheduledCron(ln *core.DeltaNode) {
 }
 
 // Setting the global node meta.
+// > This function sets the global node metadata for the given node
 func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
 
 	// get the 80% of the total memory usage

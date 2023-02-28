@@ -1,3 +1,4 @@
+// It configures the metrics router
 package api
 
 import (
@@ -7,7 +8,8 @@ import (
 	"net/http"
 )
 
-// Configuring the metrics router.
+// ConfigMetricsRouter Configuring the metrics router.
+// > ConfigMetricsRouter is a function that takes a pointer to an echo.Group and returns nothing
 func ConfigMetricsRouter(e *echo.Group) {
 	// metrics
 	phandle := promhttp.Handler()

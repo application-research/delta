@@ -13,6 +13,7 @@ import (
 )
 
 // SetFilclientLibp2pSubscribe It subscribes to the libp2p transfer manager and updates the database with the status of the transfer
+// It sets the filclient libp2p subscribe.
 func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *DeltaNode) {
 	filc.Libp2pTransferMgr.Subscribe(func(dbid uint, fst fc.ChannelState) {
 		switch fst.Status {

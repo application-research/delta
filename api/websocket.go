@@ -44,7 +44,8 @@ func ConfigureWebsocketRouter(e *echo.Group, ln *core.DeltaNode) {
 
 }
 
-// Handling a websocket connection.
+// It upgrades the HTTP connection to a WebSocket connection, registers the new client, and then reads messages from the
+// client and sends them to the broadcast channel
 func handleWebsocketContent(ln *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		// Upgrade HTTP connection to WebSocket connection
@@ -82,7 +83,8 @@ func handleWebsocketContent(ln *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
-// Handling a websocket connection.
+// It upgrades the HTTP connection to a WebSocket connection, registers the new client, and then reads messages from the
+// client and sends them to the broadcast channel
 func handleWebsocketPieceCommitment(ln *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		// Upgrade HTTP connection to WebSocket connection
@@ -120,7 +122,8 @@ func handleWebsocketPieceCommitment(ln *core.DeltaNode) func(c echo.Context) err
 	}
 }
 
-// Handling a websocket connection.
+// It upgrades the HTTP connection to a WebSocket connection, registers the new client, and then reads messages from the
+// client and sends them to the broadcast channel
 func handleWebsocketContentDeal(ln *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		// Upgrade HTTP connection to WebSocket connection

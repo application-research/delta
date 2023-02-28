@@ -36,11 +36,14 @@ func Exporter() http.Handler {
 	return exporter
 }
 
+// It takes a URL parameter, and then serves the corresponding profile
+// It takes a URL parameter, and if it's one of the supported profiling types, it serves the profile data
 func ServeProfile(c echo.Context) error {
 	httpprof.Handler(c.Param("prof")).ServeHTTP(c.Response().Writer, c.Request())
 	return nil
 }
 
+// It writes the stack traces of all goroutines to the given writer
 func WriteAllGoroutineStacks(w io.Writer) error {
 	buf := make([]byte, 64<<20)
 	for i := 0; ; i++ {

@@ -19,11 +19,13 @@ type CommpService struct {
 }
 
 // GenerateCommPFile Generating a CommP file from a payload file.
+// Generating a CommP file from a payload file.
 func (c CommpService) GenerateCommPFile(context context.Context, payloadCid cid.Cid, blockstore blockstore.Blockstore) (pieceCid cid.Cid, payloadSize uint64, unPaddedPieceSize abi.UnpaddedPieceSize, err error) {
 	return filclient.GeneratePieceCommitment(context, payloadCid, blockstore)
 }
 
 // GenerateCommPCarV2 Generating a CommP file from a CARv2 file.
+// Generating a CommP file from a CARv2 file.
 func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceInfo, error) {
 	bytesFromCar, err := io.ReadAll(readerFromFile)
 	rd, err := carv2.NewReader(bytes.NewReader(bytesFromCar))
@@ -72,6 +74,7 @@ func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceIn
 }
 
 // GetSize Getting the size of the file.
+// Getting the size of the file.
 func (c CommpService) GetSize(stream io.Reader) int {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(stream)
@@ -79,6 +82,7 @@ func (c CommpService) GetSize(stream io.Reader) int {
 }
 
 // GetCarSize Getting the size of the CARv2 file.
+// Getting the size of the CARv2 file.
 func (c CommpService) GetCarSize(stream io.Reader, rd *carv2.Reader) (int64, error) {
 	var size int64
 	switch rd.Version {

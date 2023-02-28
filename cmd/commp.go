@@ -25,6 +25,7 @@ type CommpResult struct {
 }
 
 // CommpCmd A CLI command that generates a piece commitment for a given file.
+// `CommpCmd()` returns a slice of `*cli.Command`s
 func CommpCmd() []*cli.Command {
 	// add a command to run API node
 	var commpCommands []*cli.Command

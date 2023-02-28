@@ -100,6 +100,16 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 				authorizationString := c.Request().Header.Get("Authorization")
 				authParts := strings.Split(authorizationString, " ")
 
+				if len(authParts) != 2 {
+					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+						Error: HttpError{
+							Code:    http.StatusUnauthorized,
+							Reason:  http.StatusText(http.StatusUnauthorized),
+							Details: "Invalid authorization header",
+						},
+					})
+				}
+
 				response, err := http.Post(
 					"https://auth.estuary.tech/check-api-key",
 					"application/json",
@@ -166,7 +176,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	ConfigureDealRouter(apiGroup, ln)
 	ConfigureStatsCheckRouter(apiGroup, ln)
 	ConfigureRepairRouter(apiGroup, ln)
-	ConfigureMinerRouter(apiGroup, ln)
 
 	// open api
 	ConfigureNodeInfoRouter(openApiGroup, ln)

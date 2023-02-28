@@ -70,6 +70,7 @@ func (i PieceCommpProcessor) Run() error {
 			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
 				LastMessage: err.Error(),
+				UpdatedAt:   time.Now(),
 			})
 			return err
 		}
@@ -79,6 +80,7 @@ func (i PieceCommpProcessor) Run() error {
 		unPaddedPieceSize = pieceInfo.Size.Unpadded()
 
 		payloadSize = uint64(len(bytesFromCar))
+
 	} else {
 		pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
 		paddedPieceSize = unPaddedPieceSize.Padded()
@@ -86,6 +88,7 @@ func (i PieceCommpProcessor) Run() error {
 			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
 				LastMessage: err.Error(),
+				UpdatedAt:   time.Now(),
 			})
 			return err
 		}

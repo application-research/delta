@@ -46,7 +46,7 @@ func NewStatsStatsService(deltaNode *DeltaNode) *StatsService {
 	}
 }
 
-// A function that returns a StatsResult and an error.
+// Status A function that returns a StatsResult and an error.
 func (s *StatsService) Status(param StatsParam) (StatsResult, error) {
 	var content []model.Content
 	s.DeltaNode.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ?", param.RequestingApiKey).Scan(&content)
@@ -64,7 +64,7 @@ func (s *StatsService) Status(param StatsParam) (StatsResult, error) {
 		PieceCommitments: pieceCommitments}, nil
 }
 
-// A function that returns a StatsPieceCommitmentResult and an error.
+// PieceCommitmentStatus A function that returns a StatsPieceCommitmentResult and an error.
 func (s *StatsService) PieceCommitmentStatus(param PieceCommitmentStatsParam) (StatsPieceCommitmentResult, error) {
 	// select * from piece_commitments pc, content c where c.piece_commitment_id = pc.id and c.requesting_api_key = ?;
 	var pieceCommitment model.PieceCommitment
@@ -74,7 +74,7 @@ func (s *StatsService) PieceCommitmentStatus(param PieceCommitmentStatsParam) (S
 		PieceCommitments: pieceCommitment}, nil
 }
 
-// A function that returns a StatsContentResult and an error.
+// ContentStatus A function that returns a StatsContentResult and an error.
 func (s *StatsService) ContentStatus(param ContentStatsParam) (StatsContentResult, error) {
 	var content model.Content
 	s.DeltaNode.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ? and c.id = ?", param.RequestingApiKey, param.ContentId).Scan(&content)
@@ -82,7 +82,7 @@ func (s *StatsService) ContentStatus(param ContentStatsParam) (StatsContentResul
 	return StatsContentResult{Content: content}, nil
 }
 
-// A function that returns a StatsDealResult and an error.
+// DealStatus A function that returns a StatsDealResult and an error.
 func (s *StatsService) DealStatus(param DealStatsParam) (StatsDealResult, error) {
 	var contentDeal model.ContentDeal
 	s.DeltaNode.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.requesting_api_key = ? and cd.id = ?", param.RequestingApiKey, param.DealId).Scan(&contentDeal)

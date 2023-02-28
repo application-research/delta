@@ -72,7 +72,7 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	dealStatus := dealMake.Group("/status")
 
 	dealMake.POST("/content", func(c echo.Context) error {
-		return handleContentAdd(c, node, *statsService)
+		return handleContentAdd(c, node)
 	})
 
 	dealMake.POST("/existing/content", func(c echo.Context) error {
@@ -84,16 +84,16 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealMake.POST("/piece-commitment", func(c echo.Context) error {
-		return handleCommPieceAdd(c, node, *statsService)
+		return handleCommPieceAdd(c, node)
 	})
 
 	dealMake.POST("/existing/piece-commitment", func(c echo.Context) error {
-		return handleCommPieceAdd(c, node, *statsService)
+		return handleCommPieceAdd(c, node)
 	})
 
 	// make piece-commitments
 	dealMake.POST("/piece-commitments", func(c echo.Context) error {
-		return handleCommPiecesAdd(c, node, *statsService)
+		return handleCommPiecesAdd(c, node)
 	})
 
 	dealPrepare.POST("/content", func(c echo.Context) error {
@@ -121,10 +121,10 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealStatus.POST("/content/:contentId", func(c echo.Context) error {
-		return handleContentStats(c, node, *statsService)
+		return handleContentStats(c, *statsService)
 	})
 	dealStatus.POST("/piece-commitment/:piece-commitmentId", func(c echo.Context) error {
-		return handleCommitmentPieceStats(c, node, *statsService)
+		return handleCommitmentPieceStats(c, *statsService)
 
 	})
 }
@@ -530,12 +530,15 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	c.JSON(200, DealResponse{
+	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
 		ContentId:   content.ID,
 		DealRequest: dealRequest,
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -550,7 +553,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 // @Success 200 {object} ContentMakeDealResponse
 // @Failure 500 {object} ContentMakeDealResponse
 // @Router /deal/content/{contentId} [post]
-func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsService) error {
+func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
 	// lets record this.
@@ -560,7 +563,10 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 	meta := c.FormValue("metadata")
 
 	//	validate the meta
-	json.Unmarshal([]byte(meta), &dealRequest)
+	err = json.Unmarshal([]byte(meta), &dealRequest)
+	if err != nil {
+		return err
+	}
 
 	err = ValidateMeta(dealRequest)
 	if err != nil {
@@ -739,12 +745,15 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	c.JSON(200, DealResponse{
+	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
 		ContentId:   content.ID,
 		DealRequest: dealRequest,
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -755,7 +764,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode, stats core.StatsServ
 // @Tags deals
 // @Accept  json
 // @Produce  json
-func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
+func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
 	// lets record this.
@@ -933,12 +942,15 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	c.JSON(200, DealResponse{
+	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
 		ContentId:   content.ID,
 		DealRequest: dealRequest,
 	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -948,7 +960,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode, statsService core.
 // @Tags CommP
 // @Accept  json
 // @Produce  json
-func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
+func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
 	// lets record this.
@@ -1137,13 +1149,16 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode, statsService core
 
 	}
 	node.Dispatcher.Start(len(dealRequests))
-	c.JSON(http.StatusOK, dealResponses)
+	err = c.JSON(http.StatusOK, dealResponses)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // It takes a contentId as a parameter, looks up the status of the content, and returns the status as JSON
-func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
+func handleContentStats(c echo.Context, statsService core.StatsService) error {
 	contentIdParam := c.Param("contentId")
 	contentId, err := strconv.Atoi(contentIdParam)
 	if err != nil {
@@ -1163,7 +1178,7 @@ func handleContentStats(c echo.Context, node *core.DeltaNode, statsService core.
 }
 
 // It takes a piece commitment ID, looks up the status of the piece commitment, and returns the status
-func handleCommitmentPieceStats(c echo.Context, node *core.DeltaNode, statsService core.StatsService) error {
+func handleCommitmentPieceStats(c echo.Context, statsService core.StatsService) error {
 	pieceCommitmentIdParam := c.Param("piece-commitmentId")
 	pieceCommitmentId, err := strconv.Atoi(pieceCommitmentIdParam)
 	if err != nil {
@@ -1206,10 +1221,12 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("miner is required")
 	}
 
+	// connection mode is required
 	if (DealRequest{} != dealRequest && (dealRequest.ConnectionMode != utils.CONNECTION_MODE_E2E && dealRequest.ConnectionMode != utils.CONNECTION_MODE_IMPORT)) {
 		return errors.New("connection mode can only be e2e or import")
 	}
 
+	// piece commitment is required
 	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece == "") {
 		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
 	}

@@ -84,6 +84,7 @@ type NewLightNodeParams struct {
 }
 
 // NewLightNode Creating a new light node.
+// > This function creates a new DeltaNode with a new light client
 func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 
 	//	database
@@ -167,6 +168,7 @@ func LotusConnection(fullNodeApiInfo string) (v1api.FullNode, jsonrpc.ClientClos
 }
 
 // SetupWallet Creating a new wallet and setting it as the default wallet.
+// > SetupWallet creates a new wallet and returns it
 func SetupWallet(dir string) (*wallet.LocalWallet, error) {
 	kstore, err := keystore.OpenOrInitKeystore(dir)
 	if err != nil {
@@ -198,6 +200,7 @@ func SetupWallet(dir string) (*wallet.LocalWallet, error) {
 }
 
 // GetPublicIP Getting the public IP of the node.
+// > GetPublicIP() returns the public IP address of the machine it's running on
 func GetPublicIP() (string, error) {
 	resp, err := http.Get("https://ifconfig.me") // important to get the public ip if possible.
 	if err != nil {

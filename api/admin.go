@@ -22,9 +22,9 @@ type ImportWalletRequest struct {
 	PrivateKey string `json:"private_key"`
 }
 
-// It creates a new wallet and saves it to the database
+// ConfigureAdminRouter It creates a new wallet and saves it to the database
+// It configures the admin router
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
-
 	adminWallet := e.Group("/wallet")
 	adminStats := e.Group("/stats")
 	adminStats.GET("/miner/:minerId", handleAdminStatsMiner(node))
@@ -34,6 +34,8 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 }
 
 // It creates a new wallet address and saves it to the database
+// `handleAdminCreateWallet` is a function that takes a `DeltaNode` and returns a function that takes an `echo.Context` and
+// returns an `error`
 func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -80,6 +82,8 @@ func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 }
 
 // Creating a new wallet address and saving it to the database.
+// `handleAdminRegisterWallet` is a function that takes a `DeltaNode` and returns a function that takes an `echo.Context`
+// and returns an `error`
 func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -132,6 +136,8 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 
 // It takes the authorization header from the request, splits it into two parts, and then uses the second part to find all
 // wallets owned by the user
+// `handleAdminListWallets` is a function that takes a `DeltaNode` and returns a function that takes an `echo.Context` and
+// returns an `error`
 func handleAdminListWallets(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -153,6 +159,7 @@ func handleAdminListWallets(node *core.DeltaNode) func(c echo.Context) error {
 }
 
 // A function that returns a function that returns an error.
+// It returns a function that takes a context and returns an error
 func handleAdminStatsMiner(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 

@@ -16,6 +16,7 @@ func NewRepairService(dn DeltaNode) *RepairService {
 	}
 }
 
+// RecreateDeal A method of RepairService.
 // A method of RepairService.
 func (r RepairService) RecreateDeal(param RepairParam) (RepairResult, error) {
 	return RepairResult{}, nil
