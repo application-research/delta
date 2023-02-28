@@ -35,7 +35,6 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 
 // It creates a new wallet address and saves it to the database
 func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
-
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")

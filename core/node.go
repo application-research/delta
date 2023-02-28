@@ -6,6 +6,7 @@ import (
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/delta-db/messaging"
+	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -42,6 +43,7 @@ type DeltaNode struct {
 	Dispatcher  *Dispatcher
 	DeltaTracer *messaging.DeltaMetricsTracer
 	MetaInfo    *model.InstanceMeta
+	Websocket   *websocket.Conn
 }
 
 type LocalWallet struct {

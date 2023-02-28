@@ -56,6 +56,10 @@ func handleNodeAddr(node *core.DeltaNode) func(c echo.Context) error {
 // It returns a function that returns a JSON response with the node's name, description, and type
 func handleNodeInfo(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+
+		ws := core.NewWebsocketService(node)
+		ws.SendMessage("Hello, Client!")
+
 		nodeName := node.Config.Node.Name
 		nodeDescription := node.Config.Node.Description
 		nodeType := node.Config.Node.Type
