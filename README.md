@@ -107,7 +107,7 @@ Use the following endpoint to upload a file. The process will automatically comp
 and transfer
 - miner is required
 - connection_mode is optional. Default is `e2e` (formerly known as online deals)
--
+
 ```
 curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
