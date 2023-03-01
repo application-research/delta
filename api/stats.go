@@ -58,7 +58,7 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetStatsByContent(c, node)
 	})
 
-	e.POST("/stats/contents/", func(c echo.Context) error {
+	e.POST("/stats/contents", func(c echo.Context) error {
 		return handleGetStatsByContents(c, node)
 	})
 
@@ -160,7 +160,7 @@ func handleGetCommitmentPiece(c echo.Context, node *core.DeltaNode) error {
 func handleGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
-	var contentIds []string
+	var contentIds []int64
 	err := c.Bind(&contentIds)
 	if err != nil {
 		return err
