@@ -123,7 +123,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		panic(err)
 	}
 
-	fc, err := fc.NewClient(whypfsPeer.Host, api, wallet, walletAddr, whypfsPeer.Blockstore, whypfsPeer.Datastore, whypfsPeer.Config.DatastoreDir.Directory)
+	filclient, err := fc.NewClient(whypfsPeer.Host, api, wallet, walletAddr, whypfsPeer.Blockstore, whypfsPeer.Datastore, whypfsPeer.Config.DatastoreDir.Directory)
 
 	if err != nil {
 		panic(err)
@@ -139,7 +139,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	return &DeltaNode{
 		Node:        whypfsPeer,
 		DB:          db,
-		FilClient:   fc,
+		FilClient:   filclient,
 		Dispatcher:  dispatcher,
 		Config:      repo.Config,
 		DeltaTracer: tracer,

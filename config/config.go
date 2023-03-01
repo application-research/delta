@@ -31,7 +31,7 @@ type DeltaConfig struct {
 	}
 
 	Standalone struct {
-		APIKey string `env:"API_KEY" envDefault:"standalone"`
+		APIKey string `env:"DELTA_AUTH" envDefault:""`
 	}
 }
 

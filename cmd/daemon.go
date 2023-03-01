@@ -1,15 +1,11 @@
 package cmd
 
 import (
-	"bytes"
 	"delta/api"
 	c "delta/config"
 	"delta/core"
 	"delta/jobs"
-	"delta/utils"
-	"fmt"
 	model "github.com/application-research/delta-db/db_models"
-	"github.com/google/uuid"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
@@ -91,28 +87,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 			core.SetFilclientLibp2pSubscribe(ln.FilClient, ln)
 			runScheduledCron(ln)
-
-			// generate the API key for standalone mode
-			if cfg.Common.Mode == "standalone" {
-				uuid, err := uuid.NewUUID()
-				if err != nil {
-					return err
-				}
-				apiKey := "DEL" + uuid.String() + "TA"
-				cfg.Standalone.APIKey = apiKey
-				//fmt.Println("Your standalone API key is: ", apiKey)
-				// api key output
-				commpResult := map[string]interface{}{
-					"api_key": apiKey,
-				}
-				var buffer bytes.Buffer
-				err = utils.PrettyEncode(commpResult, &buffer)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println(buffer.String())
-
-			}
 
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln, *cfg)

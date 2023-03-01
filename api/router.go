@@ -64,97 +64,102 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	openApiGroup := e.Group("/open")
 	adminApiGroup := e.Group("/admin")
 
-	if config.Common.Mode == "standalone" {
-		apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				authorizationString := c.Request().Header.Get("Authorization")
-				authParts := strings.Split(authorizationString, " ")
+	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
 
-				// at least validate it
-				if len(authParts) != 2 {
+			// check if the authorization header is present
+			authorizationString := c.Request().Header.Get("Authorization")
+			authParts := strings.Split(authorizationString, " ")
+
+			// validate the auth parts
+			if len(authParts) != 2 {
+				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusUnauthorized,
+						Reason:  http.StatusText(http.StatusUnauthorized),
+						Details: "Invalid authorization header",
+					},
+				})
+			}
+
+			if authParts[0] != "Bearer" {
+				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusUnauthorized,
+						Reason:  http.StatusText(http.StatusUnauthorized),
+						Details: "Invalid authorization header",
+					},
+				})
+			}
+
+			if authParts[1] == "" {
+				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusUnauthorized,
+						Reason:  http.StatusText(http.StatusUnauthorized),
+						Details: "Invalid authorization header",
+					},
+				})
+			}
+
+			if config.Common.Mode == "standalone" {
+				// check if the API key is present and is valid
+				if config.Standalone.APIKey != authParts[1] {
 					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
 						Error: HttpError{
 							Code:    http.StatusUnauthorized,
 							Reason:  http.StatusText(http.StatusUnauthorized),
-							Details: "Invalid authorization header",
+							Details: "Invalid API key provided for standalone mode",
 						},
 					})
 				}
+			}
 
-				// validate the token
-				if authParts[1] != config.Standalone.APIKey {
-					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
-						Error: HttpError{
-							Code:    http.StatusUnauthorized,
-							Reason:  http.StatusText(http.StatusUnauthorized),
-							Details: "Invalid authorization header",
-						},
-					})
-				}
+			// if everything is good. we can check the token against estuary-auth.
+			response, err := http.Post(
+				"https://auth.estuary.tech/check-api-key",
+				"application/json",
+				strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
+			)
+
+			if err != nil {
+				log.Errorf("handler error: %s", err)
+				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusInternalServerError,
+						Reason:  http.StatusText(http.StatusInternalServerError),
+						Details: err.Error(),
+					},
+				})
+			}
+
+			authResp, err := GetAuthResponse(response)
+			if err != nil {
+				log.Errorf("handler error: %s", err)
+				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusInternalServerError,
+						Reason:  http.StatusText(http.StatusInternalServerError),
+						Details: err.Error(),
+					},
+				})
+			}
+
+			if authResp.Result.Validated == false {
+				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
+					Error: HttpError{
+						Code:    http.StatusUnauthorized,
+						Reason:  http.StatusText(http.StatusUnauthorized),
+						Details: authResp.Result.Details,
+					},
+				})
+			}
+			if authResp.Result.Validated == true {
 				return next(c)
 			}
-		})
-	} else {
-		apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-			return func(c echo.Context) error {
-				authorizationString := c.Request().Header.Get("Authorization")
-				authParts := strings.Split(authorizationString, " ")
-
-				if len(authParts) != 2 {
-					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
-						Error: HttpError{
-							Code:    http.StatusUnauthorized,
-							Reason:  http.StatusText(http.StatusUnauthorized),
-							Details: "Invalid authorization header",
-						},
-					})
-				}
-
-				response, err := http.Post(
-					"https://auth.estuary.tech/check-api-key",
-					"application/json",
-					strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
-				)
-
-				if err != nil {
-					log.Errorf("handler error: %s", err)
-					return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
-						Error: HttpError{
-							Code:    http.StatusInternalServerError,
-							Reason:  http.StatusText(http.StatusInternalServerError),
-							Details: err.Error(),
-						},
-					})
-				}
-
-				authResp, err := GetAuthResponse(response)
-				if err != nil {
-					log.Errorf("handler error: %s", err)
-					return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
-						Error: HttpError{
-							Code:    http.StatusInternalServerError,
-							Reason:  http.StatusText(http.StatusInternalServerError),
-							Details: err.Error(),
-						},
-					})
-				}
-
-				if authResp.Result.Validated == false {
-					return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
-						Error: HttpError{
-							Code:    http.StatusUnauthorized,
-							Reason:  http.StatusText(http.StatusUnauthorized),
-							Details: authResp.Result.Details,
-						},
-					})
-				}
-				if authResp.Result.Validated == true {
-					return next(c)
-				}
-				return next(c)
-			}
-		})
-	}
+			return next(c)
+		}
+	})
 
 	// It's checking if the websocket is enabled.
 	if config.Common.EnableWebsocket {
