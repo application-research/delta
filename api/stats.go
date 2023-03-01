@@ -58,6 +58,10 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetStatsByContent(c, node)
 	})
 
+	e.POST("/stats/contents/", func(c echo.Context) error {
+		return handleGetStatsByContents(c, node)
+	})
+
 	e.GET("/stats/piece-commitment/:commitmentPieceId", func(c echo.Context) error {
 		return handleGetCommitmentPiece(c, node)
 	})
@@ -150,6 +154,42 @@ func handleGetCommitmentPiece(c echo.Context, node *core.DeltaNode) error {
 		"piece_commitments": pieceCommitments,
 	})
 	return nil
+}
+
+// > This function handles the `GET /stats/contents` route
+func handleGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+	var contentIds []string
+	err := c.Bind(&contentIds)
+	if err != nil {
+		return err
+	}
+
+	var contentResponse []map[string]interface{}
+	for _, contentId := range contentIds {
+
+		var content model.Content
+		node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", contentId, authParts[1]).Scan(&content)
+
+		var contentDeal []model.ContentDeal
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId, authParts[1]).Scan(&contentDeal)
+
+		var pieceCommitments []model.PieceCommitment
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", contentId, authParts[1]).Scan(&pieceCommitments)
+
+		var contentDealProposal []model.ContentDealProposal
+		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId, authParts[1]).Scan(&contentDealProposal)
+
+		contentResponse = append(contentResponse, map[string]interface{}{
+			"content":           content,
+			"deals":             contentDeal,
+			"piece_commitments": pieceCommitments,
+			"deal_proposals":    contentDealProposal,
+		})
+	}
+	return c.JSON(200, contentResponse)
+
 }
 
 // function to get all stats given a content id and user api key
