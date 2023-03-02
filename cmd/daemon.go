@@ -114,7 +114,7 @@ func runScheduledCron(ln *core.DeltaNode) {
 	s := gocron.NewScheduler()
 	s.Every(12).Hour().Do(func() {
 		dispatcher := core.CreateNewDispatcher()
-		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
+		//dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
 		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
 	})
