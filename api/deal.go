@@ -186,7 +186,6 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 			pieceCommp.UpdatedAt = time.Now()
 			pieceCommp.Status = utils.COMMP_STATUS_OPEN
 			node.DB.Create(&pieceCommp)
-
 			dealRequest.PieceCommitment = PieceCommitmentRequest{
 				Piece:             pieceCommp.Piece,
 				PaddedPieceSize:   pieceCommp.PaddedPieceSize,

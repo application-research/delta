@@ -46,8 +46,7 @@ func SetFilclientLibp2pSubscribe(filc *fc.FilClient, i *DeltaNode) {
 			// remove from the blockstore
 			cidToDelete, err := cid.Decode(content.Cid)
 			go i.Node.DAGService.Remove(context.Background(), cidToDelete)
-
-		case datatransfer.Failed:
+		case datatransfer.Failed, datatransfer.Failing, datatransfer.Cancelled, datatransfer.InitiatorPaused, datatransfer.ResponderPaused:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 			var contentDeal model.ContentDeal
 			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{

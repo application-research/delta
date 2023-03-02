@@ -41,12 +41,9 @@ func CommpCmd() []*cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			file := c.String("file")
-			car := c.String("car")
 			if file == "" {
-				if car == "" {
-					fmt.Println("file or car is required")
-					return nil
-				}
+				fmt.Println("Please specify a file")
+				return nil
 			}
 
 			params := whypfs.NewNodeParams{
@@ -67,18 +64,15 @@ func CommpCmd() []*cli.Command {
 				return err
 			}
 
-			if file != "" {
-				commp, payloadSize, unpadddedPiece, err := filclient.GeneratePieceCommitment(context.Background(), fileNode.Cid(), node.Blockstore)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println("payloadcid: ", fileNode.Cid())
-				fmt.Println("commp: ", commp)
-				fmt.Println("payloadSize: ", payloadSize)
-				fmt.Println("unpadddedPiece: ", unpadddedPiece)
-				fmt.Println("paddedPiece: ", unpadddedPiece.Padded())
-				return nil
+			commp, payloadSize, unpadddedPiece, err := filclient.GeneratePieceCommitment(context.Background(), fileNode.Cid(), node.Blockstore)
+			if err != nil {
+				fmt.Println(err)
 			}
+			fmt.Println("payloadcid: ", fileNode.Cid())
+			fmt.Println("commp: ", commp)
+			fmt.Println("payloadSize: ", payloadSize)
+			fmt.Println("unpadddedPiece: ", unpadddedPiece)
+			fmt.Println("paddedPiece: ", unpadddedPiece.Padded())
 
 			return nil
 		},
