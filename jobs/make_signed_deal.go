@@ -211,7 +211,7 @@ func (i *SignedDealMakerProcessor) GetAssignedFilclientForContent(content model.
 			fmt.Println("error on filclient", err)
 			return nil, err
 		}
-		core.SetFilclientLibp2pSubscribe(filclient, i.LightNode)
+		core.SetLibp2pManagerSubscribe(i.LightNode)
 		return filclient, err
 	}
 

@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// It configures the router to handle the following routes:
+// ConfigureOpenStatsCheckRouter It configures the router to handle the following routes:
 //
 // - `GET /stats/miner/:minerId`
 // - `GET /stats/miner/:minerId/deals`

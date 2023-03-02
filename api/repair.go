@@ -8,6 +8,7 @@ import (
 )
 
 // ConfigureRepairRouter repair deals (re-create or re-try)
+// It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 	repair := e.Group("/repair")

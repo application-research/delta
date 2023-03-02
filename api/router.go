@@ -47,6 +47,7 @@ type AuthResponse struct {
 }
 
 // InitializeEchoRouterConfig Initializing the router.
+// It's initializing the Echo router, and configuring the routes for the API
 func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	// Echo instance
 	e := echo.New()

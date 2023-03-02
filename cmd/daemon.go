@@ -85,7 +85,8 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			meta := setGlobalNodeMeta(ln, repo)
 			ln.MetaInfo = meta
 
-			core.SetFilclientLibp2pSubscribe(ln.FilClient, ln)
+			core.SetLibp2pManagerSubscribe(ln)
+			core.SetDataTransferEventsSubscribe(ln)
 			runScheduledCron(ln)
 
 			// launch the API node

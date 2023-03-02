@@ -119,8 +119,6 @@ func handleStats(node *core.DeltaNode) func(c echo.Context) error {
 
 // `handleMinerStats` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context` and
 // returns an `error`
-// `handleMinerStats` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context` and
-// returns an `error`
 func handleMinerStats(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 

@@ -329,3 +329,24 @@ func CommpCmd() []*cli.Command {
 	return commpCommands
 
 }
+
+//func GenerateHash(r io.Reader) cid.Cid {
+//	unixFsApi := new(httpapi.UnixfsAPI)
+//
+//	opts := []options.UnixfsAddOption{
+//		options.Unixfs.HashOnly(true),
+//		options.Unixfs.CidVersion(1),
+//		options.Unixfs.RawLeaves(true),
+//		options.Unixfs.Nocopy(true),
+//	}
+//
+//	file := files.NewReaderFile(r)
+//	path, err := unixFsApi.Add(context.Background(), file, opts...)
+//	if err != nil {
+//		fmt.Println(err)
+//		return cid.Undef
+//	}
+//	cidObj := path.Cid()
+//	return cidObj
+//
+//}
