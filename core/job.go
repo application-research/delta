@@ -1,4 +1,4 @@
-// Create a dispatcher, add jobs to it, and then start it with a number of workers
+// Package core Create a dispatcher, add jobs to it, and then start it with a number of workers
 package core
 
 import (
@@ -6,15 +6,27 @@ import (
 )
 
 type JobExecutable func() error
+
+// IProcessor is an interface that has a Run method that returns an error.
+// @property {error} Run - This is the main function of the processor. It will be called by the processor manager.
 type IProcessor interface {
 	Run() error
 }
 
+// A Job is a struct that has an ID and a Processor.
+// @property {int} ID - The ID of the job.
+// @property {IProcessor} Processor - This is the interface that the job will use to process itself.
 type Job struct {
 	ID        int
 	Processor IProcessor
 }
 
+// A Worker is a struct that has an ID, a jobs channel, a dispatchStatus channel, and a Quit channel.
+// @property {int} ID - The ID of the worker.
+// @property jobs - This is the channel that the worker will use to receive jobs from the dispatcher.
+// @property dispatchStatus - This is a channel that will be used to send a message to the worker when it's done processing
+// a job.
+// @property Quit - This is a channel that will be used to tell the worker to stop working.
 type Worker struct {
 	ID             int
 	jobs           chan *Job
@@ -22,7 +34,7 @@ type Worker struct {
 	Quit           chan bool
 }
 
-// CreateNewWorker Creating a new worker and adding it to the workerQueue.
+// CreateNewWorker Create a new worker, add it to the worker queue, and return it
 func CreateNewWorker(id int, workerQueue chan *Worker, jobQueue chan *Job, dStatus chan *DispatchStatus) *Worker {
 	w := &Worker{
 		ID:             id,
@@ -52,12 +64,32 @@ func (w *Worker) Start() {
 	}()
 }
 
+// DispatchStatus is a struct with three fields, Type, ID, and Status.
+//
+// The first field, Type, is a string. The second field, ID, is an int. The third field, Status, is a string.
+//
+// The DispatchStatus type is a struct type. A struct type is a collection of fields.
+//
+// The DispatchStatus type has three fields. Each field has a name and a type.
+//
+// The DispatchStatus type has three fields: Type, ID, and Status.
+//
+// The Type field has a name and a type. The name is Type
+// @property {string} Type - The type of the dispatch. This can be either "order" or "quote".
+// @property {int} ID - The ID of the dispatch
+// @property {string} Status - The status of the dispatch. This can be one of the following:
 type DispatchStatus struct {
 	Type   string
 	ID     int
 	Status string
 }
 
+// A Dispatcher is a struct that contains a jobCounter, jobQueue, dispatchStatus, workQueue, and workerQueue.
+// @property {int} jobCounter - an internal counter for the number of jobs submitted
+// @property jobQueue - This is the channel that jobs are submitted to.
+// @property dispatchStatus - This is a channel that will be used to report the status of jobs and workers.
+// @property workQueue - This is the channel that the workers will use to send back the results of their work.
+// @property workerQueue - a channel of workers
 type Dispatcher struct {
 	jobCounter     int                  // internal counter for number of jobs
 	jobQueue       chan *Job            // channel of jobs submitted
@@ -108,6 +140,7 @@ func (d *Dispatcher) Start(numWorkers int) {
 }
 
 // AddJob Adding a job to the jobQueue.
+// It's adding a job to the jobQueue.
 func (d *Dispatcher) AddJob(je IProcessor) {
 	j := &Job{ID: d.jobCounter, Processor: je}
 	go func() { d.jobQueue <- j }()

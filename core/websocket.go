@@ -53,9 +53,9 @@ func (ws *WebsocketService) HandleContentMessages() error {
 		message := <-ws.DeltaNode.WebsocketBroadcast.ContentChannel.Channel
 		// Broadcast to all clients
 		for client := range ws.DeltaNode.WebsocketBroadcast.ContentChannel.Clients {
-			err := client.WriteJSON(message)
+			err := client.Conn.WriteJSON(message)
 			if err != nil {
-				client.Close()
+				client.Conn.Close()
 				delete(ws.DeltaNode.WebsocketBroadcast.ContentChannel.Clients, client)
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
-	"delta/jobs"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
@@ -115,7 +114,7 @@ func runScheduledCron(ln *core.DeltaNode) {
 	s.Every(12).Hour().Do(func() {
 		dispatcher := core.CreateNewDispatcher()
 		//dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
-		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		//dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
 	})
 
@@ -127,7 +126,6 @@ func runScheduledCron(ln *core.DeltaNode) {
 // > This function sets the global node metadata for the given node
 func setGlobalNodeMeta(ln *core.DeltaNode, repo string) *model.InstanceMeta {
 
-	// get the 80% of the total memory usage
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
 	totalMemory := memStats.Sys

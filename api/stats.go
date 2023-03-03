@@ -94,7 +94,6 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 func handleStats(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
-
 		authorizationString := c.Request().Header.Get("Authorization")
 		authParts := strings.Split(authorizationString, " ")
 

@@ -20,7 +20,7 @@ func ConfigureWebsocketRouter(e *echo.Group, ln *core.DeltaNode) {
 	wsGroup := e.Group("/ws")
 	// initiate the websocket broadcast
 	contentChannel := core.ContentChannel{
-		Clients: make(map[*websocket.Conn]bool),
+		Clients: make(map[*core.ClientChannel]bool),
 		Channel: make(chan model.Content),
 	}
 
@@ -38,9 +38,10 @@ func ConfigureWebsocketRouter(e *echo.Group, ln *core.DeltaNode) {
 	ln.WebsocketBroadcast.PieceCommitmentChannel = pieceCommitmentChannel
 	ln.WebsocketBroadcast.ContentDealChannel = contentDealChannel
 
-	wsGroup.GET("/contents", handleWebsocketContent(ln))
-	wsGroup.GET("/piece-commitments", handleWebsocketPieceCommitment(ln))
-	wsGroup.GET("/deals", handleWebsocketContentDeal(ln))
+	wsGroup.GET("/contents/:contentId", handleWebsocketContent(ln))
+	wsGroup.GET("/piece-commitments/:pieceCommitmentId", handleWebsocketPieceCommitment(ln))
+	wsGroup.GET("/deals/by-uuid/:dealUuid", handleWebsocketContentDeal(ln))
+	wsGroup.GET("/deals/by-cid/:cid", handleWebsocketContentDeal(ln))
 
 }
 
@@ -55,15 +56,21 @@ func handleWebsocketContent(ln *core.DeltaNode) func(c echo.Context) error {
 			return nil
 		}
 
+		contentId := c.Param("contentId")
+
 		// Register new client
 		mutex.Lock()
-		ln.WebsocketBroadcast.ContentChannel.Clients[conn] = true
+		clientChannelForContent := &core.ClientChannel{
+			Conn: conn,
+			Id:   contentId,
+		}
+		ln.WebsocketBroadcast.ContentChannel.Clients[clientChannelForContent] = true
 		mutex.Unlock()
 
 		// Close WebSocket connection when client disconnects
 		defer func() {
 			mutex.Lock()
-			delete(ln.WebsocketBroadcast.ContentChannel.Clients, conn)
+			delete(ln.WebsocketBroadcast.ContentChannel.Clients, clientChannelForContent)
 			mutex.Unlock()
 			conn.Close()
 		}()

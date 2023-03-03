@@ -13,7 +13,43 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 	repair := e.Group("/repair")
 
-	repair.GET("/force-retry-all", func(c echo.Context) error {
+	repair.GET("/force-retry-all", handleForceRetry(node))
+
+	repair.GET("/content/:contentId", handleRepairDealContent(node))
+
+	repair.GET("/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
+
+}
+
+func handleRepairPieceCommitment(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		// get the piece commitment'
+		var pieceCommitment model.PieceCommitment
+		node.DB.Model(&model.PieceCommitment{}).Where("id = ?", c.Param("pieceCommitmentId")).First(&pieceCommitment)
+
+		// if the piece commitment is not found, throw an error.
+		if pieceCommitment.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "piece commitment not found",
+			})
+		}
+
+		// if the piece commitment is found, re-queue the job.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("piece_commitment_id = ?", pieceCommitment.ID).First(&content)
+
+		processor := jobs.NewPieceCommpProcessor(node, content)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		return c.JSON(200, map[string]interface{}{
+			"message": "re-queued piece commitment",
+		})
+	}
+}
+
+func handleForceRetry(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
 		processor := jobs.NewRetryProcessor(node)
 		node.Dispatcher.AddJobAndDispatch(processor, 1)
 
@@ -21,9 +57,11 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 			"message": "retrying all deals",
 		})
 
-	})
+	}
+}
 
-	repair.GET("/deal/content/:contentId", func(c echo.Context) error {
+func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
 
 		paramContentId := c.Param("contentId")
 
@@ -50,12 +88,5 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 			"message": "retrying deal",
 			"content": content,
 		})
-	})
-
-	repair.GET("/piece-commitment", func(c echo.Context) error {
-
-		// retry the same piece-commitment
-		return nil
-	})
-
+	}
 }
