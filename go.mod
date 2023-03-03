@@ -121,7 +121,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/graph-gophers/graphql-go v1.2.0 // indirect
+	github.com/graph-gophers/graphql-go v1.3.0 // indirect
 	github.com/hannahhoward/cbor-gen-for v0.0.0-20200817222906-ea96cece81f1 // indirect
 	github.com/hannahhoward/go-pubsub v1.0.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
