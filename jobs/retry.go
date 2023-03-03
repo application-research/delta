@@ -25,6 +25,8 @@ func NewRetryProcessor(ln *core.DeltaNode) IProcessor {
 // Checking the status of the content and requeue the job if needed.
 func (i RetryProcessor) Run() error {
 
+	// collect all cids
+	var cidsToDelete []cid.Cid
 	// create the new logic again.
 	// Finding all the contents that are not in the status of `transfer-finished` or `deal-proposal-sent` and created_at is
 	// less than 1 day ago.
@@ -68,7 +70,7 @@ func (i RetryProcessor) Run() error {
 				fmt.Println("error in decoding cid", err)
 				continue
 			}
-			i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidToDelete)
+			cidsToDelete = append(cidsToDelete, cidToDelete)
 		} else {
 			// fail it entirely
 			content.Status = utils.CONTENT_FAILED_TO_PROCESS
@@ -79,9 +81,15 @@ func (i RetryProcessor) Run() error {
 				fmt.Println("error in decoding cid", err)
 				continue
 			}
-			i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidToDelete)
+			cidsToDelete = append(cidsToDelete, cidToDelete)
 		}
 
+	}
+
+	// delete the cids
+	err := i.LightNode.Node.DAGService.RemoveMany(context.Background(), cidsToDelete)
+	if err != nil {
+		fmt.Println("error in unpinning cid", err)
 	}
 
 	return nil

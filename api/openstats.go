@@ -24,8 +24,95 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleOpenGetDealsByMiner(c, node)
 	})
 
+	e.GET("/stats/content/:contentId", func(c echo.Context) error {
+		return handleOpenGetStatsByContent(c, node)
+	})
+
+	e.POST("/stats/contents", func(c echo.Context) error {
+		return handleOpenGetStatsByContents(c, node)
+	})
+
 	e.GET("/stats/totals/info", func(c echo.Context) error {
 		return handleOpenGetTotalsInfo(c, node)
+	})
+
+	e.GET("/stats/deal/by-cid/:cid", func(c echo.Context) error {
+		return handleOpenGetDealByCid(c, node)
+	})
+
+	e.GET("/stats/deal/by-uuid/:uuid", func(c echo.Context) error {
+		return handleOpenGetDealByUuid(c, node)
+	})
+
+	e.GET("/stats/deal/by-deal-id/:dealId", func(c echo.Context) error {
+		return handleOpenGetDealByDealId(c, node)
+	})
+}
+
+// It gets the content deal, content, content deal proposal, and piece commitment from the database and returns them as
+// JSON
+func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
+	var contentDeal model.ContentDeal
+	node.DB.Raw("select * from content_deals where cid = ?", c.Param("cid")).Scan(&contentDeal)
+
+	var content model.Content
+	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
+
+	var contentDealProposal model.ContentDealProposalParameters
+	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+
+	var pieceCommitment model.PieceCommitment
+	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+
+	return c.JSON(200, map[string]interface{}{
+		"deal":             contentDeal,
+		"content":          content,
+		"deal_proposal":    contentDealProposal,
+		"piece_commitment": pieceCommitment,
+	})
+}
+
+// It gets the content deal, content, content deal proposal, and piece commitment from the database and returns them as
+// JSON
+func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
+	var contentDeal model.ContentDeal
+	node.DB.Raw("select * from content_deals where deal_id = ?", c.Param("dealId")).Scan(&contentDeal)
+
+	var content model.Content
+	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
+
+	var contentDealProposal model.ContentDealProposalParameters
+	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+
+	var pieceCommitment model.PieceCommitment
+	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+
+	return c.JSON(200, map[string]interface{}{
+		"deal":             contentDeal,
+		"content":          content,
+		"deal_proposal":    contentDealProposal,
+		"piece_commitment": pieceCommitment,
+	})
+}
+
+func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
+	var contentDeal model.ContentDeal
+	node.DB.Raw("select * from content_deals where deal_uuid = ?", c.Param("uuid")).Scan(&contentDeal)
+
+	var content model.Content
+	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
+
+	var contentDealProposal model.ContentDealProposalParameters
+	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+
+	var pieceCommitment model.PieceCommitment
+	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+
+	return c.JSON(200, map[string]interface{}{
+		"deal":             contentDeal,
+		"content":          content,
+		"deal_proposal":    contentDealProposal,
+		"piece_commitment": pieceCommitment,
 	})
 }
 
@@ -141,4 +228,61 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 		"total_import_deals_in_bytes": totalImportDealsInBytes,
 	})
 	return nil
+}
+
+// A function that is called when a GET request is made to the /open/get_stats_by_contents endpoint.
+func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
+
+	var contentIds []int64
+	err := c.Bind(&contentIds)
+	if err != nil {
+		return err
+	}
+
+	var contentResponse []map[string]interface{}
+	for _, contentId := range contentIds {
+
+		var content model.Content
+		node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", contentId).Scan(&content)
+
+		var contentDeal []model.ContentDeal
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId).Scan(&contentDeal)
+
+		var pieceCommitments []model.PieceCommitment
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", contentId).Scan(&pieceCommitments)
+
+		var contentDealProposal []model.ContentDealProposal
+		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId).Scan(&contentDealProposal)
+
+		contentResponse = append(contentResponse, map[string]interface{}{
+			"content":           content,
+			"deals":             contentDeal,
+			"piece_commitments": pieceCommitments,
+			"deal_proposals":    contentDealProposal,
+		})
+	}
+	return c.JSON(200, contentResponse)
+
+}
+
+// function to get all stats given a content id and user api key
+func handleOpenGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
+	var content model.Content
+	node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&content)
+
+	var contentDeal []model.ContentDeal
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&contentDeal)
+
+	var pieceCommitments []model.PieceCommitment
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&pieceCommitments)
+
+	var contentDealProposal []model.ContentDealProposalParameters
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&contentDealProposal)
+
+	return c.JSON(200, map[string]interface{}{
+		"content":           content,
+		"deals":             contentDeal,
+		"piece_commitments": pieceCommitments,
+		"deal_proposals":    contentDealProposal,
+	})
 }

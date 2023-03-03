@@ -1252,7 +1252,6 @@ func ValidateMeta(dealRequest DealRequest) error {
 
 // It takes a request, and returns a response
 func handlePrepareContent(c echo.Context, node *core.DeltaNode, statsService core.StatsService) {
-
 	// > This function is called when a node receives a `PrepareCommitmentPiece` message
 }
 func handlePrepareCommitmentPiece() {
@@ -1261,7 +1260,6 @@ func handlePrepareCommitmentPiece() {
 	// prepares the commitment pieces
 }
 func handlePrepareCommitmentPieces() {
-
 	// This function handles the announcement of content.
 }
 

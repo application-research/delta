@@ -4,8 +4,10 @@ package main
 
 import (
 	"delta/cmd"
+	"fmt"
 	_ "net/http"
 	"os"
+	"runtime"
 
 	c "delta/config"
 
@@ -18,6 +20,15 @@ var (
 )
 
 func main() {
+
+	// making sure we have enough file descriptors
+	numCPU := runtime.NumCPU()
+	fmt.Printf("Number of CPUs: %d\n", numCPU)
+	// make sure we only spawn based on the number of CPUs
+	// reliability is more important than performance
+	runtime.GOMAXPROCS(numCPU)
+
+	// get the config
 	cfg := c.InitConfig()
 
 	// get all the commands
