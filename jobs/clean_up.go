@@ -49,7 +49,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 	var contentsOffline []model.Content
 	i.LightNode.DB.Model(&model.Content{}).Where("status = ? and connection_mode = ?", "deal-proposal-sent", "import").Find(&contentsOffline)
 
-	for _, content := range contentsOnline {
+	for _, content := range contentsOffline {
 		cidD, err := cid.Decode(content.Cid)
 		if err != nil {
 			fmt.Println("error in decoding cid", err)
@@ -81,9 +81,27 @@ func (i ItemContentCleanUpProcessor) Run() error {
 		}
 	}
 
-	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?,?,?,?,?) and created_at < ?", "transfer-finished", "transfer-failed", "deal-proposal-failed", "piece-computing-failed", "failed-to-pin", "failed-to-process", time.Now().AddDate(0, 0, -3)).Updates(model.Content{
-		Status:      utils.DEAL_STATUS_TRANSFER_FAILED,
-		LastMessage: "Transfer failed. Record is older than 3 days.",
-	})
+	// clear up cids that are older than 3 days.
+	var oldContents []model.Content
+	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?,?,?) and created_at > ?", "transfer-failed", "deal-proposal-failed", "transfer-finished", "deal-proposal-sent", time.Now().AddDate(0, 0, -3)).Find(&oldContents)
+
+	for _, content := range oldContents {
+
+		cidD, err := cid.Decode(content.Cid)
+		if err != nil {
+			fmt.Println("error in decoding cid", err)
+			continue
+		}
+		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
+		if err != nil {
+			fmt.Println("error in deleting block", err)
+			continue
+		}
+
+		content.Status = utils.DEAL_STATUS_TRANSFER_FAILED
+		content.LastMessage = "Transfer failed. Record is older than 3 days."
+		i.LightNode.DB.Save(&content)
+
+	}
 	return nil
 }

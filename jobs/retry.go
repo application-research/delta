@@ -27,11 +27,10 @@ func (i RetryProcessor) Run() error {
 
 	// collect all cids
 	var cidsToDelete []cid.Cid
-	// create the new logic again.
-	// Finding all the contents that are not in the status of `transfer-finished` or `deal-proposal-sent` and created_at is
-	// less than 1 day ago.
+
+	// if the content is hanging in the middle of the process after a day, let's retry it.
 	var contents []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?) and created_at < ? and created_at <> updated_at", "transfer-finished", "deal-proposal-sent", time.Now().AddDate(0, 0, -1)).Find(&contents)
+	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?,?,?) and created_at > ?", "transfer-failed", "deal-proposal-failed", "transfer-finished", "deal-proposal-sent", time.Now().Add(-24*time.Hour)).Find(&contents)
 
 	// Checking the status of the content and requeue the job if needed.
 	for _, content := range contents {
@@ -53,15 +52,6 @@ func (i RetryProcessor) Run() error {
 		} else if content.Status == utils.CONTENT_PIECE_COMPUTED || content.Status == utils.CONTENT_DEAL_SENDING_PROPOSAL || content.Status == utils.CONTENT_DEAL_MAKING_PROPOSAL {
 			var pieceCommp model.PieceCommitment
 			i.LightNode.DB.Model(&model.PieceCommitment{}).Where("id = (select piece_commitment_id from contents c where c.id = ?)", content.ID).Find(&pieceCommp)
-
-			// record the retry
-			i.LightNode.DB.Model(&model.RetryDealCount{}).Create(&model.RetryDealCount{
-				Type:      "storage-deal",
-				OldId:     content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			})
-
 			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, content, pieceCommp), 1)
 		} else if content.Status == utils.CONTENT_FAILED_TO_PIN || content.Status == utils.DEAL_STATUS_TRANSFER_FAILED || content.Status == utils.CONTENT_DEAL_PROPOSAL_FAILED || content.Status == utils.CONTENT_PIECE_COMPUTING_FAILED {
 			// delete/ignore

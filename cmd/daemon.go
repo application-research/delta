@@ -4,6 +4,7 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	"delta/jobs"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
@@ -111,10 +112,10 @@ func runScheduledCron(ln *core.DeltaNode) {
 	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
 
 	s := gocron.NewScheduler()
-	s.Every(12).Hour().Do(func() {
+	s.Every(30).Minutes().Do(func() { // let's clean and retry every 30 minutes. It'll only get the old data.
 		dispatcher := core.CreateNewDispatcher()
-		//dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
-		//dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
+		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
 	})
 

@@ -21,12 +21,9 @@ var (
 
 func main() {
 
-	// making sure we have enough file descriptors
 	numCPU := runtime.NumCPU()
 	fmt.Printf("Number of CPUs: %d\n", numCPU)
-	// make sure we only spawn based on the number of CPUs
-	// reliability is more important than performance
-	runtime.GOMAXPROCS(numCPU)
+	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
 
 	// get the config
 	cfg := c.InitConfig()

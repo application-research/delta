@@ -30,7 +30,7 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 // SetLibp2pManagerSubscribe It subscribes to the libp2p transfer manager and updates the database with the status of the transfer
 func SetLibp2pManagerSubscribe(i *DeltaNode) {
 	i.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst fc.ChannelState) {
-		fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
+		//fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 		switch fst.Status {
 		case datatransfer.Requested:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)

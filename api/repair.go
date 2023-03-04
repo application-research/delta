@@ -10,17 +10,13 @@ import (
 // ConfigureRepairRouter repair deals (re-create or re-try)
 // It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
-
 	repair := e.Group("/repair")
-
-	repair.GET("/force-retry-all", handleForceRetry(node))
-
+	repair.GET("/force-retry-all", handleForceRetryPendingContents(node))
 	repair.GET("/content/:contentId", handleRepairDealContent(node))
-
 	repair.GET("/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
-
 }
 
+// It takes a piece commitment id, finds the piece commitment, and re-queues the job
 func handleRepairPieceCommitment(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
@@ -48,7 +44,8 @@ func handleRepairPieceCommitment(node *core.DeltaNode) func(c echo.Context) erro
 	}
 }
 
-func handleForceRetry(node *core.DeltaNode) func(c echo.Context) error {
+// It creates a new job processor, adds it to the dispatcher, and returns a JSON response
+func handleForceRetryPendingContents(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		processor := jobs.NewRetryProcessor(node)
 		node.Dispatcher.AddJobAndDispatch(processor, 1)
@@ -60,6 +57,7 @@ func handleForceRetry(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
+// It takes a content ID, finds the content deal entry for that content, and then retries the deal
 func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
