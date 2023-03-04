@@ -15,13 +15,13 @@ func NewWebsocketService(dn *DeltaNode) *WebsocketService {
 // receives a message, it broadcasts it to all clients.
 func (ws *WebsocketService) HandlePieceCommitmentMessages() error {
 	for {
-		message := <-ws.DeltaNode.WebsocketBroadcast.PieceCommitmentChannel.Channel
+		message := <-ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.PieceCommitmentChannel.Channel
 		// Broadcast to all clients
-		for client := range ws.DeltaNode.WebsocketBroadcast.PieceCommitmentChannel.Clients {
+		for client := range ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.PieceCommitmentChannel.Clients {
 			err := client.WriteJSON(message)
 			if err != nil {
 				client.Close()
-				delete(ws.DeltaNode.WebsocketBroadcast.PieceCommitmentChannel.Clients, client)
+				delete(ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.PieceCommitmentChannel.Clients, client)
 			}
 		}
 	}
@@ -32,14 +32,14 @@ func (ws *WebsocketService) HandlePieceCommitmentMessages() error {
 // // receives a message, it broadcasts it to all clients.
 func (ws *WebsocketService) HandleContentDealMessages() error {
 	for {
-		message := <-ws.DeltaNode.WebsocketBroadcast.ContentDealChannel.Channel
+		message := <-ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.ContentDealChannel.Channel
 
 		// Broadcast to all clients
-		for client := range ws.DeltaNode.WebsocketBroadcast.ContentDealChannel.Clients {
+		for client := range ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.ContentDealChannel.Clients {
 			err := client.WriteJSON(message)
 			if err != nil {
 				client.Close()
-				delete(ws.DeltaNode.WebsocketBroadcast.ContentDealChannel.Clients, client)
+				delete(ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.ContentDealChannel.Clients, client)
 			}
 		}
 	}
@@ -50,13 +50,13 @@ func (ws *WebsocketService) HandleContentDealMessages() error {
 // // receives a message, it broadcasts it to all clients.
 func (ws *WebsocketService) HandleContentMessages() error {
 	for {
-		message := <-ws.DeltaNode.WebsocketBroadcast.ContentChannel.Channel
+		message := <-ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.ContentChannel.Channel
 		// Broadcast to all clients
-		for client := range ws.DeltaNode.WebsocketBroadcast.ContentChannel.Clients {
+		for client := range ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.ContentChannel.Clients {
 			err := client.Conn.WriteJSON(message)
 			if err != nil {
 				client.Conn.Close()
-				delete(ws.DeltaNode.WebsocketBroadcast.ContentChannel.Clients, client)
+				delete(ws.DeltaNode.DeltaEventEmitter.WebsocketBroadcast.ContentChannel.Clients, client)
 			}
 		}
 	}

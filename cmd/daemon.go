@@ -4,6 +4,8 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	"delta/jobs"
+	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 )
 
@@ -87,7 +89,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			core.SetDataTransferEventsSubscribe(ln)
 
 			// run the clean up every 30 minutes so we can retry and also remove the unecessary files on the blockstore.
-			core.RunScheduledCleanupAndRetryCron(ln)
+			RunScheduledCleanupAndRetryCron(ln)
 
 			// launch the API node
 			api.InitializeEchoRouterConfig(ln, *cfg)
@@ -100,5 +102,25 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 	daemonCommands = append(daemonCommands, daemonCmd)
 
 	return daemonCommands
+
+}
+
+// RunScheduledCleanupAndRetryCron Run the cron jobs.
+// The cron jobs are run every 12 hours and are responsible for cleaning up the database and the blockstore.
+// It also retries the failed transfers.
+// `RunScheduledCleanupAndRetryCron` is a function that runs a cron job on a node
+func RunScheduledCleanupAndRetryCron(ln *core.DeltaNode) {
+
+	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
+
+	s := gocron.NewScheduler()
+	s.Every(30).Minutes().Do(func() { // let's clean and retry every 30 minutes. It'll only get the old data.
+		dispatcher := core.CreateNewDispatcher()
+		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
+		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		dispatcher.Start(maxCleanUpJobs)
+	})
+
+	s.Start()
 
 }

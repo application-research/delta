@@ -7,12 +7,6 @@ import (
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/delta-db/messaging"
-	"github.com/gorilla/websocket"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"sync"
-
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
 	"github.com/application-research/whypfs-core"
@@ -25,11 +19,19 @@ import (
 	"github.com/filecoin-project/lotus/chain/wallet"
 	"github.com/filecoin-project/lotus/chain/wallet/key"
 	cliutil "github.com/filecoin-project/lotus/cli/util"
+	"github.com/gorilla/websocket"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	mdagipld "github.com/ipfs/go-ipld-format"
 	"github.com/ipfs/go-path/resolver"
 	"github.com/labstack/gommon/log"
+	trace2 "go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"gorm.io/gorm"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"sync"
 )
 
 // DeltaNode is a struct that contains a context, a node, an api, a database, a filecoin client, a config, a dispatcher, a
@@ -53,16 +55,26 @@ import (
 // client.
 // websocket clients.
 type DeltaNode struct {
-	Context            context.Context
-	Node               *whypfs.Node
-	Api                url.URL
-	DB                 *gorm.DB
-	FilClient          *fc.FilClient
-	Config             *c.DeltaConfig
-	Dispatcher         *Dispatcher
-	DeltaTracer        *messaging.DeltaMetricsTracer
-	MetaInfo           *model.InstanceMeta
+	Context    context.Context
+	Node       *whypfs.Node
+	Api        url.URL
+	DB         *gorm.DB
+	FilClient  *fc.FilClient
+	Config     *c.DeltaConfig
+	Dispatcher *Dispatcher
+	MetaInfo   *model.InstanceMeta
+
+	DeltaEventEmitter  *DeltaEventEmitter
+	DeltaMetricsTracer *DeltaMetricsTracer
+}
+
+type DeltaEventEmitter struct {
 	WebsocketBroadcast WebsocketBroadcast
+}
+
+type DeltaMetricsTracer struct {
+	Tracer            trace2.Tracer
+	DeltaDataReporter *messaging.DeltaMetricsTracer
 }
 
 // `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
@@ -193,16 +205,26 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	dispatcher := CreateNewDispatcher()
 
 	// delta metrics tracer
-	tracer := messaging.NewDeltaMetricsTracer()
+	//dataTracer := messaging.NewDeltaMetricsTracer()
 
+	tp := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
+	defer tp.Shutdown(context.Background())
+
+	// Register the tracer provider with the global tracer
+	otel.SetTracerProvider(tp)
+
+	// Create a new span
+	//tracer := otel.Tracer("example")
 	// create the global light node.
 	return &DeltaNode{
-		Node:        whypfsPeer,
-		DB:          db,
-		FilClient:   filclient,
-		Dispatcher:  dispatcher,
-		Config:      repo.Config,
-		DeltaTracer: tracer,
+		Node:       whypfsPeer,
+		DB:         db,
+		FilClient:  filclient,
+		Dispatcher: dispatcher,
+		Config:     repo.Config,
+		DeltaMetricsTracer: &DeltaMetricsTracer{
+			//Tracer: tracer,
+		},
 	}, nil
 }
 

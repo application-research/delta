@@ -61,12 +61,34 @@ type DealResponse struct {
 
 // ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
 // to the echo.Group
+// `ConfigureDealRouter` is a function that takes a `Group` and a `DeltaNode` and configures the `Group` to handle the
+// `DeltaNode`'s deal-making functionality
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	//	inject the stats service
 	statsService := core.NewStatsStatsService(node)
 
 	dealMake := e.Group("/deal")
+
+	// upload limiter middleware
+	dealMake.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// check if the sum(size) transfer-started and created_at within instance_start time
+			var size uint64
+			node.DB.Raw("select sum(size) from contents where status = 'transfer-started' and created_at > ?", node.MetaInfo.InstanceStart).Scan(&size)
+
+			// memory limit
+			if size > node.MetaInfo.MemoryLimit {
+				return c.JSON(http.StatusForbidden, DealResponse{
+					Status:  "error",
+					Message: "Too much data is being transferred, please try again once all other transfers are complete",
+				})
+			}
+
+			return next(c)
+		}
+	})
+
 	dealPrepare := dealMake.Group("/prepare")
 	dealAnnounce := dealMake.Group("/announce")
 	dealStatus := dealMake.Group("/status")
@@ -97,22 +119,27 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealPrepare.POST("/content", func(c echo.Context) error {
+		// TODO: call unsigned deal proposal
 		return nil
 	})
 
 	dealPrepare.POST("/piece-commitment", func(c echo.Context) error {
+		// TODO: call unsigned deal proposal with piece commitment
 		return nil
 	})
 
 	dealPrepare.POST("/piece-commitments", func(c echo.Context) error {
+		// TODO: call unsigned deal proposal with piece commitments
 		return nil
 	})
 
 	dealAnnounce.POST("/content", func(c echo.Context) error {
+		// TODO: accept a hexed signed proposal
 		return nil
 	})
 
 	dealAnnounce.POST("/piece-commitment", func(c echo.Context) error {
+
 		return nil
 	})
 
