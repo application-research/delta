@@ -432,6 +432,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		pieceComm.UpdatedAt = time.Now()
 		content.UpdatedAt = time.Now()
 		deal.UpdatedAt = time.Now()
+		deal.TransferStarted = time.Now()
 
 		deal.DTChan = channelId.String()
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {

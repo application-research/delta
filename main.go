@@ -4,12 +4,9 @@ package main
 
 import (
 	"delta/cmd"
-	"fmt"
+	c "delta/config"
 	_ "net/http"
 	"os"
-	"runtime"
-
-	c "delta/config"
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
@@ -20,10 +17,6 @@ var (
 )
 
 func main() {
-
-	numCPU := runtime.NumCPU()
-	fmt.Printf("Number of CPUs: %d\n", numCPU)
-	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
 
 	// get the config
 	cfg := c.InitConfig()
