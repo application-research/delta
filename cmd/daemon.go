@@ -4,7 +4,6 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
-	"delta/jobs"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 )
@@ -116,8 +115,8 @@ func RunScheduledCleanupAndRetryCron(ln *core.DeltaNode) {
 	s := gocron.NewScheduler()
 	s.Every(30).Minutes().Do(func() { // let's clean and retry every 30 minutes. It'll only get the old data.
 		dispatcher := core.CreateNewDispatcher()
-		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
-		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		//dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
+		//dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
 
 		core.ScanHostComputeResources(ln, ln.Node.Config.Blockstore)
