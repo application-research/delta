@@ -83,7 +83,7 @@ func (i ItemContentCleanUpProcessor) Run() error {
 
 	// clear up cids that are older than 3 days.
 	var oldContents []model.Content
-	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?,?,?) and created_at > ?", "transfer-failed", "deal-proposal-failed", "transfer-finished", "deal-proposal-sent", time.Now().AddDate(0, 0, -3)).Find(&oldContents)
+	i.LightNode.DB.Model(&model.Content{}).Where("status not in(?,?,?,?) and created_at < ?", "transfer-failed", "deal-proposal-failed", "transfer-finished", "deal-proposal-sent", time.Now().AddDate(0, 0, -3)).Find(&oldContents)
 
 	for _, content := range oldContents {
 
