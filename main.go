@@ -5,11 +5,10 @@ package main
 import (
 	"delta/cmd"
 	c "delta/config"
-	_ "net/http"
-	"os"
-
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
+	_ "net/http"
+	"os"
 )
 
 var (

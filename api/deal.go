@@ -77,8 +77,8 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 			var size uint64
 			node.DB.Raw("select sum(size) from contents where status = 'transfer-started' and created_at > ?", node.MetaInfo.InstanceStart).Scan(&size)
 
-			// memory limit
-			if size > node.MetaInfo.MemoryLimit {
+			// memory limit (10GB per CPU)
+			if size > (node.MetaInfo.NumberOfCpus * node.MetaInfo.BytesPerCpu) {
 				return c.JSON(http.StatusForbidden, DealResponse{
 					Status:  "error",
 					Message: "Too much data is being transferred, please try again once all other transfers are complete",

@@ -119,6 +119,8 @@ func RunScheduledCleanupAndRetryCron(ln *core.DeltaNode) {
 		dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
 		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
+
+		core.ScanHostComputeResources(ln, ln.Node.Config.Blockstore)
 	})
 
 	s.Start()
