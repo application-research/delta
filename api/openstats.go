@@ -84,11 +84,11 @@ func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
 	content.RequestingApiKey = ""
 
-	var contentDealProposal model.ContentDealProposalParameters
-	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+	var contentDealProposal model.ContentDealProposal
+	node.DB.Raw("select * from content_deal_proposals where content = ?", content.ID).Scan(&contentDealProposal)
 
 	var pieceCommitment model.PieceCommitment
-	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
@@ -106,11 +106,11 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
 	content.RequestingApiKey = ""
 
-	var contentDealProposal model.ContentDealProposalParameters
-	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+	var contentDealProposal model.ContentDealProposal
+	node.DB.Raw("select * from content_deal_proposals where content = ?", content.ID).Scan(&contentDealProposal)
 
 	var pieceCommitment model.PieceCommitment
-	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
