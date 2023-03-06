@@ -52,17 +52,19 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 // It gets the content deal, content, content deal proposal, and piece commitment from the database and returns them as
 // JSON
 func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
-	var contentDeal model.ContentDeal
-	node.DB.Raw("select * from content_deals where cid = ?", c.Param("cid")).Scan(&contentDeal)
 
 	var content model.Content
-	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
+	node.DB.Raw("select * from contents where cid = ?", c.Param("cid")).Scan(&content)
+	content.RequestingApiKey = ""
+
+	var contentDeal model.ContentDeal
+	node.DB.Raw("select * from content_deals where content = ?", content.ID).Scan(&contentDeal)
 
 	var contentDealProposal model.ContentDealProposalParameters
-	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+	node.DB.Raw("select * from content_deal_proposal_parameters where content = ?", content.ID).Scan(&contentDealProposal)
 
 	var pieceCommitment model.PieceCommitment
-	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+	node.DB.Raw("select * from piece_commitments as pc, contents as c where c.id = ? and pc.id = c.piece_commitment_id", content.ID).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
@@ -80,6 +82,7 @@ func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 
 	var content model.Content
 	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
+	content.RequestingApiKey = ""
 
 	var contentDealProposal model.ContentDealProposalParameters
 	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
@@ -101,6 +104,7 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 
 	var content model.Content
 	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
+	content.RequestingApiKey = ""
 
 	var contentDealProposal model.ContentDealProposalParameters
 	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
@@ -123,6 +127,10 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 	// get content consumed by miner
 	var content []model.Content
 	node.DB.Raw("select c.* from contents c, content_miner cma where c.id = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&content)
+	// TODO: remove api key
+	for i := range content {
+		content[i].RequestingApiKey = ""
+	}
 
 	// get content deals by miner
 	var contentDeal []model.ContentDeal
@@ -243,16 +251,17 @@ func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 	for _, contentId := range contentIds {
 
 		var content model.Content
-		node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", contentId).Scan(&content)
+		node.DB.Raw("select c.* from contents c where c.id = ?", contentId).Scan(&content)
+		content.RequestingApiKey = ""
 
 		var contentDeal []model.ContentDeal
-		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId).Scan(&contentDeal)
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ?", contentId).Scan(&contentDeal)
 
 		var pieceCommitments []model.PieceCommitment
-		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", contentId).Scan(&pieceCommitments)
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ?", contentId).Scan(&pieceCommitments)
 
 		var contentDealProposal []model.ContentDealProposal
-		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId).Scan(&contentDealProposal)
+		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposal)
 
 		contentResponse = append(contentResponse, map[string]interface{}{
 			"content":           content,
@@ -268,16 +277,17 @@ func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 // function to get all stats given a content id and user api key
 func handleOpenGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	var content model.Content
-	node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&content)
+	node.DB.Raw("select c.* from contents c where c.id = ?", c.Param("contentId")).Scan(&content)
+	content.RequestingApiKey = ""
 
 	var contentDeal []model.ContentDeal
-	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&contentDeal)
+	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDeal)
 
 	var pieceCommitments []model.PieceCommitment
-	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&pieceCommitments)
+	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ?", c.Param("contentId")).Scan(&pieceCommitments)
 
 	var contentDealProposal []model.ContentDealProposalParameters
-	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId")).Scan(&contentDealProposal)
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDealProposal)
 
 	return c.JSON(200, map[string]interface{}{
 		"content":           content,

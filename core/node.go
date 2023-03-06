@@ -7,12 +7,6 @@ import (
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/delta-db/messaging"
-	"github.com/gorilla/websocket"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"sync"
-
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
 	"github.com/application-research/whypfs-core"
@@ -25,53 +19,131 @@ import (
 	"github.com/filecoin-project/lotus/chain/wallet"
 	"github.com/filecoin-project/lotus/chain/wallet/key"
 	cliutil "github.com/filecoin-project/lotus/cli/util"
+	"github.com/gorilla/websocket"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	mdagipld "github.com/ipfs/go-ipld-format"
 	"github.com/ipfs/go-path/resolver"
 	"github.com/labstack/gommon/log"
+	trace2 "go.opencensus.io/trace"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"gorm.io/gorm"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"sync"
 )
 
+// DeltaNode is a struct that contains a context, a node, an api, a database, a filecoin client, a config, a dispatcher, a
+// delta tracer, a meta info, and a websocket broadcast.
+// @property Context - The context of the node.
+// @property Node - The Whypfs node that this DeltaNode is running on.
+// @property Api - The URL of the Delta API
+// @property DB - The database connection
+// @property FilClient - This is the client that will be used to communicate with the Filecoin network.
+// @property Config - This is the configuration for the Delta node.
+// @property Dispatcher - This is the Dispatcher that is responsible for dispatching the messages to the appropriate
+// handlers.
+// @property DeltaTracer - This is a metrics tracer that is used to send metrics to the metrics server.
+// @property MetaInfo - This is the metadata of the node. It contains the node's IP address, port, and other information.
+// @property {WebsocketBroadcast} WebsocketBroadcast - This is a channel that is used to broadcast messages to the
+// `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
+// @property {ContentChannel} ContentChannel - This is the channel that will be used to send content to the client.
+// @property {PieceCommitmentChannel} PieceCommitmentChannel - This is a channel that will be used to send piece
+// commitments to the client.
+// @property {ContentDealChannel} ContentDealChannel - This is a channel that will be used to send content deals to the
+// client.
+// websocket clients.
 type DeltaNode struct {
-	Context            context.Context
-	Node               *whypfs.Node
-	Api                url.URL
-	DB                 *gorm.DB
-	FilClient          *fc.FilClient
-	Config             *c.DeltaConfig
-	Dispatcher         *Dispatcher
-	DeltaTracer        *messaging.DeltaMetricsTracer
-	MetaInfo           *model.InstanceMeta
+	Context    context.Context
+	Node       *whypfs.Node
+	Api        url.URL
+	DB         *gorm.DB
+	FilClient  *fc.FilClient
+	Config     *c.DeltaConfig
+	Dispatcher *Dispatcher
+	MetaInfo   *model.InstanceMeta
+
+	DeltaEventEmitter  *DeltaEventEmitter
+	DeltaMetricsTracer *DeltaMetricsTracer
+}
+
+type DeltaEventEmitter struct {
 	WebsocketBroadcast WebsocketBroadcast
 }
 
+type DeltaMetricsTracer struct {
+	Tracer            trace2.Tracer
+	DeltaDataReporter *messaging.DeltaMetricsTracer
+}
+
+// `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
+// @property {ContentChannel} ContentChannel - This is the channel that will be used to send content to the client.
+// @property {PieceCommitmentChannel} PieceCommitmentChannel - This is a channel that will be used to send piece
+// commitments to the client.
+// @property {ContentDealChannel} ContentDealChannel - This is a channel that will be used to send content deals to the
+// client.
 type WebsocketBroadcast struct {
 	ContentChannel         ContentChannel
 	PieceCommitmentChannel PieceCommitmentChannel
 	ContentDealChannel     ContentDealChannel
 }
+
+// A ContentChannel is a map of websocket connections to booleans and a channel of Content.
+// @property Clients - A map of all the clients that are connected to the channel.
+// @property Channel - This is the channel that will be used to send messages to all the clients.
+// A ContentChannel is a map of websocket connections to booleans and a channel of Content.
+// @property Clients - A map of all the clients that are connected to the channel.
+// @property Channel - This is the channel that will be used to send messages to all the clients.
 type ContentChannel struct {
-	Clients map[*websocket.Conn]bool
+	Clients map[*ClientChannel]bool
 	Channel chan model.Content
 }
+
+type ClientChannel struct {
+	Conn *websocket.Conn
+	Id   string
+}
+
+// PieceCommitmentChannel `PieceCommitmentChannel` is a struct that contains a map of websocket connections and a channel of
+// `model.PieceCommitment`s.
+// @property Clients - A map of all the clients that are connected to the channel.
+// @property Channel - This is the channel that will be used to send messages to all the clients.
 type PieceCommitmentChannel struct {
 	Clients map[*websocket.Conn]bool
 	Channel chan model.PieceCommitment
 }
 
+// ContentDealChannel `ContentDealChannel` is a struct with a map of `websocket.Conn` pointers and a `chan model.ContentDeal` channel.
+// @property Clients - A map of all the clients connected to the channel.
+// @property Channel - This is the channel that will be used to send messages to the clients.
 type ContentDealChannel struct {
 	Clients map[*websocket.Conn]bool
 	Channel chan model.ContentDeal
 }
 
+// LocalWallet `LocalWallet` is a struct that contains a map of `address.Address` to `key.Key` and a `types.KeyStore` and a
+// `sync.Mutex`.
+// @property keys - a map of addresses to keys.
+// @property keystore - This is the keystore that the wallet uses to store the keys.
+// @property lk - A mutex to prevent concurrent access to the wallet.
 type LocalWallet struct {
 	keys     map[address.Address]*key.Key
 	keystore types.KeyStore
 	lk       sync.Mutex
 }
 
+// It's a struct that holds a blockstore, a DAGService, a Resolver, and a Node.
+// @property bs - The blockstore is the storage layer for the IPFS node. It stores the raw data of the blocks.
+// @property dserv - The DAGService is the interface that allows us to interact with the IPFS DAG.
+// @property resolver - This is the resolver that will be used to resolve paths to IPFS objects.
+// @property node - The Whypfs node that will be used to serve the requests.
 type GatewayHandler struct {
-	bs       blockstore.Blockstore
+	bs blockstore.Blockstore
+	// `NewLightNodeParams` is a struct with three fields: `Repo`, `DefaultWalletDir`, and `Config`.
+	// @property {string} Repo - The path to the directory where the node will store its data.
+	// @property {string} DefaultWalletDir - The default directory where the wallet will be stored.
+	// @property Config - This is the configuration object that is used to configure the node.
 	dserv    mdagipld.DAGService
 	resolver resolver.Resolver
 	node     *whypfs.Node
@@ -133,20 +205,32 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	dispatcher := CreateNewDispatcher()
 
 	// delta metrics tracer
-	tracer := messaging.NewDeltaMetricsTracer()
+	//dataTracer := messaging.NewDeltaMetricsTracer()
 
+	tp := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
+	defer tp.Shutdown(context.Background())
+
+	// Register the tracer provider with the global tracer
+	otel.SetTracerProvider(tp)
+
+	// Create a new span
+	//tracer := otel.Tracer("example")
 	// create the global light node.
 	return &DeltaNode{
-		Node:        whypfsPeer,
-		DB:          db,
-		FilClient:   filclient,
-		Dispatcher:  dispatcher,
-		Config:      repo.Config,
-		DeltaTracer: tracer,
+		Node:       whypfsPeer,
+		DB:         db,
+		FilClient:  filclient,
+		Dispatcher: dispatcher,
+		Config:     repo.Config,
+		DeltaMetricsTracer: &DeltaMetricsTracer{
+			//Tracer: tracer,
+		},
 	}, nil
 }
 
 // LotusConnection It takes a string that contains the Lotus full node API address and returns a `v1api.FullNode` interface, a
+// `jsonrpc.ClientCloser` interface, and an error
+// It takes a string that contains the Lotus full node API address and returns a `v1api.FullNode` interface, a
 // `jsonrpc.ClientCloser` interface, and an error
 func LotusConnection(fullNodeApiInfo string) (v1api.FullNode, jsonrpc.ClientCloser, error) {
 	info := cliutil.ParseApiInfo(fullNodeApiInfo)

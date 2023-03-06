@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,10 @@ var (
 	log      = logging.Logger("router")
 )
 
+// HttpError A struct that contains a struct that contains a bool and a string.
+// @property {int} Code - The HTTP status code
+// @property {string} Reason - The reason for the error.
+// @property {string} Details - The details of the error.
 type HttpError struct {
 	Code    int    `json:"code,omitempty"`
 	Reason  string `json:"reason"`
@@ -54,10 +59,25 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 
 	// Middleware
 	e.Use(middleware.Logger())
+	e.Use(middleware.RateLimiter(
+		middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+			Rate: 50, Burst: 200, ExpiresIn: 5 * time.Minute,
+		}),
+	))
+
+	e.Use(middleware.SecureWithConfig(
+		middleware.SecureConfig{
+			XSSProtection:         "1; mode=block",
+			ContentTypeNosniff:    "nosniff",
+			ContentSecurityPolicy: "default-src 'self'",
+		}),
+	)
+
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 	}))
+
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.HTTPErrorHandler = ErrorHandler
 
@@ -211,6 +231,13 @@ func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
 	}
 
 	return jsonBody, nil
+}
+
+// Usage `Echo#Pre(RemoveTrailingSlash())`
+func ValidateRequestBody() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return nil
+	}
 }
 
 // ErrorHandler It's a function that is called when an error occurs.

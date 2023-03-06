@@ -10,10 +10,43 @@ import (
 // ConfigureRepairRouter repair deals (re-create or re-try)
 // It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
-
 	repair := e.Group("/repair")
+	repair.GET("/force-retry-all", handleForceRetryPendingContents(node))
+	repair.GET("/content/:contentId", handleRepairDealContent(node))
+	repair.GET("/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
+}
 
-	repair.GET("/force-retry-all", func(c echo.Context) error {
+// It takes a piece commitment id, finds the piece commitment, and re-queues the job
+func handleRepairPieceCommitment(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		// get the piece commitment'
+		var pieceCommitment model.PieceCommitment
+		node.DB.Model(&model.PieceCommitment{}).Where("id = ?", c.Param("pieceCommitmentId")).First(&pieceCommitment)
+
+		// if the piece commitment is not found, throw an error.
+		if pieceCommitment.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "piece commitment not found",
+			})
+		}
+
+		// if the piece commitment is found, re-queue the job.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("piece_commitment_id = ?", pieceCommitment.ID).First(&content)
+
+		processor := jobs.NewPieceCommpProcessor(node, content)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		return c.JSON(200, map[string]interface{}{
+			"message": "re-queued piece commitment",
+		})
+	}
+}
+
+// It creates a new job processor, adds it to the dispatcher, and returns a JSON response
+func handleForceRetryPendingContents(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
 		processor := jobs.NewRetryProcessor(node)
 		node.Dispatcher.AddJobAndDispatch(processor, 1)
 
@@ -21,9 +54,12 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 			"message": "retrying all deals",
 		})
 
-	})
+	}
+}
 
-	repair.GET("/deal/content/:contentId", func(c echo.Context) error {
+// It takes a content ID, finds the content deal entry for that content, and then retries the deal
+func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
 
 		paramContentId := c.Param("contentId")
 
@@ -50,12 +86,5 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 			"message": "retrying deal",
 			"content": content,
 		})
-	})
-
-	repair.GET("/piece-commitment", func(c echo.Context) error {
-
-		// retry the same piece-commitment
-		return nil
-	})
-
+	}
 }

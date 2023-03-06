@@ -29,5 +29,8 @@ const (
 
 	LOTUS_API = "http://api.chain.love"
 
-	DEFAULT_DURATION = 1555200 - (2880 * 21)
+	EPOCH_540_DAYS              = 1555200
+	EPOCH_PER_DAY               = 2880
+	FILECOIN_GENESIS_UNIX_EPOCH = 1598306400
+	DEFAULT_DURATION            = EPOCH_540_DAYS - (EPOCH_PER_DAY * 21)
 )

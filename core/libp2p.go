@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// `filc.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {`
+// SetDataTransferEventsSubscribe `filc.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {`
 //
 // The above function is a callback function that is called whenever a data transfer event occurs. The callback function
 // takes two arguments: `event` and `channelState`. The `event` argument is of type `datatransfer.Event` and the
@@ -27,10 +27,10 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 	})
 }
 
-// It subscribes to the libp2p transfer manager and updates the database with the status of the transfer
+// SetLibp2pManagerSubscribe It subscribes to the libp2p transfer manager and updates the database with the status of the transfer
 func SetLibp2pManagerSubscribe(i *DeltaNode) {
 	i.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst fc.ChannelState) {
-		fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
+		//fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 		switch fst.Status {
 		case datatransfer.Requested:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)

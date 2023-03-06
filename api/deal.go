@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"delta/core"
 	"delta/jobs"
 	"delta/utils"
@@ -41,11 +42,13 @@ type DealRequest struct {
 	Cid                  string                 `json:"cid,omitempty"`
 	Miner                string                 `json:"miner,omitempty"`
 	Duration             int64                  `json:"duration,omitempty"`
+	DurationInDays       int64                  `json:"duration_in_days,omitempty"`
 	Wallet               WalletRequest          `json:"wallet,omitempty"`
 	PieceCommitment      PieceCommitmentRequest `json:"piece_commitment,omitempty"`
 	ConnectionMode       string                 `json:"connection_mode,omitempty"`
 	Size                 int64                  `json:"size,omitempty"`
 	StartEpoch           int64                  `json:"start_epoch,omitempty"`
+	StartEpochInDays     int64                  `json:"start_epoch_at_days,omitempty"`
 	Replication          int64                  `json:"replication,omitempty"`
 	RemoveUnsealedCopies bool                   `json:"remove_unsealed_copies,omitempty"`
 	SkipIPNIAnnounce     bool                   `json:"skip_ipni_announce,omitempty"`
@@ -61,12 +64,20 @@ type DealResponse struct {
 
 // ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
 // to the echo.Group
+// `ConfigureDealRouter` is a function that takes a `Group` and a `DeltaNode` and configures the `Group` to handle the
+// `DeltaNode`'s deal-making functionality
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	//	inject the stats service
 	statsService := core.NewStatsStatsService(node)
 
 	dealMake := e.Group("/deal")
+
+	// upload limiter middleware
+	dealMake.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return checkResourceLimits(next, node)
+	})
+
 	dealPrepare := dealMake.Group("/prepare")
 	dealAnnounce := dealMake.Group("/announce")
 	dealStatus := dealMake.Group("/status")
@@ -97,22 +108,27 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealPrepare.POST("/content", func(c echo.Context) error {
+		// TODO: call unsigned deal proposal
 		return nil
 	})
 
 	dealPrepare.POST("/piece-commitment", func(c echo.Context) error {
+		// TODO: call unsigned deal proposal with piece commitment
 		return nil
 	})
 
 	dealPrepare.POST("/piece-commitments", func(c echo.Context) error {
+		// TODO: call unsigned deal proposal with piece commitments
 		return nil
 	})
 
 	dealAnnounce.POST("/content", func(c echo.Context) error {
+		// TODO: accept a hexed signed proposal
 		return nil
 	})
 
 	dealAnnounce.POST("/piece-commitment", func(c echo.Context) error {
+
 		return nil
 	})
 
@@ -127,6 +143,27 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleCommitmentPieceStats(c, *statsService)
 
 	})
+}
+
+// It checks if the sum of the size of all the files that are currently being transferred is greater than the number of
+// CPUs multiplied by the number of bytes per CPU. If it is, then it returns an error
+func checkResourceLimits(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		// check if the sum(size) transfer-started and created_at within instance_start time
+		var size sql.NullInt64
+		node.DB.Raw("select sum(size) from contents where status = 'transfer-started' and created_at > ?", node.MetaInfo.InstanceStart).Scan(&size)
+
+		// memory limit (10GB per CPU)
+		if size != (sql.NullInt64{}) {
+			if uint64(size.Int64) > (node.MetaInfo.NumberOfCpus * node.MetaInfo.BytesPerCpu) {
+				return c.JSON(http.StatusForbidden, DealResponse{
+					Status:  "error",
+					Message: "Too much data is being transferred, please try again once all other transfers are complete",
+				})
+			}
+		}
+		return next(c)
+	}
 }
 
 // It takes a request, validates it, creates a content record in the database, creates a piece commitment record in the
@@ -300,9 +337,18 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.Duration = dealRequest.Duration
 		}
 
+		if dealRequest.DurationInDays != 0 {
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
+		}
+
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+
+		if dealRequest.StartEpochInDays != 0 {
+			time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(time)
 		}
 
 		// remove unsealed copy
@@ -501,9 +547,18 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.Duration = dealRequest.Duration
 	}
 
+	if dealRequest.DurationInDays != 0 {
+		dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
+	}
+
 	// start epoch
 	if dealRequest.StartEpoch != 0 {
 		dealProposalParam.StartEpoch = dealRequest.StartEpoch
+	}
+
+	if dealRequest.StartEpochInDays != 0 {
+		time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+		dealRequest.StartEpoch = utils.DateToHeight(time)
 	}
 
 	// remove unsealed copy
@@ -716,9 +771,18 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.Duration = dealRequest.Duration
 	}
 
+	if dealRequest.DurationInDays != 0 {
+		dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
+	}
+
 	// start epoch
 	if dealRequest.StartEpoch != 0 {
 		dealProposalParam.StartEpoch = dealRequest.StartEpoch
+	}
+
+	if dealRequest.StartEpochInDays != 0 {
+		time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+		dealRequest.StartEpoch = utils.DateToHeight(time)
 	}
 
 	// remove unsealed copy
@@ -915,9 +979,18 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.Duration = dealRequest.Duration
 	}
 
+	if dealRequest.DurationInDays != 0 {
+		dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
+	}
+
 	// start epoch
 	if dealRequest.StartEpoch != 0 {
 		dealProposalParam.StartEpoch = dealRequest.StartEpoch
+	}
+
+	if dealRequest.StartEpochInDays != 0 {
+		time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+		dealRequest.StartEpoch = utils.DateToHeight(time)
 	}
 
 	// remove unsealed copy
@@ -1116,9 +1189,18 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.Duration = dealRequest.Duration
 		}
 
+		if dealRequest.DurationInDays != 0 {
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
+		}
+
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+
+		if dealRequest.StartEpochInDays != 0 {
+			time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(time)
 		}
 
 		// remove unsealed copy
