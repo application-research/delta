@@ -128,7 +128,6 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealAnnounce.POST("/piece-commitment", func(c echo.Context) error {
-
 		return nil
 	})
 
@@ -297,7 +296,10 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
 			}
 
-			fmt.Println("wallet", wallet)
+			if wallet.ID == 0 {
+				return errors.New("Wallet not found, please make sure the wallet is registered")
+			}
+
 			// create the wallet request object
 			var hexedWallet WalletRequest
 			hexedWallet.KeyType = wallet.KeyType
@@ -330,17 +332,6 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.Label = content.Cid
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 
-		// duration
-		if dealRequest.Duration == 0 {
-			dealProposalParam.Duration = utils.DEFAULT_DURATION
-		} else {
-			dealProposalParam.Duration = dealRequest.Duration
-		}
-
-		if dealRequest.DurationInDays != 0 {
-			dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
-		}
-
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
@@ -349,6 +340,17 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 		if dealRequest.StartEpochInDays != 0 {
 			time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealRequest.StartEpoch = utils.DateToHeight(time)
+		}
+
+		// duration
+		if dealRequest.Duration == 0 {
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		} else {
+			dealProposalParam.Duration = dealRequest.Duration
+		}
+
+		if dealRequest.DurationInDays != 0 {
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.StartEpochInDays - dealRequest.DurationInDays)
 		}
 
 		// remove unsealed copy
@@ -507,7 +509,10 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 			node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
 		}
 
-		fmt.Println("wallet", wallet)
+		if wallet.ID == 0 {
+			return errors.New("Wallet not found, please make sure the wallet is registered")
+		}
+
 		// create the wallet request object
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = wallet.KeyType
@@ -732,6 +737,10 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 			node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
 		}
 
+		if wallet.ID == 0 {
+			return errors.New("Wallet not found, please make sure the wallet is registered")
+		}
+
 		// create the wallet request object
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = wallet.KeyType
@@ -939,6 +948,10 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 			node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
 		} else {
 			node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+		}
+
+		if wallet.ID == 0 {
+			return errors.New("Wallet not found, please make sure the wallet is registered")
 		}
 
 		// create the wallet request object
@@ -1151,6 +1164,10 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
 			}
 
+			if wallet.ID == 0 {
+				return errors.New("Wallet not found, please make sure the wallet is registered")
+			}
+
 			// create the wallet request object
 			var hexedWallet WalletRequest
 			hexedWallet.KeyType = wallet.KeyType
@@ -1300,6 +1317,18 @@ func ValidateMeta(dealRequest DealRequest) error {
 	// miner is required
 	if (DealRequest{} != dealRequest && dealRequest.Miner == "") {
 		return errors.New("miner is required")
+	}
+
+	if (DealRequest{} != dealRequest && dealRequest.DurationInDays > 0 && dealRequest.StartEpochInDays == 0) {
+		return errors.New("start_epoch_in_days is required when duration_in_days is set")
+	}
+
+	if (DealRequest{} != dealRequest && dealRequest.StartEpochInDays > 0 && dealRequest.DurationInDays == 0) {
+		return errors.New("duration_in_days is required when start_epoch_in_days is set")
+	}
+
+	if (DealRequest{} != dealRequest && dealRequest.StartEpochInDays > 14) {
+		return errors.New("start_epoch_in_days can only be 14 days or less")
 	}
 
 	// connection mode is required
