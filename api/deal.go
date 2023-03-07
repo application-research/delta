@@ -152,7 +152,9 @@ func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Con
 		// check if the sum(size) transfer-started and created_at within instance_start time
 		var meta model.InstanceMeta
 		// select * from instance_meta where id = 1
-		node.DB.First(&meta, 1)
+		//select * from instance_meta where true;
+		node.DB.First(&meta)
+
 		if meta.DisableRequest {
 			return c.JSON(http.StatusForbidden, "request is disabled")
 		}
