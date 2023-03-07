@@ -203,14 +203,18 @@ func handleGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitments []model.PieceCommitment
 	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&pieceCommitments)
 
-	var contentDealProposal []model.ContentDealProposalParameters
-	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDealProposal)
+	var contentDealProposal []model.ContentDealProposal
+	node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDealProposal)
+
+	var contentDealProposalParameters []model.ContentDealProposalParameters
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDealProposalParameters)
 
 	return c.JSON(200, map[string]interface{}{
-		"content":           content,
-		"deals":             contentDeal,
-		"piece_commitments": pieceCommitments,
-		"deal_proposals":    contentDealProposal,
+		"content":                  content,
+		"deals":                    contentDeal,
+		"piece_commitments":        pieceCommitments,
+		"deal_proposals":           contentDealProposal,
+		"deal_proposal_parameters": contentDealProposalParameters,
 	})
 }
 

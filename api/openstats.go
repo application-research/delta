@@ -6,6 +6,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// TODO: OPTIMIZE!!
+
 // ConfigureOpenStatsCheckRouter It configures the router to handle the following routes:
 //
 // - `GET /stats/miner/:minerId`
@@ -60,11 +62,11 @@ func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
 	var contentDeal model.ContentDeal
 	node.DB.Raw("select * from content_deals where content = ?", content.ID).Scan(&contentDeal)
 
-	var contentDealProposal model.ContentDealProposalParameters
-	node.DB.Raw("select * from content_deal_proposal_parameters where content = ?", content.ID).Scan(&contentDealProposal)
+	var contentDealProposal model.ContentDealProposal
+	node.DB.Raw("select * from content_deal_proposals where content = ?", content.ID).Scan(&contentDealProposal)
 
 	var pieceCommitment model.PieceCommitment
-	node.DB.Raw("select * from piece_commitments as pc, contents as c where c.id = ? and pc.id = c.piece_commitment_id", content.ID).Scan(&pieceCommitment)
+	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
@@ -84,11 +86,11 @@ func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
 	content.RequestingApiKey = ""
 
-	var contentDealProposal model.ContentDealProposalParameters
-	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+	var contentDealProposal model.ContentDealProposal
+	node.DB.Raw("select * from content_deal_proposals where content = ?", content.ID).Scan(&contentDealProposal)
 
 	var pieceCommitment model.PieceCommitment
-	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
@@ -106,11 +108,11 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select * from contents where id = ?", contentDeal.Content).Scan(&content)
 	content.RequestingApiKey = ""
 
-	var contentDealProposal model.ContentDealProposalParameters
-	node.DB.Raw("select * from content_deal_proposal_parameters where content_deal = ?", contentDeal.ID).Scan(&contentDealProposal)
+	var contentDealProposal model.ContentDealProposal
+	node.DB.Raw("select * from content_deal_proposals where content = ?", content.ID).Scan(&contentDealProposal)
 
 	var pieceCommitment model.PieceCommitment
-	node.DB.Raw("select * from piece_commitments where content_deal = ?", contentDeal.ID).Scan(&pieceCommitment)
+	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
@@ -139,8 +141,8 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitments []model.PieceCommitment
 	node.DB.Raw("select pc.* from piece_commitments pc, content_deals cd, content_miners cma where pc.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&pieceCommitments)
 
-	var contentDealProposal []model.ContentDealProposalParameters
-	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, content_deals cd, content_miners cma where cdp.content_deal = cd.id and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposal)
+	var contentDealProposal []model.ContentDealProposal
+	node.DB.Raw("select cdp.* from content_deal_proposals cdp, content_deals cd, content_miners cma where cdp.content = cd.content and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposal)
 
 	return c.JSON(200, map[string]interface{}{
 		"content":           content,
