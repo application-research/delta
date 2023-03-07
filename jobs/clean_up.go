@@ -10,24 +10,24 @@ import (
 	"time"
 )
 
-// ItemContentCleanUpProcessor `ItemContentCleanUpProcessor` is a struct that has a `Context` and a `LightNode` field.
+// ContentCleanUpProcessor `ContentCleanUpProcessor` is a struct that has a `Context` and a `LightNode` field.
 // @property Context - The context of the current request.
 // @property LightNode - This is the node that we want to clean up.
-type ItemContentCleanUpProcessor struct {
+type ContentCleanUpProcessor struct {
 	Context   context.Context
 	LightNode *core.DeltaNode
 }
 
-// NewItemContentCleanUpProcessor `NewItemContentCleanUpProcessor` creates a new `ItemContentCleanUpProcessor` instance
-func NewItemContentCleanUpProcessor(ln *core.DeltaNode) IProcessor {
-	return &ItemContentCleanUpProcessor{
+// NewItemContentCleanUpProcessor `NewItemContentCleanUpProcessor` creates a new `ContentCleanUpProcessor` instance
+func NewContentCleanUpProcessor(ln *core.DeltaNode) IProcessor {
+	return &ContentCleanUpProcessor{
 		Context:   context.Background(),
 		LightNode: ln,
 	}
 }
 
 // Run Cleaning up the database.
-func (i ItemContentCleanUpProcessor) Run() error {
+func (i ContentCleanUpProcessor) Run() error {
 
 	// clear up finished CID deals.
 	var contentsOnline []model.Content

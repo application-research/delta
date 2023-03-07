@@ -21,11 +21,13 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
+
+	fmt.Println("----------------------------------")
+	fmt.Printf("Total memory: %v bytes\n", m.Alloc)
 	fmt.Printf("Total system memory: %v bytes\n", m.Sys)
 	fmt.Printf("Total heap memory: %v bytes\n", m.HeapSys)
 	fmt.Printf("Heap in use: %v bytes\n", m.HeapInuse)
 	fmt.Printf("Stack in use: %v bytes\n", m.StackInuse)
-
 	// get the 80% of the total disk usage
 	var stat syscall.Statfs_t
 	syscall.Statfs(repo, &stat) // blockstore size
@@ -34,7 +36,9 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 
 	// set the number of CPUs
 	numCPU := runtime.NumCPU()
-	fmt.Printf("Number of CPUs: %d\n", numCPU)
+	fmt.Printf("Total number of CPUs: %d\n", numCPU)
+	fmt.Printf("Number of CPUs that this Delta will use: %d\n", numCPU/(1200/1000))
+	fmt.Println("----------------------------------")
 	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
 
 	// delete all data from the instance meta table
