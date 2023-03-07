@@ -29,7 +29,9 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	e.GET("/stats/content/:contentId", func(c echo.Context) error {
 		return handleOpenGetStatsByContent(c, node)
 	})
-
+	e.GET("/stats/all-contents", func(c echo.Context) error {
+		return handleOpenGetStatsByAllContents(c, node)
+	})
 	e.POST("/stats/contents", func(c echo.Context) error {
 		return handleOpenGetStatsByContents(c, node)
 	})
@@ -240,14 +242,43 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
+func handleOpenGetStatsByAllContents(c echo.Context, node *core.DeltaNode) error {
+
+	var contentIds []int64
+	node.DB.Raw("select id from contents").Scan(&contentIds)
+
+	var contentResponse []map[string]interface{}
+	for _, contentId := range contentIds {
+
+		var content model.Content
+		node.DB.Raw("select c.* from contents c where c.id = ?", contentId).Scan(&content)
+		content.RequestingApiKey = ""
+
+		var contentDeal []model.ContentDeal
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ?", contentId).Scan(&contentDeal)
+
+		var pieceCommitments []model.PieceCommitment
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ?", contentId).Scan(&pieceCommitments)
+
+		var contentDealProposal []model.ContentDealProposal
+		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposal)
+
+		contentResponse = append(contentResponse, map[string]interface{}{
+			"content":           content,
+			"deals":             contentDeal,
+			"piece_commitments": pieceCommitments,
+			"deal_proposals":    contentDealProposal,
+		})
+	}
+	return c.JSON(200, contentResponse)
+
+}
+
 // A function that is called when a GET request is made to the /open/get_stats_by_contents endpoint.
 func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 
 	var contentIds []int64
-	err := c.Bind(&contentIds)
-	if err != nil {
-		return err
-	}
+	c.Bind(&contentIds)
 
 	var contentResponse []map[string]interface{}
 	for _, contentId := range contentIds {
