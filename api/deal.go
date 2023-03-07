@@ -75,6 +75,9 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	// upload limiter middleware
 	dealMake.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return checkMetaFlags(next, node)
+	})
+	dealMake.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return checkResourceLimits(next, node)
 	})
 
@@ -142,6 +145,19 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleCommitmentPieceStats(c, *statsService)
 
 	})
+}
+
+func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		// check if the sum(size) transfer-started and created_at within instance_start time
+		var meta model.InstanceMeta
+		// select * from instance_meta where id = 1
+		node.DB.First(&meta, 1)
+		if meta.DisableRequest {
+			return c.JSON(http.StatusForbidden, "request is disabled")
+		}
+		return next(c)
+	}
 }
 
 // It checks if the sum of the size of all the files that are currently being transferred is greater than the number of
