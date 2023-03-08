@@ -110,19 +110,20 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println(utils.Blue + "Running pre-start clean up... DONE" + utils.Reset)
 
 			// run the listeners
-			fmt.Println("Subscribing the event listeners")
+			fmt.Println(utils.Blue + "Subscribing the event listeners" + utils.Reset)
 			core.SetLibp2pManagerSubscribe(ln)
 			core.SetDataTransferEventsSubscribe(ln)
-			fmt.Println("Subscribing the event listeners... DONE")
+			fmt.Println(utils.Blue + "Subscribing the event listeners... DONE" + utils.Reset)
 
 			// run the clean up every 30 minutes so we can retry and also remove the unecessary files on the blockstore.
-			fmt.Println("Running the atomatic cron jobs")
+			fmt.Println(utils.Blue + "Running the atomatic cron jobs" + utils.Reset)
 			RunScheduledCleanupAndRetryCron(ln)
-			fmt.Println("Running the atomatic cron jobs... DONE" + utils.Reset)
+			fmt.Println(utils.Blue + "Running the atomatic cron jobs... DONE" + utils.Reset)
 
 			// launch the API node
-
+			fmt.Println(utils.Blue + "Starting Delta." + utils.Reset)
 			fmt.Println(utils.Green + `
+
      %%%%%%%%/          %%%%%%%%%%%%%%% %%%%%     %%%%%%%%%%%%%%%%%     %%%%%%  
     @@@@@@@@@@@@@@@     @@@@@@@@@@@@@@ @@@@@      @@@@@@@@@@@@@@@@@   @@@@@@@@  
     @@@@@     @@@@@@@  @@@@@@          @@@@@           @@@@@         @@@@@@@@@@ 
@@ -133,14 +134,15 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
  @@@@@@@@@@@@@@@@@   @@@@@@@@@@@@@@ @@@@@@@@@@@@@@  @@@@@@    @@@@@        @@@@@
  @@@@@@@@@@@@@@     @@@@@@@@@@@@@@ @@@@@@@@@@@@@@@  @@@@@    @@@@@         @@@@@
 
+(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)
 
-By: Protocol Labs - Outercore Engineering.
+By: Protocol Labs - Outercore Engineering
 ` + utils.Reset + utils.Red + "version: v0.0.1" + utils.Reset)
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
 			fmt.Println("----------------------------------")
-			fmt.Println(utils.Purple + "Note: Statistics collection is enabled. This will help us improve the product. If you don't want to share stats, you can run the daemon with --stats-collection=false" + utils.Reset)
-			fmt.Println("----------------------------------")
+			//fmt.Println(utils.Purple + "Note: Statistics collection is enabled. This will help us improve the product. If you don't want to share stats, you can run the daemon with --stats-collection=false" + utils.Reset)
+			//fmt.Println("----------------------------------")
 			api.InitializeEchoRouterConfig(ln, *cfg)
 			api.LoopForever()
 
@@ -159,7 +161,7 @@ By: Protocol Labs - Outercore Engineering.
 // It also retries the failed transfers.
 // `RunScheduledCleanupAndRetryCron` is a function that runs a cron job on a node
 func RunScheduledCleanupAndRetryCron(ln *core.DeltaNode) {
-
+	fmt.Println(utils.Purple + "Scheduling dispatchers and scanners..." + utils.Reset)
 	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
 
 	s := gocron.NewScheduler()

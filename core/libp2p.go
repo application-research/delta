@@ -18,6 +18,7 @@ import (
 // takes two arguments: `event` and `channelState`. The `event` argument is of type `datatransfer.Event` and the
 // `channelState` argument is of type `datatransfer.ChannelState`
 func SetDataTransferEventsSubscribe(i *DeltaNode) {
+	fmt.Println(utils.Purple + "Subscribing to transfer channel events..." + utils.Reset)
 	i.FilClient.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {
 		fmt.Println("Event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
 		switch event.Code {
@@ -33,6 +34,7 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 
 // SetLibp2pManagerSubscribe It subscribes to the libp2p transfer manager and updates the database with the status of the transfer
 func SetLibp2pManagerSubscribe(i *DeltaNode) {
+	fmt.Println(utils.Purple + "Subscribing to transfer channel states..." + utils.Reset)
 	i.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst fc.ChannelState) {
 		//fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 		switch fst.Status {
@@ -59,6 +61,7 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 			var content model.Content
 			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
 			content.Status = utils.DEAL_STATUS_TRANSFER_FINISHED
+			content.LastMessage = utils.DEAL_STATUS_TRANSFER_FINISHED
 			content.UpdatedAt = time.Now()
 			i.DB.Save(&content)
 

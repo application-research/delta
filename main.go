@@ -24,6 +24,7 @@ var (
 
 func main() {
 
+	fmt.Println("Delta version:", core.GetVersion())
 	fmt.Println("OS:", runtime.GOOS)
 	fmt.Println("Architecture:", runtime.GOARCH)
 	fmt.Println("Hostname:", core.GetHostname())

@@ -309,3 +309,7 @@ func GetHostname() string {
 	}
 	return hostname
 }
+
+func GetVersion() string {
+	return "v0.0.1"
+}
