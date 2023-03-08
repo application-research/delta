@@ -4,6 +4,7 @@ import (
 	"delta/core"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
+	"strconv"
 )
 
 // TODO: OPTIMIZE!!
@@ -36,6 +37,11 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleOpenGetStatsByContents(c, node)
 	})
 
+	// get all deals with paging
+	e.GET("/stats/deals", func(c echo.Context) error {
+		return handleOpenGetDealsWithPaging(c, node)
+	})
+
 	e.GET("/stats/totals/info", func(c echo.Context) error {
 		return handleOpenGetTotalsInfo(c, node)
 	})
@@ -50,6 +56,35 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/deal/by-deal-id/:dealId", func(c echo.Context) error {
 		return handleOpenGetDealByDealId(c, node)
+	})
+}
+
+func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
+
+	// get page number
+	page, err := strconv.Atoi(c.QueryParam("page"))
+	if err != nil {
+		page = 1
+	}
+
+	// total
+	var total int64
+	node.DB.Model(&model.ContentDeal{}).Count(&total)
+
+	// get page size
+	pageSize, err := strconv.Atoi(c.QueryParam("page_size"))
+	if err != nil {
+		pageSize = 10
+	}
+
+	// get deals
+	var deals []model.ContentDeal
+	node.DB.Offset((page - 1) * pageSize).Order("created_at desc").Limit(pageSize).Find(&deals)
+
+	return c.JSON(200, map[string]interface{}{
+		"total":         total,
+		"page":          page,
+		"content_deals": deals,
 	})
 }
 
