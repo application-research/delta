@@ -79,10 +79,14 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 			})
 
 			// clean up the blockstore
-			//var content model.Content
-			//i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
-			//itemCleanup := jobs.NewItemContentCleanUpProcessor(i, content)
-			//i.Dispatcher.AddJobAndDispatch(itemCleanup, 1)
+			var content model.Content
+			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
+			// remove from the blockstore
+			cidToDelete, err := cid.Decode(content.Cid)
+			if err != nil {
+				fmt.Println(err)
+			}
+			go i.Node.DAGService.Remove(context.Background(), cidToDelete)
 		default:
 		}
 	})
