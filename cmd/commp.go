@@ -65,6 +65,7 @@ func CommpCmd() []*cli.Command {
 			}
 
 			commp, payloadSize, unpadddedPiece, err := filclient.GeneratePieceCommitment(context.Background(), fileNode.Cid(), node.Blockstore)
+
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -131,7 +132,8 @@ func CommpCmd() []*cli.Command {
 
 			if car != "" {
 				fileNodeFromBs, err := node.GetFile(context.Background(), fileNode.Cid())
-				pieceInfo, err := commpService.GenerateCommPCarV2(fileNodeFromBs)
+				pieceInfo, err := commpService.GenerateParallelCommp(fileNodeFromBs)
+
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -139,8 +141,8 @@ func CommpCmd() []*cli.Command {
 				// return json to console.
 				commpResult.Cid = fileNode.Cid().String()
 				commpResult.PieceCommitment.Piece = pieceInfo.PieceCID.String()
-				commpResult.PieceCommitment.PaddedPieceSize = uint64(pieceInfo.Size)
-				commpResult.PieceCommitment.UnPaddedPieceSize = uint64(pieceInfo.Size.Unpadded())
+				commpResult.PieceCommitment.PaddedPieceSize = uint64(pieceInfo.PieceSize)
+				commpResult.PieceCommitment.UnPaddedPieceSize = uint64(pieceInfo.PieceSize.Unpadded())
 
 				// if for offline, add connection mode offline
 				if forImport {
