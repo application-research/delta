@@ -4,6 +4,7 @@ import (
 	"delta/core"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
+	"strconv"
 )
 
 // TODO: OPTIMIZE!!
@@ -29,9 +30,16 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	e.GET("/stats/content/:contentId", func(c echo.Context) error {
 		return handleOpenGetStatsByContent(c, node)
 	})
-
+	e.GET("/stats/all-contents", func(c echo.Context) error {
+		return handleOpenGetStatsByAllContents(c, node)
+	})
 	e.POST("/stats/contents", func(c echo.Context) error {
 		return handleOpenGetStatsByContents(c, node)
+	})
+
+	// get all deals with paging
+	e.GET("/stats/deals", func(c echo.Context) error {
+		return handleOpenGetDealsWithPaging(c, node)
 	})
 
 	e.GET("/stats/totals/info", func(c echo.Context) error {
@@ -48,6 +56,35 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 	e.GET("/stats/deal/by-deal-id/:dealId", func(c echo.Context) error {
 		return handleOpenGetDealByDealId(c, node)
+	})
+}
+
+func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
+
+	// get page number
+	page, err := strconv.Atoi(c.QueryParam("page"))
+	if err != nil {
+		page = 1
+	}
+
+	// total
+	var total int64
+	node.DB.Model(&model.ContentDeal{}).Count(&total)
+
+	// get page size
+	pageSize, err := strconv.Atoi(c.QueryParam("page_size"))
+	if err != nil {
+		pageSize = 10
+	}
+
+	// get deals
+	var deals []model.ContentDeal
+	node.DB.Offset((page - 1) * pageSize).Order("created_at desc").Limit(pageSize).Find(&deals)
+
+	return c.JSON(200, map[string]interface{}{
+		"total":         total,
+		"page":          page,
+		"content_deals": deals,
 	})
 }
 
@@ -115,10 +152,10 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
 	return c.JSON(200, map[string]interface{}{
-		"deal":             contentDeal,
 		"content":          content,
-		"deal_proposal":    contentDealProposal,
 		"piece_commitment": pieceCommitment,
+		"deal":             contentDeal,
+		"deal_proposal":    contentDealProposal,
 	})
 }
 
@@ -144,11 +181,15 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 	var contentDealProposal []model.ContentDealProposal
 	node.DB.Raw("select cdp.* from content_deal_proposals cdp, content_deals cd, content_miners cma where cdp.content = cd.content and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposal)
 
+	var contentDealProposalParameters []model.ContentDealProposalParameters
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, content_deal_proposals cdp2, content_deals cd, content_miners cma where cdp.content_deal_proposal = cdp2.id and cdp2.content = cd.content and cd.content = cma.content and cma.miner = ?", c.Param("minerId")).Scan(&contentDealProposalParameters)
+
 	return c.JSON(200, map[string]interface{}{
 		"content":           content,
 		"deals":             contentDeal,
 		"piece_commitments": pieceCommitments,
 		"deal_proposals":    contentDealProposal,
+		"deal_parameters":   contentDealProposalParameters,
 	})
 
 	return nil
@@ -240,14 +281,10 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// A function that is called when a GET request is made to the /open/get_stats_by_contents endpoint.
-func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
+func handleOpenGetStatsByAllContents(c echo.Context, node *core.DeltaNode) error {
 
 	var contentIds []int64
-	err := c.Bind(&contentIds)
-	if err != nil {
-		return err
-	}
+	node.DB.Raw("select id from contents").Scan(&contentIds)
 
 	var contentResponse []map[string]interface{}
 	for _, contentId := range contentIds {
@@ -265,11 +302,52 @@ func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 		var contentDealProposal []model.ContentDealProposal
 		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposal)
 
+		var contentDealProposalParameters []model.ContentDealProposalParameters
+		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposalParameters)
+
 		contentResponse = append(contentResponse, map[string]interface{}{
-			"content":           content,
-			"deals":             contentDeal,
-			"piece_commitments": pieceCommitments,
-			"deal_proposals":    contentDealProposal,
+			"content":                  content,
+			"deals":                    contentDeal,
+			"piece_commitments":        pieceCommitments,
+			"deal_proposals":           contentDealProposal,
+			"deal_proposal_parameters": contentDealProposalParameters,
+		})
+	}
+	return c.JSON(200, contentResponse)
+
+}
+
+// A function that is called when a GET request is made to the /open/get_stats_by_contents endpoint.
+func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
+
+	var contentIds []int64
+	c.Bind(&contentIds)
+
+	var contentResponse []map[string]interface{}
+	for _, contentId := range contentIds {
+
+		var content model.Content
+		node.DB.Raw("select c.* from contents c where c.id = ?", contentId).Scan(&content)
+		content.RequestingApiKey = ""
+
+		var contentDeal []model.ContentDeal
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ?", contentId).Scan(&contentDeal)
+
+		var pieceCommitments []model.PieceCommitment
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ?", contentId).Scan(&pieceCommitments)
+
+		var contentDealProposal []model.ContentDealProposal
+		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposal)
+
+		var contentDealProposalParameters []model.ContentDealProposalParameters
+		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposalParameters)
+
+		contentResponse = append(contentResponse, map[string]interface{}{
+			"content":                  content,
+			"deals":                    contentDeal,
+			"piece_commitments":        pieceCommitments,
+			"deal_proposals":           contentDealProposal,
+			"deal_proposal_parameters": contentDealProposalParameters,
 		})
 	}
 	return c.JSON(200, contentResponse)
@@ -288,13 +366,17 @@ func handleOpenGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitments []model.PieceCommitment
 	node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ?", c.Param("contentId")).Scan(&pieceCommitments)
 
-	var contentDealProposal []model.ContentDealProposalParameters
-	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDealProposal)
+	var contentDealProposal []model.ContentDealProposal
+	node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDealProposal)
+
+	var contentDealProposalParameters []model.ContentDealProposalParameters
+	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDealProposalParameters)
 
 	return c.JSON(200, map[string]interface{}{
-		"content":           content,
-		"deals":             contentDeal,
-		"piece_commitments": pieceCommitments,
-		"deal_proposals":    contentDealProposal,
+		"content":                  content,
+		"deals":                    contentDeal,
+		"piece_commitments":        pieceCommitments,
+		"deal_proposals":           contentDealProposal,
+		"deal_proposal_parameters": contentDealProposalParameters,
 	})
 }

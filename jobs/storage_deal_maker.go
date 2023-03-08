@@ -95,7 +95,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	// any error here, fail the content
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
 	var filClient, err = i.GetAssignedFilclientForContent(*content)
-	//var WallerSigner, err = i.GetAssignedWalletForContent(*content)
 	var dealProposal = i.GetDealProposalForContent(*content)
 
 	if err != nil {

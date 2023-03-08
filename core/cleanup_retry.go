@@ -21,11 +21,11 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
+	fmt.Printf("Total memory: %v bytes\n", m.Alloc)
 	fmt.Printf("Total system memory: %v bytes\n", m.Sys)
 	fmt.Printf("Total heap memory: %v bytes\n", m.HeapSys)
 	fmt.Printf("Heap in use: %v bytes\n", m.HeapInuse)
 	fmt.Printf("Stack in use: %v bytes\n", m.StackInuse)
-
 	// get the 80% of the total disk usage
 	var stat syscall.Statfs_t
 	syscall.Statfs(repo, &stat) // blockstore size
@@ -34,7 +34,9 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 
 	// set the number of CPUs
 	numCPU := runtime.NumCPU()
-	fmt.Printf("Number of CPUs: %d\n", numCPU)
+	fmt.Printf("Total number of CPUs: %d\n", numCPU)
+	fmt.Printf("Number of CPUs that this Delta will use: %d\n", numCPU/(1200/1000))
+	fmt.Println(utils.Purple + "Note: Delta instance proactively recalculate resources to use based on the current load." + utils.Reset)
 	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
 
 	// delete all data from the instance meta table
@@ -72,12 +74,14 @@ func CleanUpContentAndPieceComm(ln *DeltaNode) {
 	// if the transfer was started upon restart, then we need to update the status to failed
 	ln.DB.Transaction(func(tx *gorm.DB) error {
 
-		tx.Model(&model.Content{}).Where("status in (?,?)", utils.DEAL_STATUS_TRANSFER_STARTED, utils.CONTENT_PIECE_COMPUTING).Updates(
+		rowsAffected := tx.Model(&model.Content{}).Where("status in (?,?)", utils.DEAL_STATUS_TRANSFER_STARTED, utils.CONTENT_PIECE_COMPUTING).Updates(
 			model.Content{
 				Status:      utils.DEAL_STATUS_TRANSFER_FAILED,
 				UpdatedAt:   time.Now(),
 				LastMessage: "Transfer failed due to node restart",
-			})
+			}).RowsAffected
+
+		fmt.Println("Number of rows cleaned up: " + fmt.Sprint(rowsAffected))
 		return nil
 	})
 }

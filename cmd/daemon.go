@@ -4,6 +4,8 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	"delta/utils"
+	"fmt"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 )
@@ -37,13 +39,19 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "enable-websocket",
 				Usage: "enable websocket or not",
 			},
+			&cli.StringFlag{
+				Name:  "stats-collection",
+				Usage: "enable stats collection or not",
+			},
 		},
-		Action: func(c *cli.Context) error {
 
+		Action: func(c *cli.Context) error {
+			fmt.Println(utils.Blue + "Starting Delta daemon..." + utils.Reset)
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
 			mode := c.String("mode")
 			enableWebsocket := c.String("enable-websocket")
+			statsCollection := c.String("stats-collection")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -65,6 +73,19 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.EnableWebsocket = true
 			}
 
+			if statsCollection == "" {
+				cfg.Common.StatsCollection = true
+			} else {
+				cfg.Common.StatsCollection = false
+			}
+
+			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)
+			fmt.Println("repo: ", utils.Purple+repo+utils.Reset)
+			fmt.Println("walletDir: ", utils.Purple+walletDir+utils.Reset)
+			fmt.Println("mode: ", utils.Purple+cfg.Common.Mode+utils.Reset)
+			fmt.Println("enableWebsocket: ", cfg.Common.EnableWebsocket)
+			fmt.Println("statsCollection: ", cfg.Common.StatsCollection)
+
 			// create the node (with whypfs, db, filclient)
 			nodeParams := core.NewLightNodeParams{
 				Repo:             repo,
@@ -76,21 +97,50 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			if err != nil {
 				return err
 			}
+			fmt.Println(utils.Blue + "Setting up the whypfs node... DONE" + utils.Reset)
 
 			// set the node global meta
+			fmt.Println(utils.Blue + "Computing the OS resources to use" + utils.Reset)
 			core.ScanHostComputeResources(ln, repo)
+			fmt.Println(utils.Blue + "Computing the OS resources to use... DONE" + utils.Reset)
 
 			// run clean up
+			fmt.Println(utils.Blue + "Running pre-start clean up" + utils.Reset)
 			core.CleanUpContentAndPieceComm(ln)
+			fmt.Println(utils.Blue + "Running pre-start clean up... DONE" + utils.Reset)
 
 			// run the listeners
+			fmt.Println("Subscribing the event listeners")
 			core.SetLibp2pManagerSubscribe(ln)
 			core.SetDataTransferEventsSubscribe(ln)
+			fmt.Println("Subscribing the event listeners... DONE")
 
 			// run the clean up every 30 minutes so we can retry and also remove the unecessary files on the blockstore.
+			fmt.Println("Running the atomatic cron jobs")
 			RunScheduledCleanupAndRetryCron(ln)
+			fmt.Println("Running the atomatic cron jobs... DONE" + utils.Reset)
 
 			// launch the API node
+
+			fmt.Println(utils.Green + `
+     %%%%%%%%/          %%%%%%%%%%%%%%% %%%%%     %%%%%%%%%%%%%%%%%     %%%%%%  
+    @@@@@@@@@@@@@@@     @@@@@@@@@@@@@@ @@@@@      @@@@@@@@@@@@@@@@@   @@@@@@@@  
+    @@@@@     @@@@@@@  @@@@@@          @@@@@           @@@@@         @@@@@@@@@@ 
+   @@@@@@       @@@@@  @@@@@          @@@@@            @@@@@       @@@@@  @@@@@ 
+   @@@@@        @@@@@ @@@@@@@@@@@@@@ (@@@@@           @@@@@       @@@@@   @@@@@ 
+  @@@@@@       @@@@@@ @@@@@@@@@@@@@  @@@@@           /@@@@@      @@@@@    #@@@@,
+  @@@@@       @@@@@@ @@@@@*         @@@@@@           @@@@@     @@@@@@@@@@@@@@@@@
+ @@@@@@@@@@@@@@@@@   @@@@@@@@@@@@@@ @@@@@@@@@@@@@@  @@@@@@    @@@@@        @@@@@
+ @@@@@@@@@@@@@@     @@@@@@@@@@@@@@ @@@@@@@@@@@@@@@  @@@@@    @@@@@         @@@@@
+
+
+By: Protocol Labs - Outercore Engineering.
+` + utils.Reset + utils.Red + "version: v0.0.1" + utils.Reset)
+			fmt.Println("----------------------------------")
+			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
+			fmt.Println("----------------------------------")
+			fmt.Println(utils.Purple + "Note: Statistics collection is enabled. This will help us improve the product. If you don't want to share stats, you can run the daemon with --stats-collection=false" + utils.Reset)
+			fmt.Println("----------------------------------")
 			api.InitializeEchoRouterConfig(ln, *cfg)
 			api.LoopForever()
 

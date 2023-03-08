@@ -23,6 +23,10 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 		switch event.Code {
 		case datatransfer.Error, datatransfer.Disconnected, datatransfer.ReceiveDataError, datatransfer.Cancel, datatransfer.RequestTimedOut, datatransfer.SendDataError:
 			fmt.Println("Error event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
+			//var content model.Content
+			//i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
+			//itemCleanup := jobs.NewItemContentCleanUpProcessor(i, content)
+			//i.Dispatcher.AddJobAndDispatch(itemCleanup, 1)
 		}
 	})
 }
@@ -68,10 +72,21 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 				FailedAt:  time.Now(),
 				UpdatedAt: time.Now(),
 			}).Find(&contentDeal)
+
 			i.DB.Model(&model.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(model.Content{
 				Status:    utils.DEAL_STATUS_TRANSFER_FAILED,
 				UpdatedAt: time.Now(),
 			})
+
+			// clean up the blockstore
+			var content model.Content
+			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
+			// remove from the blockstore
+			cidToDelete, err := cid.Decode(content.Cid)
+			if err != nil {
+				fmt.Println(err)
+			}
+			go i.Node.DAGService.Remove(context.Background(), cidToDelete)
 		default:
 		}
 	})
