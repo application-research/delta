@@ -4,20 +4,11 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	"delta/utils"
 	"fmt"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 )
-
-var Reset = "\033[0m"
-var Red = "\033[31m"
-var Green = "\033[32m"
-var Yellow = "\033[33m"
-var Blue = "\033[34m"
-var Purple = "\033[35m"
-var Cyan = "\033[36m"
-var Gray = "\033[37m"
-var White = "\033[97m"
 
 // DaemonCmd Creating a new command called `daemon` that will run the API node.
 func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
@@ -53,8 +44,9 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "enable stats collection or not",
 			},
 		},
+
 		Action: func(c *cli.Context) error {
-			fmt.Println(Blue + "Starting Delta daemon..." + Reset)
+			fmt.Println(utils.Blue + "Starting Delta daemon..." + utils.Reset)
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
 			mode := c.String("mode")
@@ -87,10 +79,10 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.StatsCollection = false
 			}
 
-			fmt.Println("Setting up the whypfs node... ")
-			fmt.Println("repo: ", Purple+repo+Reset)
-			fmt.Println("walletDir: ", Purple+walletDir+Reset)
-			fmt.Println("mode: ", Purple+cfg.Common.Mode+Reset)
+			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)
+			fmt.Println("repo: ", utils.Purple+repo+utils.Reset)
+			fmt.Println("walletDir: ", utils.Purple+walletDir+utils.Reset)
+			fmt.Println("mode: ", utils.Purple+cfg.Common.Mode+utils.Reset)
 			fmt.Println("enableWebsocket: ", cfg.Common.EnableWebsocket)
 			fmt.Println("statsCollection: ", cfg.Common.StatsCollection)
 
@@ -105,17 +97,17 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Setting up the whypfs node... DONE")
+			fmt.Println(utils.Blue + "Setting up the whypfs node... DONE" + utils.Reset)
 
 			// set the node global meta
-			fmt.Println("Computing the OS resources to use")
+			fmt.Println(utils.Blue + "Computing the OS resources to use" + utils.Reset)
 			core.ScanHostComputeResources(ln, repo)
-			fmt.Println("Computing the OS resources to use... DONE")
+			fmt.Println(utils.Blue + "Computing the OS resources to use... DONE" + utils.Reset)
 
 			// run clean up
-			fmt.Println("Running pre-start clean up")
+			fmt.Println(utils.Blue + "Running pre-start clean up" + utils.Reset)
 			core.CleanUpContentAndPieceComm(ln)
-			fmt.Println("Running pre-start clean up... DONE")
+			fmt.Println(utils.Blue + "Running pre-start clean up... DONE" + utils.Reset)
 
 			// run the listeners
 			fmt.Println("Subscribing the event listeners")
@@ -126,13 +118,13 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			// run the clean up every 30 minutes so we can retry and also remove the unecessary files on the blockstore.
 			fmt.Println("Running the atomatic cron jobs")
 			RunScheduledCleanupAndRetryCron(ln)
-			fmt.Println("Running the atomatic cron jobs... DONE" + Reset)
+			fmt.Println("Running the atomatic cron jobs... DONE" + utils.Reset)
 
 			// launch the API node
 			fmt.Println("----------------------------------")
-			fmt.Println(Green + "Welcome! Delta daemon is running..." + Reset)
+			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
 			fmt.Println("----------------------------------")
-			fmt.Println(Purple + "Thank you for enabling stats collection. This helps us improve the product! If you don't want to share your stats, you can disable it by running the daemon with --stats-collection=false" + Reset)
+			fmt.Println(utils.Purple + "Note: Statistics collection is enabled. This will help us improve the product. If you don't want to share stats, you can run the daemon with --stats-collection=false" + utils.Reset)
 			api.InitializeEchoRouterConfig(ln, *cfg)
 			api.LoopForever()
 

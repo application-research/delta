@@ -31,6 +31,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 )
 
@@ -60,6 +61,7 @@ type DeltaNode struct {
 	Api        url.URL
 	DB         *gorm.DB
 	FilClient  *fc.FilClient
+	LotusApi   v1api.FullNode
 	Config     *c.DeltaConfig
 	Dispatcher *Dispatcher
 	MetaInfo   *model.InstanceMeta
@@ -205,7 +207,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	dispatcher := CreateNewDispatcher()
 
 	// delta metrics tracer
-	//dataTracer := messaging.NewDeltaMetricsTracer()
+	dataTracer := messaging.NewDeltaMetricsTracer()
 
 	tp := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
 	defer tp.Shutdown(context.Background())
@@ -221,9 +223,11 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		DB:         db,
 		FilClient:  filclient,
 		Dispatcher: dispatcher,
+		LotusApi:   api,
 		Config:     repo.Config,
 		DeltaMetricsTracer: &DeltaMetricsTracer{
-			//Tracer: tracer,
+			Tracer:            nil,
+			DeltaDataReporter: dataTracer,
 		},
 	}, nil
 }
@@ -296,4 +300,12 @@ func GetPublicIP() (string, error) {
 		return "", err
 	}
 	return string(body), nil
+}
+
+func GetHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "unknown"
+	}
+	return hostname
 }

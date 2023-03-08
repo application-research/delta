@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
+	"github.com/application-research/delta-db/event_models"
+	"github.com/application-research/delta-db/messaging"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 	"net/http"
@@ -835,6 +837,16 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
+	// trace
+	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+		ObjectType: "ContentLog",
+		Object: event_models.ContentLog{
+			NodeInfo:      core.GetHostname(),
+			RequesterInfo: c.RealIP(),
+			Content:       content,
+		},
+	})
+
 	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
@@ -1045,6 +1057,26 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
+	// tracer
+	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+		ObjectType: "ContentLog",
+		Object: event_models.ContentLog{
+			NodeInfo:      core.GetHostname(),
+			RequesterInfo: c.RealIP(),
+			Content:       content,
+		},
+	})
+
+	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+		ObjectType: "PieceCommitmentLog",
+		Object: event_models.PieceCommitmentLog{
+			NodeInfo:         core.GetHostname(),
+			RequesterInfo:    c.RealIP(),
+			RequestingApiKey: authParts[1],
+			PieceCommitment:  pieceCommp,
+		},
+	})
+
 	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
@@ -1249,12 +1281,31 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 		node.DB.Create(&dealProposalParam)
 
 		var dispatchJobs core.IProcessor
-		fmt.Println(pieceCommp.ID)
 		if pieceCommp.ID != 0 {
 			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
 		}
 
 		node.Dispatcher.AddJob(dispatchJobs)
+
+		// tracer
+		utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+			ObjectType: "ContentLog",
+			Object: event_models.ContentLog{
+				NodeInfo:      core.GetHostname(),
+				RequesterInfo: c.RealIP(),
+				Content:       content,
+			},
+		})
+
+		utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+			ObjectType: "PieceCommitmentLog",
+			Object: event_models.PieceCommitmentLog{
+				NodeInfo:         core.GetHostname(),
+				RequesterInfo:    c.RealIP(),
+				RequestingApiKey: authParts[1],
+				PieceCommitment:  pieceCommp,
+			},
+		})
 
 		dealResponses = append(dealResponses, DealResponse{
 			Status:      "success",
