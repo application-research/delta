@@ -121,10 +121,26 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println("Running the atomatic cron jobs... DONE" + utils.Reset)
 
 			// launch the API node
+
+			fmt.Println(utils.Green + `
+     %%%%%%%%/          %%%%%%%%%%%%%%% %%%%%     %%%%%%%%%%%%%%%%%     %%%%%%  
+    @@@@@@@@@@@@@@@     @@@@@@@@@@@@@@ @@@@@      @@@@@@@@@@@@@@@@@   @@@@@@@@  
+    @@@@@     @@@@@@@  @@@@@@          @@@@@           @@@@@         @@@@@@@@@@ 
+   @@@@@@       @@@@@  @@@@@          @@@@@            @@@@@       @@@@@  @@@@@ 
+   @@@@@        @@@@@ @@@@@@@@@@@@@@ (@@@@@           @@@@@       @@@@@   @@@@@ 
+  @@@@@@       @@@@@@ @@@@@@@@@@@@@  @@@@@           /@@@@@      @@@@@    #@@@@,
+  @@@@@       @@@@@@ @@@@@*         @@@@@@           @@@@@     @@@@@@@@@@@@@@@@@
+ @@@@@@@@@@@@@@@@@   @@@@@@@@@@@@@@ @@@@@@@@@@@@@@  @@@@@@    @@@@@        @@@@@
+ @@@@@@@@@@@@@@     @@@@@@@@@@@@@@ @@@@@@@@@@@@@@@  @@@@@    @@@@@         @@@@@
+
+
+By: Protocol Labs - Outercore Engineering.
+` + utils.Reset + utils.Red + "version: v0.0.1" + utils.Reset)
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Purple + "Note: Statistics collection is enabled. This will help us improve the product. If you don't want to share stats, you can run the daemon with --stats-collection=false" + utils.Reset)
+			fmt.Println("----------------------------------")
 			api.InitializeEchoRouterConfig(ln, *cfg)
 			api.LoopForever()
 
