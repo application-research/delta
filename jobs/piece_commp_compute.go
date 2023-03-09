@@ -65,8 +65,18 @@ func (i PieceCommpProcessor) Run() error {
 	var paddedPieceSize abi.PaddedPieceSize
 
 	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
-		pieceInfo, err := i.CommpService.GenerateCommPCarV2(node)
-		if pieceInfo == nil && err != nil {
+		//pieceInfo, err := i.CommpService.GenerateParallelCommp(node)
+		//if core.DataCIDSize{} == pieceInfo && err != nil {
+		//	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+		//		Status:      utils.CONTENT_FAILED_TO_PROCESS,
+		//		LastMessage: err.Error(),
+		//		UpdatedAt:   time.Now(),
+		//	})
+		//	return err
+		//}
+
+		pieceInfo, err := i.CommpService.GenerateParallelCommp(node)
+		if err != nil {
 			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
 				LastMessage: err.Error(),
@@ -74,10 +84,9 @@ func (i PieceCommpProcessor) Run() error {
 			})
 			return err
 		}
-
 		pieceCid = pieceInfo.PieceCID
-		paddedPieceSize = pieceInfo.Size
-		unPaddedPieceSize = pieceInfo.Size.Unpadded()
+		paddedPieceSize = abi.PaddedPieceSize(pieceInfo.PayloadSize)
+		unPaddedPieceSize = pieceInfo.PieceSize.Unpadded()
 
 		payloadSize = uint64(len(bytesFromCar))
 
