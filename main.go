@@ -5,17 +5,10 @@ package main
 import (
 	"delta/cmd"
 	c "delta/config"
-	"delta/core"
-	"delta/utils"
-	"fmt"
-	"github.com/application-research/delta-db/event_models"
-	"github.com/application-research/delta-db/messaging"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 	_ "net/http"
 	"os"
-	"runtime"
-	"time"
 )
 
 var (
@@ -23,26 +16,6 @@ var (
 )
 
 func main() {
-
-	fmt.Println("Delta version:", core.GetVersion())
-	fmt.Println("OS:", runtime.GOOS)
-	fmt.Println("Architecture:", runtime.GOARCH)
-	fmt.Println("Hostname:", core.GetHostname())
-
-	ip, err := core.GetPublicIP()
-	if err != nil {
-		fmt.Println("Error getting public IP:", err)
-	}
-	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-		ObjectType: "DeltaStartupLogs",
-		Object: event_models.DeltaStartupLogs{
-			NodeInfo:  core.GetHostname(),
-			OSDetails: runtime.GOARCH + " " + runtime.GOOS,
-			IPAddress: ip,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-	})
 
 	// get the config
 	cfg := c.InitConfig()

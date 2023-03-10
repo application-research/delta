@@ -6,8 +6,12 @@ import (
 	"delta/core"
 	"delta/utils"
 	"fmt"
+	"github.com/application-research/delta-db/event_models"
+	"github.com/application-research/delta-db/messaging"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
+	"runtime"
+	"time"
 )
 
 // DaemonCmd Creating a new command called `daemon` that will run the API node.
@@ -46,6 +50,27 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+
+			fmt.Println("Delta version:", core.GetVersion())
+			fmt.Println("OS:", runtime.GOOS)
+			fmt.Println("Architecture:", runtime.GOARCH)
+			fmt.Println("Hostname:", core.GetHostname())
+
+			ip, err := core.GetPublicIP()
+			if err != nil {
+				fmt.Println("Error getting public IP:", err)
+			}
+			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+				ObjectType: "DeltaStartupLogs",
+				Object: event_models.DeltaStartupLogs{
+					NodeInfo:  core.GetHostname(),
+					OSDetails: runtime.GOARCH + " " + runtime.GOOS,
+					IPAddress: ip,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			})
+
 			fmt.Println(utils.Blue + "Starting Delta daemon..." + utils.Reset)
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
