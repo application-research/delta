@@ -28,6 +28,7 @@ type DeltaConfig struct {
 		Mode            string `env:"MODE" envDefault:"standalone"`
 		DBDSN           string `env:"DB_DSN" envDefault:"stg-deal-maker"`
 		EnableWebsocket bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
+		CommpMode       string `env:"COMMP_MODE" envDefault:"filboost"` // option "parallel"
 		StatsCollection bool   `env:"STATS_COLLECTION" envDefault:"true"`
 	}
 

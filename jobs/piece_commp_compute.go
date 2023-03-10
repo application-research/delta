@@ -58,22 +58,12 @@ func (i PieceCommpProcessor) Run() error {
 	if err != nil {
 		log.Error(err)
 	}
-
 	var pieceCid cid.Cid
 	var payloadSize uint64
 	var unPaddedPieceSize abi.UnpaddedPieceSize
 	var paddedPieceSize abi.PaddedPieceSize
 
-	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
-		//pieceInfo, err := i.CommpService.GenerateParallelCommp(node)
-		//if core.DataCIDSize{} == pieceInfo && err != nil {
-		//	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
-		//		Status:      utils.CONTENT_FAILED_TO_PROCESS,
-		//		LastMessage: err.Error(),
-		//		UpdatedAt:   time.Now(),
-		//	})
-		//	return err
-		//}
+	if i.LightNode.Config.Common.CommpMode == utils.COMMP_MODE_PARALLEL {
 
 		pieceInfo, err := i.CommpService.GenerateParallelCommp(node)
 		if err != nil {
@@ -91,15 +81,30 @@ func (i PieceCommpProcessor) Run() error {
 		payloadSize = uint64(len(bytesFromCar))
 
 	} else {
-		pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
-		paddedPieceSize = unPaddedPieceSize.Padded()
-		if err != nil {
-			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_FAILED_TO_PROCESS,
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			return err
+
+		if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
+			pieceCid, payloadSize, unPaddedPieceSize, err = filclient.GeneratePieceCommitment(context.Background(), payloadCid, i.LightNode.Node.Blockstore)
+			if err != nil {
+				i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+					Status:      utils.CONTENT_FAILED_TO_PROCESS,
+					LastMessage: err.Error(),
+					UpdatedAt:   time.Now(),
+				})
+				return err
+			}
+			paddedPieceSize = abi.PaddedPieceSize(payloadSize)
+
+		} else {
+			pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
+			paddedPieceSize = unPaddedPieceSize.Padded()
+			if err != nil {
+				i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+					Status:      utils.CONTENT_FAILED_TO_PROCESS,
+					LastMessage: err.Error(),
+					UpdatedAt:   time.Now(),
+				})
+				return err
+			}
 		}
 	}
 

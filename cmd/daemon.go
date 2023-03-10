@@ -47,6 +47,10 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "stats-collection",
 				Usage: "enable stats collection or not",
 			},
+			&cli.StringFlag{
+				Name:  "commp-mode",
+				Usage: "enable stats collection or not",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
@@ -77,6 +81,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			mode := c.String("mode")
 			enableWebsocket := c.String("enable-websocket")
 			statsCollection := c.String("stats-collection")
+			commpMode := c.String("commp-mode")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -102,6 +107,12 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.StatsCollection = true
 			} else {
 				cfg.Common.StatsCollection = false
+			}
+
+			if commpMode == "" {
+				cfg.Common.CommpMode = utils.COMPP_MODE_FILBOOST
+			} else {
+				cfg.Common.CommpMode = commpMode
 			}
 
 			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)

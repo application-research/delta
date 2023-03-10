@@ -92,6 +92,8 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 }
 
+// It returns a function that takes a `DeltaNode` and returns a function that takes an `echo.Context` and returns an
+// `error`
 func handleStats(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
