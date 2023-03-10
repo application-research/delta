@@ -25,6 +25,20 @@ type CommpService struct {
 	DeltaNode *DeltaNode
 }
 
+type DataCIDSize struct {
+	PayloadSize int64
+	PieceSize   abi.PaddedPieceSize
+	PieceCID    cid.Cid
+}
+
+const commPBufPad = abi.PaddedPieceSize(8 << 20)
+const CommPBuf = abi.UnpaddedPieceSize(commPBufPad - (commPBufPad / 128)) // can't use .Unpadded() for const
+
+type ciderr struct {
+	c   cid.Cid
+	err error
+}
+
 // GenerateCommPFile Generating a CommP file from a payload file.
 // Generating a CommP file from a payload file.
 func (c CommpService) GenerateCommPFile(context context.Context, payloadCid cid.Cid, blockstore blockstore.Blockstore) (pieceCid cid.Cid, payloadSize uint64, unPaddedPieceSize abi.UnpaddedPieceSize, err error) {
@@ -115,20 +129,6 @@ func (c CommpService) GetCarSize(stream io.Reader, rd *carv2.Reader) (int64, err
 		size = int64(len(bytes))
 	}
 	return size, nil
-}
-
-type DataCIDSize struct {
-	PayloadSize int64
-	PieceSize   abi.PaddedPieceSize
-	PieceCID    cid.Cid
-}
-
-const commPBufPad = abi.PaddedPieceSize(8 << 20)
-const CommPBuf = abi.UnpaddedPieceSize(commPBufPad - (commPBufPad / 128)) // can't use .Unpadded() for const
-
-type ciderr struct {
-	c   cid.Cid
-	err error
 }
 
 type DataCidWriter struct {

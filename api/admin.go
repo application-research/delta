@@ -28,22 +28,23 @@ type ImportWalletRequest struct {
 // It configures the admin router
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminWallet := e.Group("/wallet")
-	adminStats := e.Group("/stats")
-	adminStats.GET("/miner/:minerId", handleAdminStatsMiner(node))
 	adminWallet.POST("/register", handleAdminRegisterWallet(node))
 	adminWallet.POST("/create", handleAdminCreateWallet(node))
 	adminWallet.GET("/list", handleAdminListWallets(node))
 	adminWallet.GET("/balance/:address", handleAdminGetBalance(node))
+
 }
 
 // `handleAdminGetBalance` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context`
 // and returns an `error`
 func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
 
 		// check if the address is registered in the database
 		var wallet model.Wallet
-		node.DB.Model(&model.Wallet{}).Where("addr = ?", c.Param("address")).First(&wallet)
+		node.DB.Model(&model.Wallet{}).Where("addr = ? and owner =?", c.Param("address"), authParts[1]).First(&wallet)
 
 		if wallet.ID == 0 {
 			return c.JSON(400, map[string]interface{}{
@@ -225,24 +226,6 @@ func handleAdminListWallets(node *core.DeltaNode) func(c echo.Context) error {
 
 		return c.JSON(200, map[string]interface{}{
 			"wallets": wallets,
-		})
-	}
-}
-
-// A function that returns a function that returns an error.
-// It returns a function that takes a context and returns an error
-func handleAdminStatsMiner(node *core.DeltaNode) func(c echo.Context) error {
-	return func(c echo.Context) error {
-
-		var contents []model.Content
-		node.DB.Raw("select c.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ?", c.Param("minerId")).Scan(&contents)
-
-		var contentMinerAssignment []model.ContentMiner
-		node.DB.Raw("select cma.* from content_miners cma, contents c where cma.content = c.id and cma.miner = ?", c.Param("minerId")).Scan(&contentMinerAssignment)
-
-		return c.JSON(200, map[string]interface{}{
-			"content": contents,
-			"cmas":    contentMinerAssignment,
 		})
 	}
 }
