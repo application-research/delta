@@ -3,12 +3,10 @@ package cmd
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"delta/api"
 	"delta/core"
 	"delta/utils"
 	"fmt"
-	"github.com/application-research/whypfs-core"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
 	"net/http"
@@ -51,25 +49,12 @@ func CommpCmd() []*cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			var commpResult api.DealRequest
-			car := c.String("file")
+			file := c.String("file")
 			forImport := c.Bool("for-import")
+
 			miner := c.String("miner")
-			//wallet := c.String("wallet")
-
-			params := whypfs.NewNodeParams{
-				Ctx:       context.Background(),
-				Datastore: whypfs.NewInMemoryDatastore(),
-			}
-
-			node, err := whypfs.NewNode(params)
-			openFile, err := os.Open(car)
+			openFile, err := os.Open(file)
 			reader := bufio.NewReader(openFile)
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-
-			fileNode, err := node.AddPinFile(context.Background(), reader, nil)
 			if err != nil {
 				fmt.Println(err)
 				return err
@@ -79,16 +64,14 @@ func CommpCmd() []*cli.Command {
 				commpResult.Miner = miner
 			}
 
-			if car != "" {
-				fileNodeFromBs, err := node.GetFile(context.Background(), fileNode.Cid())
-				pieceInfo, err := commpService.GenerateParallelCommp(fileNodeFromBs)
+			if file != "" {
+				pieceInfo, err := commpService.GenerateParallelCommp(reader)
 
 				if err != nil {
 					fmt.Println(err)
 					return err
 				}
 				// return json to console.
-				commpResult.Cid = fileNode.Cid().String()
 				commpResult.PieceCommitment.Piece = pieceInfo.PieceCID.String()
 				commpResult.PieceCommitment.PaddedPieceSize = uint64(pieceInfo.PieceSize)
 				commpResult.PieceCommitment.UnPaddedPieceSize = uint64(pieceInfo.PieceSize.Unpadded())
@@ -100,18 +83,18 @@ func CommpCmd() []*cli.Command {
 					commpResult.ConnectionMode = "e2e"
 				}
 
-				size, err := fileNode.Size()
 				if err != nil {
 					fmt.Println(err)
 					return err
 				}
-				commpResult.Size = int64(size)
+				commpResult.Size = pieceInfo.PayloadSize
 
 				var buffer bytes.Buffer
 				err = utils.PrettyEncode(commpResult, &buffer)
 				if err != nil {
 					fmt.Println(err)
 				}
+
 				fmt.Println(buffer.String())
 
 				// if the delta api url and key is given, send the result to delta api.
