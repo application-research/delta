@@ -26,7 +26,7 @@ NODE_TYPE=delta-main
 
 # Database configuration
 MODE=standalone
-DB_DSN=stg-deal-maker
+DB_DSN=delta.db
 #REPO=/mnt/.whypfs # shared mounted repo
 
 # Frequencies
