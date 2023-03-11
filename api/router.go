@@ -206,6 +206,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	// open api
 	ConfigureNodeInfoRouter(openApiGroup, ln)
 	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
+	ConfigureOpenInfoCheckRouter(openApiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
