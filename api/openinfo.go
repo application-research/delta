@@ -18,9 +18,10 @@ func ConfigureOpenInfoCheckRouter(e *echo.Group, node *core.DeltaNode) {
 
 }
 
+// It gets the balance of a wallet
 func handleOpenGetBalance(c echo.Context, node *core.DeltaNode) error {
 	var wallet model.Wallet
-	node.DB.Model(&model.Wallet{}).Where("addr = ? and owner =?", c.Param("address")).First(&wallet)
+	node.DB.Model(&model.Wallet{}).Where("addr = ?", c.Param("address")).First(&wallet)
 
 	if wallet.ID == 0 {
 		return c.JSON(400, map[string]interface{}{

@@ -7,8 +7,7 @@ import (
 	"strconv"
 )
 
-// TODO: OPTIMIZE!!
-
+// ConfigureOpenStatsCheckRouter TODO: OPTIMIZE!!
 // ConfigureOpenStatsCheckRouter It configures the router to handle the following routes:
 //
 // - `GET /stats/miner/:minerId`

@@ -149,6 +149,10 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 }
 
+// > check if the sum(size) transfer-started and created_at within instance_start time
+//
+// The above function is a middleware that checks if the sum of the size of all the files that have been transferred and
+// created_at within instance_start time
 func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		// check if the sum(size) transfer-started and created_at within instance_start time
@@ -358,8 +362,8 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 
 		if dealRequest.StartEpochInDays != 0 {
-			time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealRequest.StartEpoch = utils.DateToHeight(time)
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 		}
 
 		// duration
@@ -582,8 +586,8 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	if dealRequest.StartEpochInDays != 0 {
-		time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-		dealRequest.StartEpoch = utils.DateToHeight(time)
+		startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+		dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 	}
 
 	// remove unsealed copy
@@ -810,8 +814,8 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	if dealRequest.StartEpochInDays != 0 {
-		time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-		dealRequest.StartEpoch = utils.DateToHeight(time)
+		startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+		dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 	}
 
 	// remove unsealed copy
@@ -1032,8 +1036,8 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	if dealRequest.StartEpochInDays != 0 {
-		time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-		dealRequest.StartEpoch = utils.DateToHeight(time)
+		startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+		dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 	}
 
 	// remove unsealed copy
@@ -1266,8 +1270,8 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 
 		if dealRequest.StartEpochInDays != 0 {
-			time := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealRequest.StartEpoch = utils.DateToHeight(time)
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 		}
 
 		// remove unsealed copy
@@ -1435,7 +1439,6 @@ func handlePrepareContent(c echo.Context, node *core.DeltaNode, statsService cor
 	// > This function is called when a node receives a `PrepareCommitmentPiece` message
 }
 func handlePrepareCommitmentPiece() {
-
 	// > This function is called when the user clicks the "Prepare Commitment Pieces" button. It takes the user's input and
 	// prepares the commitment pieces
 }
@@ -1443,8 +1446,9 @@ func handlePrepareCommitmentPieces() {
 	// This function handles the announcement of content.
 }
 
+// This function is called when the user clicks the "Announce Content" button. It takes the user's input and...
 func handleAnnounceContent() {
-
+	//	> This function is called when the user clicks the "Announce Content" button. It takes the user's input and
 }
 
 // > The function `handleAnnounceCommitmentPiece` is called when a `AnnounceCommitmentPiece` message is received
@@ -1458,7 +1462,7 @@ func handleAnnounceCommitmentPieces() {
 
 }
 
-//
+// Approach:
 //
 //{
 //"cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",

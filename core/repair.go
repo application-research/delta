@@ -22,17 +22,17 @@ func (r RepairService) RecreateDeal(param RepairParam) (RepairResult, error) {
 	return RepairResult{}, nil
 }
 
-// A method of RepairService.
+// RestartDataTransfer A method of RepairService.
 func (r RepairService) RestartDataTransfer(param RepairParam) (RepairResult, error) {
 	return RepairResult{}, nil
 }
 
-// A method of RepairService.
+// RecreateCommp A method of RepairService.
 func (r RepairService) RecreateCommp(param RepairParam) (RepairResult, error) {
 	return RepairResult{}, nil
 }
 
-// A method of RepairService.
+// RecreateContent A method of RepairService.
 func (r RepairService) RecreateContent(param RepairParam) (RepairResult, error) {
 	return RepairResult{}, nil
 }

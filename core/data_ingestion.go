@@ -1,6 +1,6 @@
 package core
 
-// TODO: Plugin interface
+// Ingestion TODO: Plugin interface
 type Ingestion interface {
 	IngestionHandler()
 }

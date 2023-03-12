@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"delta/api"
+	c "delta/config"
 	"delta/core"
 	"delta/utils"
 	"fmt"
 	"github.com/urfave/cli/v2"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
@@ -22,7 +23,7 @@ type CommpResult struct {
 
 // CommpCmd A CLI command that generates a piece commitment for a given file.
 // `CommpCmd()` returns a slice of `*cli.Command`s
-func CommpCmd() []*cli.Command {
+func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 	// add a command to run API node
 	var commpCommands []*cli.Command
 	var commpService = new(core.CommpService)
@@ -31,11 +32,11 @@ func CommpCmd() []*cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "file",
-				Usage: "specify the car file",
+				Usage: "specify the file",
 			},
 			&cli.BoolFlag{
-				Name:  "for-offline",
-				Usage: "specify the car file",
+				Name:  "for-import",
+				Usage: "specify the file is for import mode",
 				Value: true,
 			},
 			&cli.StringFlag{
@@ -51,7 +52,6 @@ func CommpCmd() []*cli.Command {
 			var commpResult api.DealRequest
 			file := c.String("file")
 			forImport := c.Bool("for-import")
-
 			miner := c.String("miner")
 			openFile, err := os.Open(file)
 			reader := bufio.NewReader(openFile)
@@ -118,9 +118,9 @@ func CommpCmd() []*cli.Command {
 						return err
 					}
 					defer resp.Body.Close()
-					body, err := ioutil.ReadAll(resp.Body)
-					if err != nil {
-						fmt.Println(err)
+					var body, respErr = io.ReadAll(resp.Body)
+					if respErr != nil {
+						fmt.Println(respErr)
 						return err
 					}
 					fmt.Println(string(body))
