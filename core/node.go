@@ -79,7 +79,7 @@ type DeltaMetricsTracer struct {
 	DeltaDataReporter *messaging.DeltaMetricsTracer
 }
 
-// `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
+// WebsocketBroadcast `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
 // @property {ContentChannel} ContentChannel - This is the channel that will be used to send content to the client.
 // @property {PieceCommitmentChannel} PieceCommitmentChannel - This is a channel that will be used to send piece
 // commitments to the client.
@@ -135,7 +135,7 @@ type LocalWallet struct {
 	lk       sync.Mutex
 }
 
-// It's a struct that holds a blockstore, a DAGService, a Resolver, and a Node.
+// GatewayHandler It's a struct that holds a blockstore, a DAGService, a Resolver, and a Node.
 // @property bs - The blockstore is the storage layer for the IPFS node. It stores the raw data of the blocks.
 // @property dserv - The DAGService is the interface that allows us to interact with the IPFS DAG.
 // @property resolver - This is the resolver that will be used to resolve paths to IPFS objects.
@@ -209,11 +209,11 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	// delta metrics tracer
 	dataTracer := messaging.NewDeltaMetricsTracer()
 
-	tp := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
-	defer tp.Shutdown(context.Background())
+	openTelemetryTracerProvider := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
+	defer openTelemetryTracerProvider.Shutdown(context.Background())
 
 	// Register the tracer provider with the global tracer
-	otel.SetTracerProvider(tp)
+	otel.SetTracerProvider(openTelemetryTracerProvider)
 
 	// Create a new span
 	//tracer := otel.Tracer("example")
@@ -226,7 +226,6 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		LotusApi:   api,
 		Config:     repo.Config,
 		DeltaMetricsTracer: &DeltaMetricsTracer{
-			Tracer:            nil,
 			DeltaDataReporter: dataTracer,
 		},
 	}, nil
