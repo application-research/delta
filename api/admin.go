@@ -32,7 +32,6 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminWallet.POST("/create", handleAdminCreateWallet(node))
 	adminWallet.GET("/list", handleAdminListWallets(node))
 	adminWallet.GET("/balance/:address", handleAdminGetBalance(node))
-
 }
 
 // `handleAdminGetBalance` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context`

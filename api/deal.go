@@ -10,10 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
-	"github.com/application-research/delta-db/event_models"
-	"github.com/application-research/delta-db/messaging"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"net/http"
 	"strconv"
 	"strings"
@@ -155,6 +155,19 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 // created_at within instance_start time
 func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+
+		_, span := otel.Tracer("handleNodePeers").Start(context.Background(), "handleNodeHostApiKey")
+		defer span.End()
+
+		span.SetName("checkMetaFlags")
+		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
+		span.SetAttributes(attribute.String("remote_ip", c.RealIP()))
+		span.SetAttributes(attribute.String("host", c.Request().Host))
+		span.SetAttributes(attribute.String("referer", c.Request().Referer()))
+		span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
+
 		// check if the sum(size) transfer-started and created_at within instance_start time
 		var meta model.InstanceMeta
 		// select * from instance_meta where id = 1
@@ -172,7 +185,19 @@ func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Con
 // CPUs multiplied by the number of bytes per CPU. If it is, then it returns an error
 func checkResourceLimits(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
-		// check if the sum(size) transfer-started and created_at within instance_start time
+
+		_, span := otel.Tracer("handleNodePeers").Start(context.Background(), "handleNodeHostApiKey")
+		defer span.End()
+
+		span.SetName("checkMetaFlags")
+		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
+		span.SetAttributes(attribute.String("remote_ip", c.RealIP()))
+		span.SetAttributes(attribute.String("host", c.Request().Host))
+		span.SetAttributes(attribute.String("referer", c.Request().Referer()))
+		span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
+
 		var size sql.NullInt64
 		node.DB.Raw("select sum(size) from contents where status = 'transfer-started' and created_at > ?", node.MetaInfo.InstanceStart).Scan(&size)
 
@@ -841,16 +866,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	// trace
-	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-		ObjectType: "ContentLog",
-		Object: event_models.ContentLog{
-			NodeInfo:      core.GetHostname(),
-			RequesterInfo: c.RealIP(),
-			Content:       content,
-		},
-	})
-
 	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
@@ -1061,26 +1076,6 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 
 	node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
-	// tracer
-	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-		ObjectType: "ContentLog",
-		Object: event_models.ContentLog{
-			NodeInfo:      core.GetHostname(),
-			RequesterInfo: c.RealIP(),
-			Content:       content,
-		},
-	})
-
-	utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-		ObjectType: "PieceCommitmentLog",
-		Object: event_models.PieceCommitmentLog{
-			NodeInfo:         core.GetHostname(),
-			RequesterInfo:    c.RealIP(),
-			RequestingApiKey: authParts[1],
-			PieceCommitment:  pieceCommp,
-		},
-	})
-
 	err = c.JSON(200, DealResponse{
 		Status:      "success",
 		Message:     "File uploaded and pinned successfully",
@@ -1290,26 +1285,6 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 
 		node.Dispatcher.AddJob(dispatchJobs)
-
-		// tracer
-		utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-			ObjectType: "ContentLog",
-			Object: event_models.ContentLog{
-				NodeInfo:      core.GetHostname(),
-				RequesterInfo: c.RealIP(),
-				Content:       content,
-			},
-		})
-
-		utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-			ObjectType: "PieceCommitmentLog",
-			Object: event_models.PieceCommitmentLog{
-				NodeInfo:         core.GetHostname(),
-				RequesterInfo:    c.RealIP(),
-				RequestingApiKey: authParts[1],
-				PieceCommitment:  pieceCommp,
-			},
-		})
 
 		dealResponses = append(dealResponses, DealResponse{
 			Status:      "success",

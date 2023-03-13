@@ -27,6 +27,8 @@ func handleNodeHostApiKey(node *core.DeltaNode) func(c echo.Context) error {
 
 		span.SetName("ConfigureNodeInfoRouter")
 		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
 
 		if node.Config.Common.Mode != "standalone" {
 			return c.JSON(200, "This is not a standalone node")
@@ -40,6 +42,14 @@ func handleNodeHostApiKey(node *core.DeltaNode) func(c echo.Context) error {
 // `error`
 func handleNodeHost(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		_, span := otel.Tracer("handleNodeHost").Start(context.Background(), "handleNodeHostApiKey")
+		defer span.End()
+
+		span.SetName("ConfigureNodeInfoRouter")
+		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
+
 		return c.JSON(200, node.Node.Host.ID())
 	}
 }
@@ -47,6 +57,13 @@ func handleNodeHost(node *core.DeltaNode) func(c echo.Context) error {
 // It returns a function that takes a `DeltaNode` and returns a function that takes a `Context` and returns an `error`
 func handleNodePeers(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		_, span := otel.Tracer("handleNodePeers").Start(context.Background(), "handleNodeHostApiKey")
+		defer span.End()
+
+		span.SetName("ConfigureNodeInfoRouter")
+		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
 		return c.JSON(200, node.Node.Host.Network().Peers())
 	}
 }
@@ -54,6 +71,13 @@ func handleNodePeers(node *core.DeltaNode) func(c echo.Context) error {
 // It returns a function that takes a `DeltaNode` and returns a function that takes a `Context` and returns an `error`
 func handleNodeAddr(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		_, span := otel.Tracer("handleNodePeers").Start(context.Background(), "handleNodeHostApiKey")
+		defer span.End()
+
+		span.SetName("handleNodeAddr")
+		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
 		return c.JSON(200, node.Node.Host.Addrs())
 	}
 }
@@ -61,6 +85,13 @@ func handleNodeAddr(node *core.DeltaNode) func(c echo.Context) error {
 // It returns a function that returns a JSON response with the node's name, description, and type
 func handleNodeInfo(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		_, span := otel.Tracer("handleNodePeers").Start(context.Background(), "handleNodeHostApiKey")
+		defer span.End()
+
+		span.SetName("handleNodeInfo")
+		span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
+		span.SetAttributes(attribute.String("path", c.Path()))
+		span.SetAttributes(attribute.String("method", c.Request().Method))
 
 		nodeName := node.Config.Node.Name
 		nodeDescription := node.Config.Node.Description

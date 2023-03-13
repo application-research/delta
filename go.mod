@@ -305,4 +305,4 @@ require (
 
 replace github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
 
-//replace github.com/application-research/delta-db => ../delta-events
+replace github.com/application-research/delta-db => ../delta-events
