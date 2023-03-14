@@ -6,7 +6,8 @@ import (
 	"delta/core"
 	"delta/utils"
 	"fmt"
-	"github.com/application-research/delta-db/event_models"
+	"github.com/application-research/delta-db/db_models"
+	_ "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/delta-db/messaging"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
@@ -66,7 +67,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			}
 			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
 				ObjectType: "DeltaStartupLogs",
-				Object: event_models.DeltaStartupLogs{
+				Object: db_models.DeltaStartupLogs{
 					NodeInfo:  core.GetHostname(),
 					OSDetails: runtime.GOARCH + " " + runtime.GOOS,
 					IPAddress: ip,

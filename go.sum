@@ -86,8 +86,8 @@ github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYU
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
-github.com/application-research/delta-db v0.0.0-20230308014519-6a6003012d1e h1:sAbs1bc5JbCrO2DUp8qgvEHGfnA0KDjad0ECGYg2WNo=
-github.com/application-research/delta-db v0.0.0-20230308014519-6a6003012d1e/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
+github.com/application-research/delta-db v0.0.1 h1:rvqhS/nvXhl6M8mlbb2bEnN9JBiwy8TGnqn+7hDBXxw=
+github.com/application-research/delta-db v0.0.1/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
 github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9 h1:x60eXkdBR8JkyFaxQYsep0cEo7HfwzxrkZ5H5YaYvmk=
 github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9/go.mod h1:QI5TGGs8M43kdVOqOshBLqRwMwnAgdcSODgtyIeQE4o=
 github.com/application-research/whypfs-core v0.1.1 h1:BY40N15Ge9BlyAT3f4T4B/CAlaL7A1RYaRrNS3HIyEk=

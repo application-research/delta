@@ -32,7 +32,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"sync"
+	"syscall"
+	"time"
 )
 
 // DeltaNode is a struct that contains a context, a node, an api, a database, a filecoin client, a config, a dispatcher, a
@@ -79,7 +82,7 @@ type DeltaMetricsTracer struct {
 	DeltaDataReporter *messaging.DeltaMetricsTracer
 }
 
-// `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
+// WebsocketBroadcast `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
 // @property {ContentChannel} ContentChannel - This is the channel that will be used to send content to the client.
 // @property {PieceCommitmentChannel} PieceCommitmentChannel - This is a channel that will be used to send piece
 // commitments to the client.
@@ -135,7 +138,7 @@ type LocalWallet struct {
 	lk       sync.Mutex
 }
 
-// It's a struct that holds a blockstore, a DAGService, a Resolver, and a Node.
+// GatewayHandler It's a struct that holds a blockstore, a DAGService, a Resolver, and a Node.
 // @property bs - The blockstore is the storage layer for the IPFS node. It stores the raw data of the blocks.
 // @property dserv - The DAGService is the interface that allows us to interact with the IPFS DAG.
 // @property resolver - This is the resolver that will be used to resolve paths to IPFS objects.
@@ -209,11 +212,11 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	// delta metrics tracer
 	dataTracer := messaging.NewDeltaMetricsTracer()
 
-	tp := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
-	defer tp.Shutdown(context.Background())
+	openTelemetryTracerProvider := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
+	defer openTelemetryTracerProvider.Shutdown(context.Background())
 
 	// Register the tracer provider with the global tracer
-	otel.SetTracerProvider(tp)
+	otel.SetTracerProvider(openTelemetryTracerProvider)
 
 	// Create a new span
 	//tracer := otel.Tracer("example")
@@ -226,7 +229,6 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		LotusApi:   api,
 		Config:     repo.Config,
 		DeltaMetricsTracer: &DeltaMetricsTracer{
-			Tracer:            nil,
 			DeltaDataReporter: dataTracer,
 		},
 	}, nil
@@ -312,4 +314,88 @@ func GetHostname() string {
 
 func GetVersion() string {
 	return "v0.0.1"
+}
+
+// ScanHostComputeResources Setting the global node meta.
+// > This function sets the global node metadata for the given node
+func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
+
+	memStats := &runtime.MemStats{}
+	runtime.ReadMemStats(memStats)
+	totalMemory := memStats.Sys
+	totalMemory80 := totalMemory * 90 / 100
+
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	fmt.Printf("Total memory: %v bytes\n", m.Alloc)
+	fmt.Printf("Total system memory: %v bytes\n", m.Sys)
+	fmt.Printf("Total heap memory: %v bytes\n", m.HeapSys)
+	fmt.Printf("Heap in use: %v bytes\n", m.HeapInuse)
+	fmt.Printf("Stack in use: %v bytes\n", m.StackInuse)
+	// get the 80% of the total disk usage
+	var stat syscall.Statfs_t
+	syscall.Statfs(repo, &stat) // blockstore size
+	totalStorage := stat.Blocks * uint64(stat.Bsize)
+	totalStorage90 := totalStorage * 90 / 100
+
+	// set the number of CPUs
+	numCPU := runtime.NumCPU()
+	fmt.Printf("Total number of CPUs: %d\n", numCPU)
+	fmt.Printf("Number of CPUs that this Delta will use: %d\n", numCPU/(1200/1000))
+	fmt.Println(utils.Purple + "Note: Delta instance proactively recalculate resources to use based on the current load." + utils.Reset)
+	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
+
+	// delete all data from the instance meta table
+	ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)
+	// re-create
+	ip, err := GetPublicIP()
+	if err != nil {
+		fmt.Println("Error getting public IP:", err)
+	}
+
+	instanceMeta := &model.InstanceMeta{
+		MemoryLimit:                      totalMemory80,  // 80%
+		StorageLimit:                     totalStorage90, // 90%
+		NumberOfCpus:                     uint64(numCPU),
+		InstanceNodeName:                 ln.Config.Node.Name,
+		PublicIp:                         ip,
+		OSDetails:                        runtime.GOARCH + " " + runtime.GOOS,
+		StorageInBytes:                   totalStorage,
+		BytesPerCpu:                      11000000000,
+		SystemMemory:                     totalMemory,
+		HeapMemory:                       m.HeapSys,
+		HeapInUse:                        m.HeapInuse,
+		StackInUse:                       m.StackInuse,
+		DisableRequest:                   false,
+		DisableCommitmentPieceGeneration: false,
+		DisableStorageDeal:               false,
+		DisableOnlineDeals:               false,
+		DisableOfflineDeals:              false,
+		CreatedAt:                        time.Now(),
+		UpdatedAt:                        time.Now(),
+		InstanceStart:                    time.Now(),
+	}
+	ln.DB.Model(&model.InstanceMeta{}).Create(instanceMeta)
+	ln.MetaInfo = instanceMeta
+	return instanceMeta
+
+}
+
+// CleanUpContentAndPieceComm It updates the status of all the content and piece commitments that were in the process of being transferred or computed
+// to failed
+func CleanUpContentAndPieceComm(ln *DeltaNode) {
+
+	// if the transfer was started upon restart, then we need to update the status to failed
+	ln.DB.Transaction(func(tx *gorm.DB) error {
+
+		rowsAffected := tx.Model(&model.Content{}).Where("status in (?,?)", utils.DEAL_STATUS_TRANSFER_STARTED, utils.CONTENT_PIECE_COMPUTING).Updates(
+			model.Content{
+				Status:      utils.DEAL_STATUS_TRANSFER_FAILED,
+				UpdatedAt:   time.Now(),
+				LastMessage: "Transfer failed due to node restart",
+			}).RowsAffected
+
+		fmt.Println("Number of rows cleaned up: " + fmt.Sprint(rowsAffected))
+		return nil
+	})
 }

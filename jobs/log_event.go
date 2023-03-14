@@ -2,7 +2,7 @@ package jobs
 
 import (
 	"delta/core"
-	model "github.com/application-research/delta-db/db_models"
+	"github.com/application-research/delta-db/messaging"
 )
 
 // LogEventProcessor `LogEventProcessor` is a struct that contains a `LightNode` and a `LogEvent`.
@@ -10,11 +10,11 @@ import (
 // @property LogEvent - This is the event that we want to process.
 type LogEventProcessor struct {
 	LightNode *core.DeltaNode
-	LogEvent  model.LogEvent
+	LogEvent  messaging.LogEvent
 }
 
 // NewLogEvent > This function creates a new LogEventProcessor object and returns it
-func NewLogEvent(ln *core.DeltaNode, logEvent model.LogEvent) IProcessor {
+func NewLogEvent(ln *core.DeltaNode, logEvent messaging.LogEvent) IProcessor {
 	return &LogEventProcessor{
 		LightNode: ln,
 		LogEvent:  logEvent,
