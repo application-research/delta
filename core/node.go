@@ -19,6 +19,7 @@ import (
 	"github.com/filecoin-project/lotus/chain/wallet"
 	"github.com/filecoin-project/lotus/chain/wallet/key"
 	cliutil "github.com/filecoin-project/lotus/cli/util"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	mdagipld "github.com/ipfs/go-ipld-format"
@@ -304,6 +305,7 @@ func GetPublicIP() (string, error) {
 	return string(body), nil
 }
 
+// Get the hostname of the current machine, or return 'unknown' if there's an error.
 func GetHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -312,6 +314,7 @@ func GetHostname() string {
 	return hostname
 }
 
+// It returns a string
 func GetVersion() string {
 	return "v0.0.1"
 }
@@ -346,38 +349,68 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
 
 	// delete all data from the instance meta table
-	ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)
+	//ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)
 	// re-create
 	ip, err := GetPublicIP()
 	if err != nil {
 		fmt.Println("Error getting public IP:", err)
 	}
 
-	instanceMeta := &model.InstanceMeta{
-		MemoryLimit:                      totalMemory80,  // 80%
-		StorageLimit:                     totalStorage90, // 90%
-		NumberOfCpus:                     uint64(numCPU),
-		InstanceNodeName:                 ln.Config.Node.Name,
-		PublicIp:                         ip,
-		OSDetails:                        runtime.GOARCH + " " + runtime.GOOS,
-		StorageInBytes:                   totalStorage,
-		BytesPerCpu:                      11000000000,
-		SystemMemory:                     totalMemory,
-		HeapMemory:                       m.HeapSys,
-		HeapInUse:                        m.HeapInuse,
-		StackInUse:                       m.StackInuse,
-		DisableRequest:                   false,
-		DisableCommitmentPieceGeneration: false,
-		DisableStorageDeal:               false,
-		DisableOnlineDeals:               false,
-		DisableOfflineDeals:              false,
-		CreatedAt:                        time.Now(),
-		UpdatedAt:                        time.Now(),
-		InstanceStart:                    time.Now(),
+	// if there's already an existing record, update that record
+	var instanceMeta model.InstanceMeta
+	ln.DB.Model(&model.InstanceMeta{}).Where("id > ?", 0).First(&instanceMeta)
+
+	if instanceMeta.ID > 0 {
+
+		instanceMeta = model.InstanceMeta{
+			MemoryLimit:      totalMemory80,  // 80%
+			StorageLimit:     totalStorage90, // 90%
+			InstanceUuid:     instanceMeta.InstanceUuid,
+			NumberOfCpus:     uint64(numCPU),
+			InstanceNodeName: ln.Config.Node.Name,
+			PublicIp:         ip,
+			OSDetails:        runtime.GOARCH + " " + runtime.GOOS,
+			StorageInBytes:   totalStorage,
+			BytesPerCpu:      11000000000,
+			SystemMemory:     totalMemory,
+			HeapMemory:       m.HeapSys,
+			HeapInUse:        m.HeapInuse,
+			StackInUse:       m.StackInuse,
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
+			InstanceStart:    time.Now(),
+		}
+		ln.DB.Model(&model.InstanceMeta{}).Save(&instanceMeta)
+		ln.MetaInfo = &instanceMeta
+	} else {
+
+		instanceUuid := uuid.New().String()
+		if err != nil {
+			fmt.Println("Error generating UUID:", err)
+		}
+
+		instanceMeta = model.InstanceMeta{
+			MemoryLimit:      totalMemory80,  // 80%
+			StorageLimit:     totalStorage90, // 90%
+			InstanceUuid:     instanceUuid,
+			NumberOfCpus:     uint64(numCPU),
+			InstanceNodeName: ln.Config.Node.Name,
+			PublicIp:         ip,
+			OSDetails:        runtime.GOARCH + " " + runtime.GOOS,
+			StorageInBytes:   totalStorage,
+			BytesPerCpu:      11000000000,
+			SystemMemory:     totalMemory,
+			HeapMemory:       m.HeapSys,
+			HeapInUse:        m.HeapInuse,
+			StackInUse:       m.StackInuse,
+			CreatedAt:        time.Now(),
+			UpdatedAt:        time.Now(),
+			InstanceStart:    time.Now(),
+		}
+		ln.DB.Model(&model.InstanceMeta{}).Create(&instanceMeta)
+		ln.MetaInfo = &instanceMeta
 	}
-	ln.DB.Model(&model.InstanceMeta{}).Create(instanceMeta)
-	ln.MetaInfo = instanceMeta
-	return instanceMeta
+	return &instanceMeta
 
 }
 

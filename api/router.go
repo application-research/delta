@@ -92,15 +92,21 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			span.SetAttributes(attribute.String("referer", c.Request().Referer()))
 			span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
 
+			ip, err := core.GetPublicIP()
+			if err != nil {
+				log.Error(err)
+			}
 			fmt.Println("Request: " + c.Request().Method + " " + c.Path() + " " + c.Request().UserAgent() + " " + c.RealIP() + " " + c.Request().Host + " " + c.Request().Referer() + " " + c.Request().RequestURI)
 			s := struct {
 				RemoteIP string `json:"remote_ip"`
+				PublicIP string `json:"public_ip"`
 				Host     string `json:"host"`
 				Referer  string `json:"referer"`
 				Request  string `json:"request"`
 				Path     string `json:"path"`
 			}{
 				RemoteIP: c.RealIP(),
+				PublicIP: ip,
 				Host:     c.Request().Host,
 				Referer:  c.Request().Referer(),
 				Request:  c.Request().RequestURI,

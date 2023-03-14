@@ -15,9 +15,10 @@ var (
 
 type DeltaConfig struct {
 	Node struct {
-		Name        string `env:"NODE_NAME" envDefault:"delta-deal-maker"`
-		Description string `env:"NODE_DESCRIPTION"`
-		Type        string `env:"NODE_TYPE"`
+		Name         string `env:"NODE_NAME" envDefault:"delta-deal-maker"`
+		Description  string `env:"NODE_DESCRIPTION"`
+		Type         string `env:"NODE_TYPE"`
+		InstanceUuid string `env:"INSTANCE_UUID"`
 	}
 
 	Dispatcher struct {
