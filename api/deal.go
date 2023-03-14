@@ -70,7 +70,6 @@ type DealResponse struct {
 // `DeltaNode`'s deal-making functionality
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
-	//	inject the stats service
 	statsService := core.NewStatsStatsService(node)
 
 	dealMake := e.Group("/deal")
@@ -399,7 +398,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 
 		if dealRequest.DurationInDays != 0 {
-			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.StartEpochInDays - dealRequest.DurationInDays)
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays)
 		}
 
 		// remove unsealed copy
