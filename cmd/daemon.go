@@ -178,8 +178,6 @@ By: Protocol Labs - Outercore Engineering
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
 			fmt.Println("----------------------------------")
-			//fmt.Println(utils.Purple + "Note: Statistics collection is enabled. This will help us improve the product. If you don't want to share stats, you can run the daemon with --stats-collection=false" + utils.Reset)
-			//fmt.Println("----------------------------------")
 			api.InitializeEchoRouterConfig(ln, *cfg)
 			api.LoopForever()
 
