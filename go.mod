@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
+	github.com/application-research/delta-db v0.0.2-0.20230315194434-cc5bce58d8be
 	github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9
 	github.com/application-research/whypfs-core v0.1.1
 	github.com/caarlos0/env/v6 v6.10.1
@@ -11,10 +12,7 @@ require (
 	github.com/filecoin-project/go-address v1.1.0
 	github.com/filecoin-project/go-cbor-util v0.0.1
 	github.com/filecoin-project/go-commp-utils v0.1.4
-	github.com/filecoin-project/go-commp-utils/nonffi v0.0.0-20220905160352-62059082a837
 	github.com/filecoin-project/go-data-transfer v1.15.3
-	github.com/filecoin-project/go-fil-commcid v0.1.0
-	github.com/filecoin-project/go-fil-commp-hashhash v0.1.0
 	github.com/filecoin-project/go-fil-markets v1.26.0
 	github.com/filecoin-project/go-jsonrpc v0.2.1
 	github.com/filecoin-project/go-state-types v0.9.9
@@ -52,7 +50,6 @@ require (
 	github.com/akavel/rsrc v0.8.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alexbrainman/goissue34681 v0.0.0-20191006012335-3fc7a47baff5 // indirect
-	github.com/application-research/delta-db v0.0.2-0.20230314130526-f423d41325d7 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
@@ -87,6 +84,8 @@ require (
 	github.com/filecoin-project/go-bitfield v0.2.4 // indirect
 	github.com/filecoin-project/go-crypto v0.0.1 // indirect
 	github.com/filecoin-project/go-ds-versioning v0.1.2 // indirect
+	github.com/filecoin-project/go-fil-commcid v0.1.0 // indirect
+	github.com/filecoin-project/go-fil-commp-hashhash v0.1.0 // indirect
 	github.com/filecoin-project/go-hamt-ipld v0.1.5 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v2 v2.0.0 // indirect
 	github.com/filecoin-project/go-hamt-ipld/v3 v3.1.0 // indirect

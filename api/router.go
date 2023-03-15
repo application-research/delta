@@ -120,9 +120,12 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 
 			utils.GlobalDeltaDataReporter.TraceLog(
 				messaging.LogEvent{
-					LogEventType:   "Route Request",
+					LogEventType:   "Route: " + core.GetHostname() + " " + c.Request().Method + " " + c.Path(),
+					SourceHost:     core.GetHostname(),
+					SourceIP:       ip,
 					LogEventObject: b,
-					LogEvent:       string(b),
+					LogEvent:       c.Path(),
+					DeltaUuid:      config.Node.InstanceUuid,
 					CreatedAt:      time.Now(),
 					UpdatedAt:      time.Now(),
 				})

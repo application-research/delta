@@ -385,6 +385,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	} else {
 
 		instanceUuid := uuid.New().String()
+
 		if err != nil {
 			fmt.Println("Error generating UUID:", err)
 		}
@@ -408,6 +409,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 			InstanceStart:    time.Now(),
 		}
 		ln.DB.Model(&model.InstanceMeta{}).Create(&instanceMeta)
+		ln.Config.Node.InstanceUuid = instanceUuid
 		ln.MetaInfo = &instanceMeta
 	}
 	return &instanceMeta
