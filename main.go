@@ -15,6 +15,7 @@ var (
 	log = logging.Logger("api")
 )
 
+// It initializes the config, gets all the commands, and runs the app.
 func main() {
 
 	// get the config

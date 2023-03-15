@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"delta/core"
+	"github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -97,10 +98,15 @@ func handleNodeInfo(node *core.DeltaNode) func(c echo.Context) error {
 		nodeDescription := node.Config.Node.Description
 		nodeType := node.Config.Node.Type
 
+		// instance meta
+		var instanceMeta db_models.InstanceMeta
+		node.DB.Model(&db_models.InstanceMeta{}).First(&instanceMeta)
+
 		return c.JSON(200, map[string]string{
 			"name":        nodeName,
 			"description": nodeDescription,
 			"type":        nodeType,
+			"uuid":        instanceMeta.InstanceUuid,
 		})
 	}
 }
