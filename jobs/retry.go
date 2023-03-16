@@ -65,7 +65,7 @@ func (i RetryProcessor) Run() error {
 			// fail it entirely
 			content.Status = utils.CONTENT_FAILED_TO_PROCESS
 			content.LastMessage = "failed to process even after retrying."
-			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", content.ID).Updates(content)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(content)
 			cidToDelete, err := cid.Decode(content.Cid)
 			if err != nil {
 				fmt.Println("error in decoding cid", err)

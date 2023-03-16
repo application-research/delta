@@ -381,6 +381,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 			InstanceStart:    time.Now(),
 		}
 		ln.DB.Model(&model.InstanceMeta{}).Save(&instanceMeta)
+		ln.Config.Node.InstanceUuid = instanceMeta.InstanceUuid
 		ln.MetaInfo = &instanceMeta
 	} else {
 

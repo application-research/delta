@@ -43,11 +43,18 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcesso
 
 // Run The process of generating the commp.
 func (i PieceCommpProcessor) Run() error {
+	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
+		Status:    utils.CONTENT_PIECE_COMPUTING,
+		UpdatedAt: time.Now(),
+	})
 
-	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_COMPUTING})
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
-		i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_COMPUTING_FAILED, LastMessage: err.Error()})
+		i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
+			Status:      utils.CONTENT_PIECE_COMPUTING_FAILED,
+			LastMessage: err.Error(),
+			UpdatedAt:   time.Now(),
+		})
 	}
 
 	// prepare the commp
@@ -67,7 +74,7 @@ func (i PieceCommpProcessor) Run() error {
 
 		pieceInfo, err := i.CommpService.GenerateParallelCommp(node)
 		if err != nil {
-			i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+			i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
 				LastMessage: err.Error(),
 				UpdatedAt:   time.Now(),
@@ -85,7 +92,7 @@ func (i PieceCommpProcessor) Run() error {
 		if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
 			pieceCid, payloadSize, unPaddedPieceSize, err = filclient.GeneratePieceCommitment(context.Background(), payloadCid, i.LightNode.Node.Blockstore)
 			if err != nil {
-				i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+				i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
 					Status:      utils.CONTENT_FAILED_TO_PROCESS,
 					LastMessage: err.Error(),
 					UpdatedAt:   time.Now(),
@@ -98,7 +105,7 @@ func (i PieceCommpProcessor) Run() error {
 			pieceCid, payloadSize, unPaddedPieceSize, err = i.CommpService.GenerateCommPFile(i.Context, payloadCid, i.LightNode.Node.Blockstore)
 			paddedPieceSize = unPaddedPieceSize.Padded()
 			if err != nil {
-				i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{
+				i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
 					Status:      utils.CONTENT_FAILED_TO_PROCESS,
 					LastMessage: err.Error(),
 					UpdatedAt:   time.Now(),
@@ -127,7 +134,11 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	i.LightNode.DB.Create(commpRec)
-	i.LightNode.DB.Model(&model.Content{}).Where("id = ?", i.Content.ID).Updates(model.Content{Status: utils.CONTENT_PIECE_ASSIGNED, PieceCommitmentId: commpRec.ID})
+	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
+		Status:            utils.CONTENT_PIECE_ASSIGNED,
+		PieceCommitmentId: commpRec.ID,
+		UpdatedAt:         time.Now(),
+	})
 
 	// add this to the job queue
 	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)
