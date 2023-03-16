@@ -75,7 +75,7 @@ func handleOpenGetBalance(c echo.Context, node *core.DeltaNode) error {
 			"market_escrow":           types.FIL(market.Escrow),
 			"market_locked":           types.FIL(market.Locked),
 			"market_available":        types.FIL(avail),
-			"verified_client_balance": vcstatus,
+			"verified_client_balance": vcstatus.Int64(),
 		},
 	})
 }

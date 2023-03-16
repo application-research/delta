@@ -360,59 +360,41 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	var instanceMeta model.InstanceMeta
 	ln.DB.Model(&model.InstanceMeta{}).Where("id > ?", 0).First(&instanceMeta)
 
-	if instanceMeta.ID > 0 {
+	if instanceMeta.InstanceUuid == "" {
+		instanceMeta.InstanceUuid = uuid.New().String()
+	}
 
-		instanceMeta = model.InstanceMeta{
-			MemoryLimit:      totalMemory80,  // 80%
-			StorageLimit:     totalStorage90, // 90%
-			InstanceUuid:     instanceMeta.InstanceUuid,
-			NumberOfCpus:     uint64(numCPU),
-			InstanceNodeName: ln.Config.Node.Name,
-			PublicIp:         ip,
-			OSDetails:        runtime.GOARCH + " " + runtime.GOOS,
-			StorageInBytes:   totalStorage,
-			BytesPerCpu:      11000000000,
-			SystemMemory:     totalMemory,
-			HeapMemory:       m.HeapSys,
-			HeapInUse:        m.HeapInuse,
-			StackInUse:       m.StackInuse,
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
-			InstanceStart:    time.Now(),
-		}
+	instanceMeta = model.InstanceMeta{
+		MemoryLimit:      totalMemory80,  // 80%
+		StorageLimit:     totalStorage90, // 90%
+		InstanceUuid:     instanceMeta.InstanceUuid,
+		NumberOfCpus:     uint64(numCPU),
+		InstanceNodeName: ln.Config.Node.Name,
+		PublicIp:         ip,
+		OSDetails:        runtime.GOARCH + " " + runtime.GOOS,
+		StorageInBytes:   totalStorage,
+		BytesPerCpu:      11000000000,
+		SystemMemory:     totalMemory,
+		HeapMemory:       m.HeapSys,
+		HeapInUse:        m.HeapInuse,
+		StackInUse:       m.StackInuse,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+		InstanceStart:    time.Now(),
+	}
+
+	if instanceMeta.ID > 0 {
 		ln.DB.Model(&model.InstanceMeta{}).Save(&instanceMeta)
 		ln.Config.Node.InstanceUuid = instanceMeta.InstanceUuid
 		ln.MetaInfo = &instanceMeta
+
 	} else {
 
-		instanceUuid := uuid.New().String()
-
-		if err != nil {
-			fmt.Println("Error generating UUID:", err)
-		}
-
-		instanceMeta = model.InstanceMeta{
-			MemoryLimit:      totalMemory80,  // 80%
-			StorageLimit:     totalStorage90, // 90%
-			InstanceUuid:     instanceUuid,
-			NumberOfCpus:     uint64(numCPU),
-			InstanceNodeName: ln.Config.Node.Name,
-			PublicIp:         ip,
-			OSDetails:        runtime.GOARCH + " " + runtime.GOOS,
-			StorageInBytes:   totalStorage,
-			BytesPerCpu:      11000000000,
-			SystemMemory:     totalMemory,
-			HeapMemory:       m.HeapSys,
-			HeapInUse:        m.HeapInuse,
-			StackInUse:       m.StackInuse,
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
-			InstanceStart:    time.Now(),
-		}
 		ln.DB.Model(&model.InstanceMeta{}).Create(&instanceMeta)
-		ln.Config.Node.InstanceUuid = instanceUuid
+		ln.Config.Node.InstanceUuid = instanceMeta.InstanceUuid
 		ln.MetaInfo = &instanceMeta
 	}
+
 	return &instanceMeta
 
 }

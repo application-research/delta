@@ -85,6 +85,7 @@ func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 		}
 
 		vcstatus, err := node.LotusApi.StateVerifiedClientStatus(context.Background(), address, types.EmptyTSK)
+
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{
 				"message": "failed to get verified client status",
@@ -102,7 +103,7 @@ func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 				"market_escrow":           types.FIL(market.Escrow),
 				"market_locked":           types.FIL(market.Locked),
 				"market_available":        types.FIL(avail),
-				"verified_client_balance": vcstatus,
+				"verified_client_balance": vcstatus.Int64(),
 			},
 		})
 
