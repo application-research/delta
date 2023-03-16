@@ -44,6 +44,7 @@ const (
 
 	EPOCH_540_DAYS              = 1555200
 	EPOCH_PER_DAY               = 2880
+	EPOCH_PER_HOUR              = 60 * 2
 	FILECOIN_GENESIS_UNIX_EPOCH = 1598306400
 	DEFAULT_DURATION            = EPOCH_540_DAYS - (EPOCH_PER_DAY * 21)
 

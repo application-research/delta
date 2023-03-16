@@ -24,11 +24,16 @@ type ImportWalletRequest struct {
 	PrivateKey string `json:"private_key"`
 }
 
+type ImportWalletWithHexRequest struct {
+	HexKey string `json:"hex_key"`
+}
+
 // ConfigureAdminRouter It creates a new wallet and saves it to the database
 // It configures the admin router
 func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminWallet := e.Group("/wallet")
 	adminWallet.POST("/register", handleAdminRegisterWallet(node))
+	adminWallet.POST("/register-hex", handleAdminRegisterWalletWithHex(node))
 	adminWallet.POST("/create", handleAdminCreateWallet(node))
 	adminWallet.GET("/list", handleAdminListWallets(node))
 	adminWallet.GET("/balance/:address", handleAdminGetBalance(node))
@@ -149,6 +154,38 @@ func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 			"wallet_uuid": newWallet.UuId,
 			"wallet_addr": newWallet.Addr,
 		})
+	}
+}
+
+func handleAdminRegisterWalletWithHex(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+		walletService := core.NewWalletService(node)
+
+		if len(authParts) != 2 {
+			return c.JSON(401, map[string]interface{}{
+				"message": "unauthorized",
+			})
+		}
+		var hexedKey ImportWalletWithHexRequest
+		c.Bind(&hexedKey)
+
+		importedWallet, err := walletService.ImportWithHex(hexedKey.HexKey)
+
+		if err != nil {
+			return c.JSON(500, map[string]interface{}{
+				"message": "failed to import wallet",
+				"error":   err.Error(),
+			})
+		}
+
+		return c.JSON(200, map[string]interface{}{
+			"message":     "Successfully imported a wallet address. Please take note of the following information.",
+			"wallet_addr": importedWallet.WalletAddress.String(),
+			"wallet_uuid": importedWallet.Wallet.UuId,
+		})
+
 	}
 }
 

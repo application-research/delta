@@ -2,7 +2,10 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -28,6 +31,11 @@ type RemoveWalletParam struct {
 type CreateWalletParam struct {
 	WalletParam
 	KeyType types.KeyType
+}
+
+type ImportWithHexKey struct {
+	KeyType    types.KeyType `json:"Type"`
+	PrivateKey string        `json:"PrivateKey"`
 }
 
 type ImportWalletParam struct {
@@ -95,6 +103,29 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 		Wallet:        *walletToDb,
 		WalletAddress: address,
 	}, nil
+}
+
+func (w WalletService) ImportWithHex(hexKey string) (ImportWalletResult, error) {
+	fmt.Println(hexKey)
+	hexString, err := hex.DecodeString(hexKey)
+	if err != nil {
+		panic(err)
+	}
+	var importWithHexKey ImportWithHexKey
+	json.Unmarshal(hexString, &importWithHexKey)
+	fmt.Println(importWithHexKey.KeyType)
+	bKey, err := base64.StdEncoding.DecodeString(importWithHexKey.PrivateKey)
+	if err != nil {
+		panic(err)
+
+	}
+	result, err := w.Import(ImportWalletParam{
+		KeyType:    importWithHexKey.KeyType,
+		PrivateKey: bKey,
+	})
+
+	return result, err
+
 }
 
 // Import Importing a wallet.

@@ -1247,6 +1247,10 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.Content = content.ID
 		dealProposalParam.Label = content.Cid
 
+		// start epoch
+		if dealRequest.StartEpoch != 0 {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
 		// duration
 		if dealRequest.Duration == 0 {
 			dealProposalParam.Duration = utils.DEFAULT_DURATION
@@ -1254,19 +1258,22 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.Duration = dealRequest.Duration
 		}
 
-		if dealRequest.DurationInDays != 0 {
-			dealProposalParam.Duration = utils.EPOCH_PER_DAY * dealRequest.DurationInDays
-		}
-
-		// start epoch
-		if dealRequest.StartEpoch != 0 {
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
-
 		if dealRequest.StartEpochInDays != 0 {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
+			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
 		}
+
+		if dealRequest.DurationInDays > 540 {
+			return errors.New("Duration cannot be more than 540 days")
+		}
+
+		if dealRequest.DurationInDays != 0 {
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
+		}
+
+		fmt.Println("Start epoch: ", dealRequest.StartEpoch)
+		fmt.Println("Duration: ", dealProposalParam.Duration)
 
 		// remove unsealed copy
 		if dealRequest.RemoveUnsealedCopies == false {

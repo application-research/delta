@@ -173,7 +173,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	dealProp := prop.DealProposal
 	if dealProposal.StartEpoch != 0 {
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
-		dealProp.Proposal.EndEpoch = dealProp.Proposal.StartEpoch + duration
 	}
 
 	propnd, err := cborutil.AsIpld(dealProp)
