@@ -732,7 +732,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		RequestingApiKey:  authParts[1],
 		PieceCommitmentId: pieceCommp.ID,
 		Status:            utils.CONTENT_PINNED,
-		ConnectionMode:    connMode,
+		ConnectionMode:    dealRequest.ConnectionMode,
 		CreatedAt:         time.Now(),
 		UpdatedAt:         time.Now(),
 	}
