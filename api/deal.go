@@ -699,12 +699,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		return errors.New("Error pinning the file")
 	}
 
-	// specify the connection mode
-	var connMode = dealRequest.ConnectionMode
-	if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
-		connMode = "e2e"
-	}
-
 	// let's create a commp but only if we have
 	// a cid, a piece_cid, a padded_piece_size, size
 	var pieceCommp model.PieceCommitment
@@ -1397,8 +1391,15 @@ func ValidateMeta(dealRequest DealRequest) error {
 	}
 
 	// connection mode is required
-	if (DealRequest{} != dealRequest && (dealRequest.ConnectionMode != utils.CONNECTION_MODE_E2E && dealRequest.ConnectionMode != utils.CONNECTION_MODE_IMPORT)) {
-		return errors.New("connection mode can only be e2e or import")
+	if (DealRequest{} != dealRequest) {
+		switch dealRequest.ConnectionMode {
+		case "":
+			dealRequest.ConnectionMode = utils.CONNECTION_MODE_IMPORT
+		case utils.CONNECTION_MODE_E2E:
+		case utils.CONNECTION_MODE_IMPORT:
+		default:
+			return errors.New("connection mode can only be e2e or import")
+		}
 	}
 
 	// piece commitment is required
