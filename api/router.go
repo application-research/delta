@@ -24,8 +24,10 @@ import (
 )
 
 var (
-	OsSignal chan os.Signal
-	log      = logging.Logger("router")
+	OsSignal        chan os.Signal
+	log             = logging.Logger("router")
+	DeltaNode       *core.DeltaNode
+	DeltaNodeConfig *config.DeltaConfig
 )
 
 // HttpError A struct that contains a struct that contains a bool and a string.
@@ -73,6 +75,10 @@ type AuthResponse struct {
 // @securityDefinitions.Bearer.in header
 // @securityDefinitions.Bearer.name Authorization
 func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
+
+	DeltaNode = ln
+	DeltaNodeConfig = &config
+
 	// Echo instance
 	e := echo.New()
 
@@ -318,6 +324,47 @@ func ValidateRequestBody() echo.MiddlewareFunc {
 
 // ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
+
+	ip, err := core.GetPublicIP()
+	if err != nil {
+		log.Error(err)
+	}
+	
+	s := struct {
+		RemoteIP     string `json:"remote_ip"`
+		PublicIP     string `json:"public_ip"`
+		Host         string `json:"host"`
+		Referer      string `json:"referer"`
+		Request      string `json:"request"`
+		Path         string `json:"path"`
+		ErrorDetails string `json:"details"`
+	}{
+		RemoteIP:     c.RealIP(),
+		PublicIP:     ip,
+		Host:         c.Request().Host,
+		Referer:      c.Request().Referer(),
+		Request:      c.Request().RequestURI,
+		Path:         c.Path(),
+		ErrorDetails: err.Error(),
+	}
+
+	b, err := json.Marshal(s)
+	if err != nil {
+		log.Error(err)
+	}
+
+	utils.GlobalDeltaDataReporter.TraceLog(
+		messaging.LogEvent{
+			LogEventType:   "Error: " + core.GetHostname() + " " + c.Request().Method + " " + c.Path(),
+			SourceHost:     core.GetHostname(),
+			SourceIP:       ip,
+			LogEventObject: b,
+			LogEvent:       c.Path(),
+			DeltaUuid:      DeltaNodeConfig.Node.InstanceUuid,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		})
+
 	var httpRespErr *HttpError
 	if xerrors.As(err, &httpRespErr) {
 		log.Errorf("handler error: %s", err)

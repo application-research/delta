@@ -132,7 +132,6 @@ func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /admin/wallet/register [post]
-
 func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
