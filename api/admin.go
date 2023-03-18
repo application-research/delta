@@ -39,8 +39,17 @@ func ConfigureAdminRouter(e *echo.Group, node *core.DeltaNode) {
 	adminWallet.GET("/balance/:address", handleAdminGetBalance(node))
 }
 
-// `handleAdminGetBalance` is a function that takes a `*core.DeltaNode` and returns a function that takes an `echo.Context`
-// and returns an `error`
+// handleAdminRegisterWallet It creates a new wallet and saves it to the database
+// @Summary It creates a new wallet and saves it to the database
+// @Description It creates a new wallet and saves it to the database
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Param address path string true "address"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/wallet/balance/:address [post]
 func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -110,9 +119,20 @@ func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
-// It creates a new wallet address and saves it to the database
-// `handleAdminCreateWallet` is a function that takes a `DeltaNode` and returns a function that takes an `echo.Context` and
-// returns an `error`
+// handleAdminRegisterWallet It creates a new wallet and saves it to the database
+// @Summary It creates a new wallet and saves it to the database
+// @Description It creates a new wallet and saves it to the database
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Param address path string true "address"
+// @Param key_type path string true "key_type"
+// @Param private_key path string true "private_key"
+// @Success 200 {object} AddWalletRequest
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/wallet/register [post]
+
 func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -175,7 +195,7 @@ func handleAdminRegisterWalletWithHex(node *core.DeltaNode) func(c echo.Context)
 		importedWallet, err := walletService.ImportWithHex(hexedKey.HexKey)
 
 		if err != nil {
-			return c.JSON(500, map[string]interface{}{
+			return c.JSON(400, map[string]interface{}{
 				"message": "failed to import wallet",
 				"error":   err.Error(),
 			})

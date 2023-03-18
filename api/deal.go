@@ -213,9 +213,12 @@ func checkResourceLimits(next echo.HandlerFunc, node *core.DeltaNode) func(c ech
 	}
 }
 
-// It takes a request, validates it, creates a content record in the database, creates a piece commitment record in the
-// database, creates a content miner assignment record in the database, creates a content wallet assignment record in the
-// database, creates a content deal proposal parameters record in the database, and then dispatches a job to the dispatcher
+// handleExistingContentsAdd handles the request to add existing content to the network
+// @Summary Add existing content to the network
+// @Description Add existing content to the network
+// @Tags deal
+// @Accept  json
+// @Produce  json
 func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -438,7 +441,12 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 	return c.JSON(http.StatusOK, dealResponses)
 }
 
-// Adding a new event listener to the existing content.
+// handleExistingContentAdd handles the request to add content to the network
+// @Summary Add content to the network
+// @Description Add content to the network
+// @Tags Content
+// @Accept  json
+// @Produce  json
 func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -664,8 +672,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 // @Accept  json
 // @Produce  json
 // @Param contentId path int true "Content ID"
-// @Success 200 {object} ContentMakeDealResponse
-// @Failure 500 {object} ContentMakeDealResponse
+// @Success 200 {object} DealResponse
 // @Router /deal/content/{contentId} [post]
 func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest

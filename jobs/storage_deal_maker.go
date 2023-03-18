@@ -451,9 +451,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		deal.UpdatedAt = time.Now()
 
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
-			tx.Model(&model.PieceCommitment{}).Where("id = ?", pieceComm.ID).Save(pieceComm)
-			tx.Model(&model.Content{}).Where("id = ?", content.ID).Save(content)
-			tx.Model(&model.ContentDeal{}).Where("id = ?", deal.ID).Save(deal)
+			tx.Model(&pieceComm).Where("id = ?", pieceComm.ID).Save(pieceComm)
+			tx.Model(&content).Where("id = ?", content.ID).Save(content)
+			tx.Model(&deal).Where("id = ?", deal.ID).Save(deal)
 			return nil
 		})
 	}
