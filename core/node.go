@@ -358,7 +358,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 
 	// if there's already an existing record, update that record
 	var instanceMeta model.InstanceMeta
-	ln.DB.Model(&model.InstanceMeta{}).Where("id > ?", 0).First(&instanceMeta)
+	ln.DB.Model(&model.InstanceMeta{}).Where("id > ?", 0).Order("created_at desc").First(&instanceMeta)
 
 	if instanceMeta.InstanceUuid == "" {
 		instanceMeta.InstanceUuid = uuid.New().String()

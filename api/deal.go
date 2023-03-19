@@ -112,17 +112,17 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealPrepare.POST("/content", func(c echo.Context) error {
-		// TODO: call unsigned deal proposal
+		// TODO: call prepare unsigned deal proposal
 		return nil
 	})
 
 	dealPrepare.POST("/piece-commitment", func(c echo.Context) error {
-		// TODO: call unsigned deal proposal with piece commitment
+		// TODO: call prepare unsigned deal proposal with piece commitment
 		return nil
 	})
 
 	dealPrepare.POST("/piece-commitments", func(c echo.Context) error {
-		// TODO: call unsigned deal proposal with piece commitments
+		// TODO: call prepare unsigned deal proposal with piece commitments
 		return nil
 	})
 
@@ -169,8 +169,6 @@ func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Con
 
 		// check if the sum(size) transfer-started and created_at within instance_start time
 		var meta model.InstanceMeta
-		// select * from instance_meta where id = 1
-		//select * from instance_meta where true;
 		node.DB.First(&meta)
 
 		if meta.DisableRequest {

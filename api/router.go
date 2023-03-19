@@ -8,24 +8,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/application-research/delta-db/messaging"
+	logging "github.com/ipfs/go-log/v2"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/xerrors"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
-
-	logging "github.com/ipfs/go-log/v2"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"golang.org/x/xerrors"
 )
 
 var (
-	OsSignal chan os.Signal
-	log      = logging.Logger("router")
+	OsSignal        chan os.Signal
+	log             = logging.Logger("router")
+	DeltaNode       *core.DeltaNode
+	DeltaNodeConfig *config.DeltaConfig
 )
 
 // HttpError A struct that contains a struct that contains a bool and a string.
@@ -48,7 +49,6 @@ func (he HttpError) Error() string {
 type HttpErrorResponse struct {
 	Error HttpError `json:"error"`
 }
-
 type AuthResponse struct {
 	Result struct {
 		Validated bool   `json:"validated"`
@@ -73,6 +73,10 @@ type AuthResponse struct {
 // @securityDefinitions.Bearer.in header
 // @securityDefinitions.Bearer.name Authorization
 func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
+
+	DeltaNode = ln
+	DeltaNodeConfig = &config
+
 	// Echo instance
 	e := echo.New()
 
@@ -83,7 +87,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			Rate: 50, Burst: 200, ExpiresIn: 5 * time.Minute,
 		}),
 	))
-
 	e.Use(middleware.SecureWithConfig(
 		middleware.SecureConfig{
 			XSSProtection:         "1; mode=block",
@@ -91,12 +94,10 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			ContentSecurityPolicy: "default-src 'self'",
 		}),
 	)
-
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			_, span := otel.Tracer("GlobalRouterRequest").Start(context.Background(), "handleNodeHostApiKey")
 			defer span.End()
-
 			span.SetName("Request: " + c.Request().Method + " " + c.Path())
 			span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
 			span.SetAttributes(attribute.String("path", c.Path()))
@@ -105,7 +106,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			span.SetAttributes(attribute.String("host", c.Request().Host))
 			span.SetAttributes(attribute.String("referer", c.Request().Referer()))
 			span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
-
 			ip, err := core.GetPublicIP()
 			if err != nil {
 				log.Error(err)
@@ -126,12 +126,12 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 				Request:  c.Request().RequestURI,
 				Path:     c.Path(),
 			}
-
 			b, err := json.Marshal(s)
 			if err != nil {
 				log.Error(err)
 			}
 
+			// log all errors so we can pre-emptively fix them
 			utils.GlobalDeltaDataReporter.TraceLog(
 				messaging.LogEvent{
 					LogEventType:   "Route: " + core.GetHostname() + " " + c.Request().Method + " " + c.Path(),
@@ -143,30 +143,23 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					CreatedAt:      time.Now(),
 					UpdatedAt:      time.Now(),
 				})
-
 			return next(c)
 		}
-
 	})
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 	}))
-
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.HTTPErrorHandler = ErrorHandler
-
 	apiGroup := e.Group("/api/v1")
 	openApiGroup := e.Group("/open")
 	adminApiGroup := e.Group("/admin")
-
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-
 			// check if the authorization header is present
 			authorizationString := c.Request().Header.Get("Authorization")
 			authParts := strings.Split(authorizationString, " ")
-
 			// validate the auth parts
 			if len(authParts) != 2 {
 				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
@@ -177,7 +170,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					},
 				})
 			}
-
 			if authParts[0] != "Bearer" {
 				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
 					Error: HttpError{
@@ -187,7 +179,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					},
 				})
 			}
-
 			if authParts[1] == "" {
 				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
 					Error: HttpError{
@@ -197,7 +188,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					},
 				})
 			}
-
 			if config.Common.Mode == "standalone" {
 				// check if the API key is present and is valid
 				if config.Standalone.APIKey != authParts[1] {
@@ -210,14 +200,12 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					})
 				}
 			}
-
 			// if everything is good. we can check the token against estuary-auth.
 			response, err := http.Post(
 				"https://auth.estuary.tech/check-api-key",
 				"application/json",
 				strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
 			)
-
 			if err != nil {
 				log.Errorf("handler error: %s", err)
 				return c.JSON(http.StatusInternalServerError, HttpErrorResponse{
@@ -228,7 +216,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					},
 				})
 			}
-
 			authResp, err := GetAuthResponse(response)
 			if err != nil {
 				log.Errorf("handler error: %s", err)
@@ -240,7 +227,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 					},
 				})
 			}
-
 			if authResp.Result.Validated == false {
 				return c.JSON(http.StatusUnauthorized, HttpErrorResponse{
 					Error: HttpError{
@@ -257,6 +243,18 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 		}
 	})
 
+	// admin api
+	ConfigureAdminRouter(adminApiGroup, ln)
+	// api
+	ConfigMetricsRouter(apiGroup)
+	ConfigureDealRouter(apiGroup, ln)
+	ConfigureStatsCheckRouter(apiGroup, ln)
+	ConfigureRepairRouter(apiGroup, ln)
+	// open api
+	ConfigureNodeInfoRouter(openApiGroup, ln)
+	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
+	ConfigureOpenInfoCheckRouter(openApiGroup, ln)
+
 	// It's checking if the websocket is enabled.
 	if config.Common.EnableWebsocket {
 		// websocket
@@ -265,23 +263,8 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 		go ws.HandlePieceCommitmentMessages()
 		go ws.HandleContentDealMessages()
 		go ws.HandleContentMessages()
-
 		ConfigureWebsocketRouter(openApiGroup, ln)
 	}
-
-	// admin api
-	ConfigureAdminRouter(adminApiGroup, ln)
-
-	// api
-	ConfigMetricsRouter(apiGroup)
-	ConfigureDealRouter(apiGroup, ln)
-	ConfigureStatsCheckRouter(apiGroup, ln)
-	ConfigureRepairRouter(apiGroup, ln)
-
-	// open api
-	ConfigureNodeInfoRouter(openApiGroup, ln)
-	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
-	ConfigureOpenInfoCheckRouter(openApiGroup, ln)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
@@ -289,11 +272,9 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 
 // GetAuthResponse It's making a request to the auth API to check if the API key is valid.
 func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
-
 	jsonBody := AuthResponse{}
 	err := json.NewDecoder(resp.Body).Decode(&jsonBody)
 	if err != nil {
-
 		log.Error("empty json body")
 		return AuthResponse{
 			Result: struct {
@@ -305,7 +286,6 @@ func GetAuthResponse(resp *http.Response) (AuthResponse, error) {
 			},
 		}, nil
 	}
-
 	return jsonBody, nil
 }
 
@@ -318,6 +298,48 @@ func ValidateRequestBody() echo.MiddlewareFunc {
 
 // ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
+
+	ip, err := core.GetPublicIP()
+	if err != nil {
+		log.Error(err)
+	}
+
+	s := struct {
+		RemoteIP     string `json:"remote_ip"`
+		PublicIP     string `json:"public_ip"`
+		Host         string `json:"host"`
+		Referer      string `json:"referer"`
+		Request      string `json:"request"`
+		Path         string `json:"path"`
+		ErrorDetails string `json:"details"`
+	}{
+		RemoteIP:     c.RealIP(),
+		PublicIP:     ip,
+		Host:         c.Request().Host,
+		Referer:      c.Request().Referer(),
+		Request:      c.Request().RequestURI,
+		Path:         c.Path(),
+		ErrorDetails: err.Error(),
+	}
+
+	b, err := json.Marshal(s)
+	if err != nil {
+		log.Error(err)
+	}
+
+	// It's sending the error to the log server.
+	utils.GlobalDeltaDataReporter.TraceLog(
+		messaging.LogEvent{
+			LogEventType:   "Error: " + core.GetHostname() + " " + c.Request().Method + " " + c.Path(),
+			SourceHost:     core.GetHostname(),
+			SourceIP:       ip,
+			LogEventObject: b,
+			LogEvent:       c.Path(),
+			DeltaUuid:      DeltaNodeConfig.Node.InstanceUuid,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
+		})
+
 	var httpRespErr *HttpError
 	if xerrors.As(err, &httpRespErr) {
 		log.Errorf("handler error: %s", err)
@@ -327,7 +349,6 @@ func ErrorHandler(err error, c echo.Context) {
 		}
 		return
 	}
-
 	var echoErr *echo.HTTPError
 	if xerrors.As(err, &echoErr) {
 		if err := c.JSON(echoErr.Code, HttpErrorResponse{
@@ -342,7 +363,6 @@ func ErrorHandler(err error, c echo.Context) {
 		}
 		return
 	}
-
 	log.Errorf("handler error: %s", err)
 	if err := c.JSON(http.StatusInternalServerError, HttpErrorResponse{
 		Error: HttpError{
@@ -360,9 +380,7 @@ func ErrorHandler(err error, c echo.Context) {
 // It's a function that is called when an error occurs.
 func LoopForever() {
 	fmt.Printf("Entering infinite loop\n")
-
 	signal.Notify(OsSignal, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1)
 	_ = <-OsSignal
-
 	fmt.Printf("Exiting infinite loop received OsSignal\n")
 }

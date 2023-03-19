@@ -10,19 +10,12 @@ import (
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	fc "github.com/application-research/filclient"
-	smtypes "github.com/filecoin-project/boost/storagemarket/types"
-	"github.com/filecoin-project/boost/transport/httptransport"
-	boosttypes "github.com/filecoin-project/boost/transport/types"
 	"github.com/filecoin-project/go-address"
-	"github.com/filecoin-project/go-fil-markets/storagemarket/network"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/filecoin-project/go-state-types/builtin/v9/market"
 	"github.com/filecoin-project/lotus/chain/types"
 	"github.com/filecoin-project/lotus/chain/wallet"
-	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
-	"github.com/multiformats/go-multiaddr"
-	"golang.org/x/xerrors"
 	"time"
 )
 
@@ -64,7 +57,6 @@ func (i *UnsignedDealMakerProcessor) makeUnsignedStorageDeal(content *model.Cont
 	// any error here, fail the content
 	var minerAddress = i.GetAssignedMinerForContent(*content).Address
 	var filClient, err = i.GetAssignedFilclientForContent(*content)
-	//var WallerSigner, err = i.GetAssignedWalletForContent(*content)
 	var dealProposal = i.GetDealProposalForContent(*content)
 
 	if err != nil {
@@ -230,79 +222,4 @@ func (i *UnsignedDealMakerProcessor) GetStorageProviders() []MinerAddress {
 		storageProviders = append(storageProviders, MinerAddress{Address: a})
 	}
 	return storageProviders
-}
-
-// Sending a proposal to the peer.
-func (i *UnsignedDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool) (bool, error) {
-	// Create an auth token to be used in the request
-	authToken, err := httptransport.GenerateAuthToken()
-	if err != nil {
-		return false, xerrors.Errorf("generating auth token for deal: %w", err)
-	}
-
-	rootCid := netprop.Piece.Root
-	size := netprop.Piece.RawBlockSize
-	var announceAddr multiaddr.Multiaddr
-
-	if len(i.LightNode.Node.Config.AnnounceAddrs) == 0 {
-		return false, xerrors.Errorf("cannot serve deal data: no announce address configured for estuary node")
-	}
-
-	addrstr := i.LightNode.Node.Config.AnnounceAddrs[1] + "/p2p/" + i.LightNode.Node.Host.ID().String()
-	announceAddr, err = multiaddr.NewMultiaddr(addrstr)
-	if err != nil {
-		return false, xerrors.Errorf("cannot parse announce address '%s': %w", addrstr, err)
-	}
-
-	// Add an auth token for the data to the auth DB
-	err = i.LightNode.FilClient.Libp2pTransferMgr.PrepareForDataRequest(ctx, dbid, authToken, propCid, rootCid, size)
-	if err != nil {
-		return false, xerrors.Errorf("preparing for data request: %w", err)
-	}
-
-	// Send the deal proposal to the storage provider
-	transferParams, err := json.Marshal(boosttypes.HttpRequest{
-		URL: "libp2p://" + announceAddr.String(),
-		Headers: map[string]string{
-			"Authorization": httptransport.BasicAuthHeader("", authToken),
-		},
-	})
-
-	// Send the deal proposal to the storage provider
-	var propPhase bool
-	//var err error
-	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
-		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
-			ctx, netprop,
-			fc.ProposalV120WithDealUUID(dealUUID),
-			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
-			fc.ProposalV120WithOffline(true),
-			fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
-			fc.ProposalV120WithTransfer(smtypes.Transfer{
-				Type:     "libp2p",
-				ClientID: fmt.Sprintf("%d", dbid),
-				Params:   transferParams,
-				Size:     netprop.Piece.RawBlockSize,
-			}),
-		)
-	} else {
-		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
-			ctx, netprop,
-			fc.ProposalV120WithDealUUID(dealUUID),
-			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
-			fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
-			fc.ProposalV120WithTransfer(smtypes.Transfer{
-				Type:     "libp2p",
-				ClientID: fmt.Sprintf("%d", dbid),
-				Params:   transferParams,
-				Size:     netprop.Piece.RawBlockSize,
-			}),
-		)
-	}
-
-	if err != nil {
-		i.LightNode.FilClient.Libp2pTransferMgr.CleanupPreparedRequest(i.Context, dbid, authToken)
-	}
-
-	return propPhase, err
 }

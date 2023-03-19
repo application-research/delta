@@ -132,7 +132,6 @@ func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /admin/wallet/register [post]
-
 func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -178,6 +177,19 @@ func handleAdminCreateWallet(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
+// handleAdminRegisterWalletWithHex It creates a new wallet and saves it to the database
+// @Summary It creates a new wallet and saves it to the database
+// @Description It creates a new wallet and saves it to the database
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Param address path string true "address"
+// @Param key_type path string true "key_type"
+// @Param private_key path string true "private_key"
+// @Success 200 {object} AddWalletRequest
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/wallet/register-hex [post]
 func handleAdminRegisterWalletWithHex(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -210,9 +222,19 @@ func handleAdminRegisterWalletWithHex(node *core.DeltaNode) func(c echo.Context)
 	}
 }
 
-// Creating a new wallet address and saving it to the database.
-// `handleAdminRegisterWallet` is a function that takes a `DeltaNode` and returns a function that takes an `echo.Context`
-// and returns an `error`
+// handleAdminRegisterWallet It creates a new wallet and saves it to the database
+// @Summary It creates a new wallet and saves it to the database
+// @Description It creates a new wallet and saves it to the database
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Param address path string true "address"
+// @Param key_type path string true "key_type"
+// @Param private_key path string true "private_key"
+// @Success 200 {object} AddWalletRequest
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/wallet/register [post]
 func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -263,10 +285,19 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 	}
 }
 
-// It takes the authorization header from the request, splits it into two parts, and then uses the second part to find all
-// wallets owned by the user
-// `handleAdminListWallets` is a function that takes a `DeltaNode` and returns a function that takes an `echo.Context` and
-// returns an `error`
+// handleAdminRegisterWallet It creates a new wallet and saves it to the database
+// @Summary It creates a new wallet and saves it to the database
+// @Description It creates a new wallet and saves it to the database
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Param address path string true "address"
+// @Param key_type path string true "key_type"
+// @Param private_key path string true "private_key"
+// @Success 200 {object} AddWalletRequest
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /admin/wallet/list [get]
 func handleAdminListWallets(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
