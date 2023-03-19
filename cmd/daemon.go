@@ -68,11 +68,12 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
 				ObjectType: "DeltaStartupLogs",
 				Object: db_models.DeltaStartupLogs{
-					NodeInfo:  core.GetHostname(),
-					OSDetails: runtime.GOARCH + " " + runtime.GOOS,
-					IPAddress: ip,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					NodeInfo:      core.GetHostname(),
+					OSDetails:     runtime.GOARCH + " " + runtime.GOOS,
+					IPAddress:     ip,
+					DeltaNodeUuid: cfg.Node.InstanceUuid,
+					CreatedAt:     time.Now(),
+					UpdatedAt:     time.Now(),
 				},
 			})
 
