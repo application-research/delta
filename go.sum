@@ -96,6 +96,8 @@ github.com/application-research/delta-db v0.0.2-0.20230316225602-077a4d9634d5 h1
 github.com/application-research/delta-db v0.0.2-0.20230316225602-077a4d9634d5/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
 github.com/application-research/delta-db v0.0.2-0.20230319030811-bcf78518a94e h1:kcV437YCi6lxTg9d/DPChR28bxzruc888i5j+zA0JhA=
 github.com/application-research/delta-db v0.0.2-0.20230319030811-bcf78518a94e/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
+github.com/application-research/delta-db v0.0.2-0.20230320045601-b0c6a5f033ee h1:YAZyFz45cfgJCx7YqchI+jFTLvjz/SejP8n/crxJJW8=
+github.com/application-research/delta-db v0.0.2-0.20230320045601-b0c6a5f033ee/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
 github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9 h1:x60eXkdBR8JkyFaxQYsep0cEo7HfwzxrkZ5H5YaYvmk=
 github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9/go.mod h1:QI5TGGs8M43kdVOqOshBLqRwMwnAgdcSODgtyIeQE4o=
 github.com/application-research/whypfs-core v0.1.1 h1:BY40N15Ge9BlyAT3f4T4B/CAlaL7A1RYaRrNS3HIyEk=
