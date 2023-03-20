@@ -299,9 +299,9 @@ func ValidateRequestBody() echo.MiddlewareFunc {
 // ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
 
-	ip, err := core.GetPublicIP()
-	if err != nil {
-		log.Error(err)
+	ip, errP := core.GetPublicIP()
+	if errP != nil {
+		log.Error(errP)
 	}
 
 	s := struct {
@@ -322,9 +322,9 @@ func ErrorHandler(err error, c echo.Context) {
 		ErrorDetails: err.Error(),
 	}
 
-	b, err := json.Marshal(s)
-	if err != nil {
-		log.Error(err)
+	b, errM := json.Marshal(s)
+	if errM != nil {
+		log.Error(errM)
 	}
 
 	// It's sending the error to the log server.

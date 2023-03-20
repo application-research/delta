@@ -1399,7 +1399,7 @@ func ValidateMeta(dealRequest DealRequest) error {
 	if (DealRequest{} != dealRequest) {
 		switch dealRequest.ConnectionMode {
 		case "":
-			dealRequest.ConnectionMode = utils.CONNECTION_MODE_IMPORT
+			dealRequest.ConnectionMode = utils.CONNECTION_MODE_E2E
 		case utils.CONNECTION_MODE_E2E:
 		case utils.CONNECTION_MODE_IMPORT:
 		default:
