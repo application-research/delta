@@ -18,6 +18,3 @@ clean:
 install:
 	install -C -m 0755 delta /usr/local/bin
 
-.PHONY: generate-swagger
-generate-swagger:
-	scripts/swagger/swag.sh
