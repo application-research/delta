@@ -34,6 +34,7 @@ type CreateWalletParam struct {
 }
 
 type ImportWithHexKey struct {
+	WalletParam
 	KeyType    types.KeyType `json:"Type"`
 	PrivateKey string        `json:"PrivateKey"`
 }
@@ -105,7 +106,7 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 	}, nil
 }
 
-func (w WalletService) ImportWithHex(hexKey string) (ImportWalletResult, error) {
+func (w WalletService) ImportWithHex(hexKey string, auth string) (ImportWalletResult, error) {
 	fmt.Println(hexKey)
 	hexString, err := hex.DecodeString(hexKey)
 	if err != nil {
@@ -120,6 +121,9 @@ func (w WalletService) ImportWithHex(hexKey string) (ImportWalletResult, error) 
 
 	}
 	result, err := w.Import(ImportWalletParam{
+		WalletParam: WalletParam{
+			RequestingApiKey: auth,
+		},
 		KeyType:    importWithHexKey.KeyType,
 		PrivateKey: bKey,
 	})

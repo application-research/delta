@@ -204,7 +204,7 @@ func handleAdminRegisterWalletWithHex(node *core.DeltaNode) func(c echo.Context)
 		var hexedKey ImportWalletWithHexRequest
 		c.Bind(&hexedKey)
 
-		importedWallet, err := walletService.ImportWithHex(hexedKey.HexKey)
+		importedWallet, err := walletService.ImportWithHex(hexedKey.HexKey, authParts[1])
 
 		if err != nil {
 			return c.JSON(400, map[string]interface{}{
@@ -297,7 +297,7 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 // @Success 200 {object} AddWalletRequest
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
-// @Router /admin/wallet/list [get]
+// @Router /admin/wallet/register [post]
 func handleAdminListWallets(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
