@@ -227,6 +227,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	// send the proposal.
 	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce)
 
+	// check all errors
 	if err != nil {
 		i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
 			LastMessage: err.Error(),
@@ -240,8 +241,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 		return err
 	}
-	if propPhase == true && err != nil {
 
+	// check proposal phase if true and if there are any errors
+	if propPhase == true && err != nil {
 		if strings.Contains(err.Error(), "failed to send request: stream reset") {
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
 				LastMessage: err.Error(),
@@ -401,16 +403,23 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		return err
 	}
 
+	// if we are here, we have a deal proposal but with errors.
 	if propPhase == false && err != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_SENT, //"deal-proposal-sent",
+			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
 			LastMessage: err.Error(),
 			UpdatedAt:   time.Now(),
 		})
+		return nil
+	} else { // clean deal proposal.
+		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+			Status:      utils.CONTENT_DEAL_PROPOSAL_SENT,
+			LastMessage: utils.CONTENT_DEAL_PROPOSAL_SENT,
+		})
 	}
 
-	if propPhase == false && content.ConnectionMode == "e2e" {
-
+	// if this is e2e, then we need to start the data transfer.
+	if propPhase == false && content.ConnectionMode == utils.CONNECTION_MODE_E2E {
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
 		channelId, err := filClient.StartDataTransfer(i.Context, i.GetAssignedMinerForContent(*content).Address, propCid, contentCid)
@@ -422,9 +431,10 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		}
 
 		content.PieceCommitmentId = pieceComm.ID
-		pieceComm.Status = utils.COMMP_STATUS_COMITTED        //"committed"
-		content.Status = utils.DEAL_STATUS_TRANSFER_STARTED   //"transfer-started"
-		deal.LastMessage = utils.DEAL_STATUS_TRANSFER_STARTED //"transfer-started"
+		pieceComm.Status = utils.COMMP_STATUS_COMITTED           //"committed"
+		content.Status = utils.DEAL_STATUS_TRANSFER_STARTED      //"transfer-started"
+		content.LastMessage = utils.DEAL_STATUS_TRANSFER_STARTED //"transfer-started"
+		deal.LastMessage = utils.DEAL_STATUS_TRANSFER_STARTED    //"transfer-started"
 
 		pieceComm.UpdatedAt = time.Now()
 		content.UpdatedAt = time.Now()
@@ -440,18 +450,20 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		})
 
 	}
-	if propPhase == false && content.ConnectionMode == "import" {
+
+	//	if this is import, then we need to mark the deal as deal_proposal_sent.
+	if propPhase == false && content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
-		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
+		//content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
 		deal.LastMessage = utils.CONTENT_DEAL_PROPOSAL_SENT
 
 		pieceComm.UpdatedAt = time.Now()
-		content.UpdatedAt = time.Now()
+		//content.UpdatedAt = time.Now()
 		deal.UpdatedAt = time.Now()
 
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 			tx.Model(&pieceComm).Where("id = ?", pieceComm.ID).Save(pieceComm)
-			tx.Model(&content).Where("id = ?", content.ID).Save(content)
+			//tx.Model(&content).Where("id = ?", content.ID).Save(content)
 			tx.Model(&deal).Where("id = ?", deal.ID).Save(deal)
 			return nil
 		})
