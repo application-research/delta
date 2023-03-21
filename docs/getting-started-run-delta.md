@@ -158,3 +158,11 @@ ____________________________________O/_______
                                     O\
 ⇨ http server started on [::]:1414
 ```
+
+# Next
+Now that you have the node running, you can start making deals. 
+
+- [Make an e2e deal](make-e2e-deal.md)
+- [Make an import deal](make-import-deal.md)
+
+If you to use an existing live `Delta` node, go to [getting started using a live delta node](getting-started-use-delta.md).
