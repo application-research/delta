@@ -80,16 +80,15 @@ If it return the following, then the API server is working
 ```
 
 # More information
-
-- To get started on running delta, go to the [getting started to run delta](https://delta.estuary.tech/docs/get-started-run-delta)
-- To get started on using a live delta instance, go to the [getting started to use delta](https://delta.estuary.tech/docs/get-started-use-delta)
-- To learn more about deployment modes, go to the [deployment modes](https://delta.estuary.tech/docs/deployment-modes)
-- To manage wallets, go to the [managing wallets](https://delta.estuary.tech/docs/manage-wallets)
-- To make an end-to-end deal, go to the [make e2e deals](https://delta.estuary.tech/docs/make-e2e-deal)
-- To make an import deal, go to the [make import deals](https://delta.estuary.tech/docs/make-import-deal)
-- To learn how to repair a deal, go to the [repairing and retrying deals](https://delta.estuary.tech/docs/repair)
-- To learn how to access the open statistics and information, go to the [open statistics and information](https://delta.estuary.tech/docs/open-stats-info)
-- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](https://delta.estuary.tech/docs/deal-status)
+- To get started on running delta, go to the [getting started to run delta](docs/getting-started-run-delta.md)
+- To get started on using a live delta instance, go to the [getting started to use delta](docs/getting-started-run-delta.md)
+- To learn more about deployment modes, go to the [deployment modes](docs/deployment-modes.md)
+- To manage wallets, go to the [managing wallets](docs/manage-wallets.md)
+- To make an end-to-end deal, go to the [make e2e deals](docs/make-e2e-deal.md)
+- To make an import deal, go to the [make import deals](docs/make-import-deal.md)
+- To learn how to repair a deal, go to the [repairing and retrying deals](docs/repair.md)
+- To learn how to access the open statistics and information, go to the [open statistics and information](docs/open-stats-info.md)
+- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](docs/deal-status.md))
 
 ## Author
 Protocol Labs Outercore Engineering.
