@@ -79,9 +79,9 @@ If it return the following, then the API server is working
 {"name":"stg-deal-maker","description":"Experimental Deal Maker","type":"delta-main"}
 ```
 
-# More information
+# Getting Started with `Delta`
 - To get started on running delta, go to the [getting started to run delta](docs/getting-started-run-delta.md)
-- To get started on using a live delta instance, go to the [getting started to use delta](docs/getting-started-run-delta.md)
+- To get started on using a live delta instance, go to the [getting started to use delta](docs/getting-started-use-delta.md)
 - To learn more about deployment modes, go to the [deployment modes](docs/deployment-modes.md)
 - To get estuary api key, go to the [estuary api keys](docs/getting-estuary-api-key.md)
 - To manage wallets, go to the [managing wallets](docs/manage-wallets.md)
@@ -89,7 +89,7 @@ If it return the following, then the API server is working
 - To make an import deal, go to the [make import deals](docs/make-import-deal.md)
 - To learn how to repair a deal, go to the [repairing and retrying deals](docs/repair.md)
 - To learn how to access the open statistics and information, go to the [open statistics and information](docs/open-stats-info.md)
-- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](docs/deal-status.md))
+- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](docs/deal-status.md)
 
 ## Author
 Protocol Labs Outercore Engineering.

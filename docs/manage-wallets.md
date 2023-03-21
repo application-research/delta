@@ -10,7 +10,7 @@ To register a wallet to a live Delta node, we can use the `/admin/wallet/registe
 curl --location --request POST 'http://localhost:1414/admin/wallet/register-hex' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --header 'Content-Type: application/json' \
---data-raw '{"hex_key":"<HEX FROM LOTUS / BOOSTD WALELT EXPORT>"}'
+--data-raw '{"hex_key":"<HEX FROM LOTUS / BOOSTD WALLET EXPORT>"}'
 ```
 
 ## Response

@@ -105,7 +105,7 @@ To register a wallet to a live Delta node, we can use the `/admin/wallet/registe
 curl --location --request POST 'http://localhost:1414/admin/wallet/register-hex' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --header 'Content-Type: application/json' \
---data-raw '{"hex_key":"<HEX FROM LOTUS / BOOSTD WALELT EXPORT>"}'
+--data-raw '{"hex_key":"<HEX FROM LOTUS / BOOSTD WALLET EXPORT>"}'
 ```
 
 
@@ -140,3 +140,9 @@ Once a wallet is registered, we can add a `wallet` field to the `metadata` reque
     "skip_ipni_announce": true
 }
 ```
+
+# Next
+Now that we can make an import deal, we can move on to the next step
+- [Make an e2e deal](make-e2e-deal.md)
+- [Check the status of your deal](deal-status.md)
+- [Learn how to repair a deal](repair.md)
