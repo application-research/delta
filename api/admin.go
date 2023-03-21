@@ -4,6 +4,9 @@ import (
 	"context"
 	"delta/core"
 	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/lotus/chain/types"
@@ -22,6 +25,11 @@ type AddWalletRequest struct {
 type ImportWalletRequest struct {
 	KeyType    string `json:"key_type"`
 	PrivateKey string `json:"private_key"`
+}
+
+type ImportWalletRequestHex struct {
+	KeyType    string `json:"Type"`
+	PrivateKey string `json:"PrivateKey"`
 }
 
 type ImportWalletWithHexRequest struct {
@@ -204,7 +212,28 @@ func handleAdminRegisterWalletWithHex(node *core.DeltaNode) func(c echo.Context)
 		var hexedKey ImportWalletWithHexRequest
 		c.Bind(&hexedKey)
 
-		importedWallet, err := walletService.ImportWithHex(hexedKey.HexKey, authParts[1])
+		hexString, err := hex.DecodeString(hexedKey.HexKey)
+
+		fmt.Println(hexString)
+		if err != nil {
+			panic(err)
+		}
+		var importWithHexKey ImportWalletRequestHex
+		json.Unmarshal(hexString, &importWithHexKey)
+		fmt.Println(importWithHexKey.KeyType)
+
+		decodedPrivateKey, err := base64.StdEncoding.DecodeString(importWithHexKey.PrivateKey)
+		if err != nil {
+			panic(err)
+		}
+
+		importedWallet, err := walletService.Import(core.ImportWalletParam{
+			WalletParam: core.WalletParam{
+				RequestingApiKey: authParts[1],
+			},
+			KeyType:    types.KeyType(importWithHexKey.KeyType),
+			PrivateKey: decodedPrivateKey,
+		})
 
 		if err != nil {
 			return c.JSON(400, map[string]interface{}{
@@ -255,10 +284,10 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 				"message": "key_type and private_key are required",
 			})
 		}
-		decodedPrivateKey, err := base64.StdEncoding.DecodeString(importWalletRequest.PrivateKey)
+		encodedPrivateKey, err := base64.StdEncoding.DecodeString(importWalletRequest.PrivateKey)
 		if err != nil {
 			return c.JSON(400, map[string]interface{}{
-				"message": "failed to decode private key",
+				"message": "invalid private key",
 				"error":   err.Error(),
 			})
 		}
@@ -267,7 +296,7 @@ func handleAdminRegisterWallet(node *core.DeltaNode) func(c echo.Context) error 
 				RequestingApiKey: authParts[1],
 			},
 			KeyType:    types.KeyType(importWalletRequest.KeyType),
-			PrivateKey: decodedPrivateKey,
+			PrivateKey: encodedPrivateKey,
 		})
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{

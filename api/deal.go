@@ -6,7 +6,6 @@ import (
 	"delta/core"
 	"delta/jobs"
 	"delta/utils"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
@@ -310,28 +309,6 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 			dealRequest.Miner = contentMinerAssignment.Miner
 		}
 
-		// 	assign a wallet_estuary
-		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
-			var hexedWallet WalletRequest
-			hexedWallet.KeyType = dealRequest.Wallet.KeyType
-			hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
-			walletByteArr, err := json.Marshal(hexedWallet)
-
-			if err != nil {
-				return errors.New("Error encoding the wallet")
-			}
-			contentWalletAssignment := model.ContentWallet{
-				Wallet:    string(walletByteArr),
-				Content:   content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
-			node.DB.Create(&contentWalletAssignment)
-			dealRequest.Wallet = WalletRequest{
-				KeyType: contentWalletAssignment.Wallet,
-			}
-		}
-
 		if (WalletRequest{} != dealRequest.Wallet) {
 
 			// get wallet from wallets database
@@ -353,7 +330,6 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 			var hexedWallet WalletRequest
 			hexedWallet.KeyType = wallet.KeyType
 			hexedWallet.PrivateKey = wallet.PrivateKey
-			walletByteArr, err := json.Marshal(hexedWallet)
 
 			if err != nil {
 				return errors.New("Error encoding the wallet")
@@ -361,7 +337,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 
 			// assign the wallet to the content
 			contentWalletAssignment := model.ContentWallet{
-				Wallet:    string(walletByteArr),
+				WalletId:  wallet.ID,
 				Content:   content.ID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
@@ -532,27 +508,6 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	// 	assign a wallet_estuary
-	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
-		var hexedWallet WalletRequest
-		hexedWallet.KeyType = dealRequest.Wallet.KeyType
-		hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
-		walletByteArr, err := json.Marshal(hexedWallet)
-
-		if err != nil {
-			return errors.New("Error encoding the wallet")
-		}
-		contentWalletAssignment := model.ContentWallet{
-			Wallet:    string(walletByteArr),
-			Content:   content.ID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		node.DB.Create(&contentWalletAssignment)
-		dealRequest.Wallet = WalletRequest{
-			KeyType: contentWalletAssignment.Wallet,
-		}
-	}
-
 	if (WalletRequest{} != dealRequest.Wallet) {
 
 		// get wallet from wallets database
@@ -574,7 +529,6 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = wallet.KeyType
 		hexedWallet.PrivateKey = wallet.PrivateKey
-		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
 			return errors.New("Error encoding the wallet")
@@ -582,7 +536,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 		// assign the wallet to the content
 		contentWalletAssignment := model.ContentWallet{
-			Wallet:    string(walletByteArr),
+			WalletId:  wallet.ID,
 			Content:   content.ID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -756,28 +710,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealRequest.Miner = contentMinerAssignment.Miner
 	}
 
-	// 	assign a wallet_estuary
-	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
-		var hexedWallet WalletRequest
-		hexedWallet.KeyType = dealRequest.Wallet.KeyType
-		hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
-		walletByteArr, err := json.Marshal(hexedWallet)
-
-		if err != nil {
-			return errors.New("Error encoding the wallet")
-		}
-		contentWalletAssignment := model.ContentWallet{
-			Wallet:    string(walletByteArr),
-			Content:   content.ID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		node.DB.Create(&contentWalletAssignment)
-		dealRequest.Wallet = WalletRequest{
-			KeyType: contentWalletAssignment.Wallet,
-		}
-	}
-
 	if (WalletRequest{} != dealRequest.Wallet) {
 
 		// get wallet from wallets database
@@ -799,7 +731,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = wallet.KeyType
 		hexedWallet.PrivateKey = wallet.PrivateKey
-		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
 			return errors.New("Error encoding the wallet")
@@ -807,7 +738,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 		// assign the wallet to the content
 		contentWalletAssignment := model.ContentWallet{
-			Wallet:    string(walletByteArr),
+			WalletId:  wallet.ID,
 			Content:   content.ID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -973,28 +904,6 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		dealRequest.Miner = contentMinerAssignment.Miner
 	}
 
-	// 	assign a wallet_estuary
-	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
-		var hexedWallet WalletRequest
-		hexedWallet.KeyType = dealRequest.Wallet.KeyType
-		hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
-		walletByteArr, err := json.Marshal(hexedWallet)
-
-		if err != nil {
-			return errors.New("Error parsing the wallet")
-		}
-		contentWalletAssignment := model.ContentWallet{
-			Wallet:    string(walletByteArr),
-			Content:   content.ID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		node.DB.Create(&contentWalletAssignment)
-		dealRequest.Wallet = WalletRequest{
-			KeyType: contentWalletAssignment.Wallet,
-		}
-	}
-
 	if (WalletRequest{} != dealRequest.Wallet) {
 
 		// get wallet from wallets database
@@ -1015,7 +924,6 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		var hexedWallet WalletRequest
 		hexedWallet.KeyType = wallet.KeyType
 		hexedWallet.PrivateKey = wallet.PrivateKey
-		walletByteArr, err := json.Marshal(hexedWallet)
 
 		if err != nil {
 			return errors.New("Error encoding the wallet")
@@ -1023,7 +931,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 
 		// assign the wallet to the content
 		contentWalletAssignment := model.ContentWallet{
-			Wallet:    string(walletByteArr),
+			WalletId:  wallet.ID,
 			Content:   content.ID,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -1192,27 +1100,6 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 
 		// 	assign a wallet_estuary
-		if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.KeyType != "") {
-			var hexedWallet WalletRequest
-			hexedWallet.KeyType = dealRequest.Wallet.KeyType
-			hexedWallet.PrivateKey = hex.EncodeToString([]byte(dealRequest.Wallet.PrivateKey))
-			walletByteArr, err := json.Marshal(hexedWallet)
-
-			if err != nil {
-				return errors.New("Wallet could not be encoded")
-			}
-			contentWalletAssignment := model.ContentWallet{
-				Wallet:    string(walletByteArr),
-				Content:   content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
-			node.DB.Create(&contentWalletAssignment)
-			dealRequest.Wallet = WalletRequest{
-				KeyType: contentWalletAssignment.Wallet,
-			}
-		}
-
 		if (WalletRequest{} != dealRequest.Wallet) {
 
 			// get wallet from wallets database
@@ -1233,7 +1120,6 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 			var hexedWallet WalletRequest
 			hexedWallet.KeyType = wallet.KeyType
 			hexedWallet.PrivateKey = wallet.PrivateKey
-			walletByteArr, err := json.Marshal(hexedWallet)
 
 			if err != nil {
 				return errors.New("Error encoding the wallet")
@@ -1241,7 +1127,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 
 			// assign the wallet to the content
 			contentWalletAssignment := model.ContentWallet{
-				Wallet:    string(walletByteArr),
+				WalletId:  wallet.ID,
 				Content:   content.ID,
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),

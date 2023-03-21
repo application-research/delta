@@ -184,12 +184,9 @@ func (i *SignedDealMakerProcessor) GetAssignedFilclientForContent(content model.
 
 	if storageWalletAssignment.ID != 0 {
 		newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
-
-		var walletMeta WalletMeta
-
-		json.Unmarshal([]byte(storageWalletAssignment.Wallet), &walletMeta)
-		unhexPkey, err := hex.DecodeString(walletMeta.PrivateKey)
-		decodedPkey, err := base64.StdEncoding.DecodeString(string(unhexPkey))
+		var wallet model.Wallet
+		i.LightNode.DB.Model(&model.Wallet{}).Where("id = ?", storageWalletAssignment.WalletId).Find(&wallet)
+		decodedPkey, err := base64.StdEncoding.DecodeString(wallet.PrivateKey)
 
 		if err != nil {
 			fmt.Println("error on unhex", err)
@@ -197,7 +194,7 @@ func (i *SignedDealMakerProcessor) GetAssignedFilclientForContent(content model.
 		}
 
 		newWalletAddr, err := newWallet.WalletImport(context.Background(), &types.KeyInfo{
-			Type:       types.KeyType(walletMeta.KeyType),
+			Type:       types.KeyType(wallet.KeyType),
 			PrivateKey: decodedPkey,
 		})
 

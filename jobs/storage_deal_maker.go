@@ -5,7 +5,6 @@ import (
 	"delta/core"
 	"delta/utils"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
@@ -496,20 +495,22 @@ func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model
 
 	if storageWalletAssignment.ID != 0 {
 		newWallet, err := wallet.NewWallet(wallet.NewMemKeyStore())
-
-		var walletMeta WalletMeta
-
-		json.Unmarshal([]byte(storageWalletAssignment.Wallet), &walletMeta)
-		unhexPkey, err := hex.DecodeString(walletMeta.PrivateKey)
-		decodedPkey, err := base64.StdEncoding.DecodeString(string(unhexPkey))
-
 		if err != nil {
-			fmt.Println("error on unhex", err)
+			fmt.Println("error on new wallet", err)
+			return nil, err
+		}
+
+		// get the wallet entry
+		var wallet model.Wallet
+		i.LightNode.DB.Model(&model.Wallet{}).Where("id = ?", storageWalletAssignment.WalletId).Find(&wallet)
+		decodedPkey, err := base64.StdEncoding.DecodeString(wallet.PrivateKey)
+		if err != nil {
+			fmt.Println("error on base64 decode", err)
 			return nil, err
 		}
 
 		newWalletAddr, err := newWallet.WalletImport(context.Background(), &types.KeyInfo{
-			Type:       types.KeyType(walletMeta.KeyType),
+			Type:       types.KeyType(wallet.KeyType),
 			PrivateKey: decodedPkey,
 		})
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -107,7 +108,6 @@ func (w WalletService) Create(param CreateWalletParam) (AddWalletResult, error) 
 }
 
 func (w WalletService) ImportWithHex(hexKey string, auth string) (ImportWalletResult, error) {
-	fmt.Println(hexKey)
 	hexString, err := hex.DecodeString(hexKey)
 	if err != nil {
 		panic(err)
@@ -139,7 +139,7 @@ func (w WalletService) Import(param ImportWalletParam) (ImportWalletResult, erro
 		return ImportWalletResult{}, err
 	}
 
-	hexedWallet := hex.EncodeToString(param.PrivateKey)
+	hexedWallet := base64.StdEncoding.EncodeToString(param.PrivateKey)
 
 	address, err := newWallet.WalletImport(w.Context, &types.KeyInfo{
 		Type:       param.KeyType,
@@ -199,4 +199,10 @@ func (w WalletService) Get(param GetWalletParam) (model.Wallet, error) {
 	var wallet model.Wallet
 	w.DeltaNode.DB.Model(&model.Wallet{}).Where("owner = ? and addr = ?", param.RequestingApiKey, param.Address).Find(&wallet)
 	return wallet, nil
+}
+
+func (w WalletService) GetTokenHash(key string) string {
+	tokenHashBytes := sha256.Sum256([]byte(key))
+	// needs to be URL-encodable to send revoke token requests by hash
+	return base64.RawURLEncoding.EncodeToString(tokenHashBytes[:])
 }
