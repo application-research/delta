@@ -9,3 +9,4 @@ Every request that goes thru Delta API is logged. This logged message is then se
 process collects it and persist is on a timescaleDB.
 
 
+![image](https://user-images.githubusercontent.com/4479171/226726850-59828c4a-dba8-4082-877a-12efd9474641.png)
