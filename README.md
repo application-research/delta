@@ -1,23 +1,14 @@
 # Δ Delta
-Generic DealMaking MicroService using whypfs + filclient + estuary_auth
+Filecoin Storage Deal Making Service
 
 ![image](https://user-images.githubusercontent.com/4479171/218267752-9a7af133-4e36-4f4c-95da-16b3c7bd73ae.png)
 
+For more information, check out the [docs](https://delta.estuary.tech/docs/overview)
 
-## Features
-- Creates a deal for large files. The recommended size is 1GB.
-- Shows all the deals made for specific user
+## Quick set-up: Build and Run Delta
 
-This is strictly a deal-making service. It'll pin the files/CIDs but it won't keep the files. Once a deal is made, the CID will be removed from the blockstore. For retrievals, use the retrieval-deal microservice.
+Copy the `.env.example` file to `.env` and update the values as needed.
 
-## Process Flow
-- client upload files or specifies a pre-computed piece_commitments
-- service queues the request for content or commp
-- dispatcher runs every N seconds to check the request
-
-## Configuration
-
-Create the .env file in the root directory of the project. The following are the required fields.
 ```
 # Node info
 NODE_NAME=stg-deal-maker
@@ -33,7 +24,7 @@ DB_DSN=delta.db
 MAX_CLEANUP_WORKERS=1500
 ```
 
-Running this the first time will generate a wallet. Make sure to get FIL from the [faucet](https://verify.glif.io/) and fund the wallet
+Running this the first time will generate a wallet. Make sure to get FIL/DataCap from the [faucet](https://verify.glif.io/) and fund the wallet
 
 ## Install the following pre-req
 - go 1.18
@@ -70,235 +61,35 @@ docker build -t delta .
 docker run -it --rm -p 1414:1414 delta --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
-## Standalone mode
-By default, delta will run on cluster mode but users can standup a `standalone`mode. `standalone` mode primarily for those who want to run delta in an isolated environment. This mode will create a local database and a local static API key for all requests.
+## Running Delta
 ```
 ./delta daemon --mode=standalone
-...
-Your Standalone API key is:  DELc4d43054-b6d7-11ed-a08a-9e0bf0c70138TA
 ```
 
-## Cluster mode
-By default, delta will run on cluster mode. This mode will create a local database that can be reconfigured to use a remote HA database and estuary-auth as the authentication and authorizatio component.
-
-When running in cluster mode, users need to register for an ESTUARY_API_KEY using the following command.
-```
-curl --location --request GET 'https://auth.estuary.tech/register-new-token'
-
-...
-{
-    "expires": "2123-02-03T21:12:15.632368998Z",
-    "token": "<ESTUARY_API_KEY>"
-}
-```
-
-## REST API Endpoints
-
-### Node information
-To get the node information, use the following endpoints
+## Test the API server
+Try the following endpoints to test the API server
 ```
 curl --location --request GET 'http://localhost:1414/open/node/info'
 curl --location --request GET 'http://localhost:1414/open/node/peers'
 curl --location --request GET 'http://localhost:1414/open/node/host'
 ```
 
-### Upload a file
-Use the following endpoint to upload a file. The process will automatically compute the piece size and initiate the deal proposal
-and transfer
-- miner is required
-- connection_mode is optional. Default is `e2e` (formerly known as online deals)
-
+If it return the following, then the API server is working
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---form 'data=@"/Users/alvinreyes/Downloads/baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car"' \
---form 'metadata="{\"miner\":\"f01963614\",\"connection_mode\":\"e2e\"}"'
+{"name":"stg-deal-maker","description":"Experimental Deal Maker","type":"delta-main"}
 ```
 
-### Import mode (formerly known as offline deal)
-Use the following endpoint to upload a file with a specific miner, duration, piece size and connection mode.
-```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitment' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "miner":"f01963614",
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "import",
-    "size": 2500366291,
-    "remove_unsealed_copies":true, 
-    "skip_ipni_announce": true
-}'
-```
+# More information
+- To get started on running delta, go to the [getting started to run delta](docs/getting-started-run-delta.md)
+- To get started on using a live delta instance, go to the [getting started to use delta](docs/getting-started-run-delta.md)
+- To learn more about deployment modes, go to the [deployment modes](docs/deployment-modes.md)
+- To get estuary api key, go to the [estuary api keys](docs/getting-estuary-api-key.md)
+- To manage wallets, go to the [managing wallets](docs/manage-wallets.md)
+- To make an end-to-end deal, go to the [make e2e deals](docs/make-e2e-deal.md)
+- To make an import deal, go to the [make import deals](docs/make-import-deal.md)
+- To learn how to repair a deal, go to the [repairing and retrying deals](docs/repair.md)
+- To learn how to access the open statistics and information, go to the [open statistics and information](docs/open-stats-info.md)
+- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](docs/deal-status.md))
 
-### Batch Import mode (formerly known as offline deals)
-The request body is an array of objects. The following is an example of a batch import request.
-```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitments' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---header 'Content-Type: application/json' \
---data-raw '[{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "miner":"f01963614",
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "import",
-    "size": 2500366291,
-    "remove_unsealed_copies":true, 
-    "skip_ipni_announce": true
-},
-{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "miner":"f01963614",
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "import",
-    "size": 2500366291,
-    "remove_unsealed_copies":true, 
-    "skip_ipni_announce": true
-},
-{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "miner":"f01963614",
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "import",
-    "size": 2500366291,
-    "remove_unsealed_copies":true, 
-    "skip_ipni_announce": true
-}]'
-```
-
-### Stats (content, commps and deals)
-```
-curl --location --request GET 'http://localhost:1414/api/v1/stats' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
-```
-
-### Stats of a specific content
-When you upload, it returns a content id, use that to get the stats of a specific content
-```
-curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]'
-```
-### Import a wallet and use it to make a deal
-```
-curl --location --request POST 'http://localhost:1414/admin/wallet/register' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---header 'Content-Type: application/json' \
---data-raw '{
-"key_type":"bls",
-"private_key":"<private_key>"
-}'
-```
-
-Get the response and use the wallet id to make a deal
-```
-{
-    "message": "Successfully imported a wallet address. Please take note of the following information.",
-    "wallet_addr": "<public address>",
-    "wallet_uuid": "ca7c3690-b714-11ed-b97a-9e0bf0c70138"
-}
-```
-
-### Make a deal using the registered wallet
-```
-curl --location --request POST 'http://shuttle-4-bs1.estuary.tech:1414/api/v1/deal/piece-commitments' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
---header 'Content-Type: application/json' \
---data-raw '[{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "miner":"f01963614",
-    "wallet": {
-        "address":"<public address after registering>",
-    },
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "import",
-    "size": 2500366291,
-    "remove_unsealed_copies":true, 
-    "skip_ipni_announce": true
-}]'
-```
-
-## CLI
-### Get the commp of a file using commp cli
-```
-./delta commp --file=<>
-```
-
-### Get the commp of a CAR file using commp cli
-```
-./delta commp-car --file=<>
-```
-
-if you want to get the commp of a CAR file for offline deal, use the following command
-```
-./delta commp-car --file=<> --for-import
-```
-The output will be as follows
-```
-{
-    "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-    "wallet": {},
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-        "padded_piece_size": 4294967296
-    },
-    "connection_mode": "import",
-    "size": 2500366291
-}
-```
-
-### Get the commp of a CAR file using commp cli and pass to the delta api to make an offline deal
-```
-./delta commp-car --file=baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq.car --for-import --delta-api-url=http://localhost:1414 --delta-api-key=[ESTUARY_API_KEY]
-```
-
-Output
-```
-{
-   "status":"success",
-   "message":"File uploaded and pinned successfully",
-   "content_id":208,
-   "piece_commitment_id":172,
-   "meta":{
-      "cid":"bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-      "wallet":{
-         
-      },
-      "piece_commitment":{
-         "piece_cid":"baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-         "padded_piece_size":4294967296,
-         "unpadded_piece_size":4261412864
-      },
-      "connection_mode":"import",
-      "size":2500366291
-   }
-}
-```
-
-### Stats (content, commps and deals)
-```
-curl --location --request GET 'http://localhost:1414/api/v1/stats' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
-```
-
-### Stats of a specific content
-When you upload, it returns a content id, use that to get the stats of a specific content
-```
-curl --location --request GET 'http://localhost:1414/api/v1/stats/content/1' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]'
-```
+## Author
+Protocol Labs Outercore Engineering.
