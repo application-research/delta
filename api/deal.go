@@ -451,7 +451,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		connMode = "e2e"
 	}
 
-	node.DB.Transaction(func(tx *gorm.DB) error {
+	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 		// let's create a commp but only if we have
 		// a cid, a piece_cid, a padded_piece_size, size
 		var pieceCommp model.PieceCommitment
@@ -617,6 +617,10 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 		return nil
 	})
+
+	if errTxn != nil {
+		return errors.New("Error creating the content record" + " " + errTxn.Error())
+	}
 	return nil
 }
 
@@ -662,7 +666,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	// wrap in a transaction so we can rollback if something goes wrong
-	node.DB.Transaction(func(tx *gorm.DB) error {
+	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 
 		// let's create a commp but only if we have
 		// a cid, a piece_cid, a padded_piece_size, size
@@ -798,10 +802,6 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		// deal proposal parameters
 		node.DB.Create(&dealProposalParam)
 
-		if err != nil {
-			return errors.New("Error pinning the file")
-		}
-
 		var dispatchJobs core.IProcessor
 		if pieceCommp.ID != 0 {
 			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
@@ -824,7 +824,12 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		// return transaction
 		return nil
 	})
+
+	if errTxn != nil {
+		return errors.New("Error creating the content record" + " " + errTxn.Error())
+	}
 	// return handler
+
 	return nil
 }
 
