@@ -1,0 +1,5 @@
+# Deployment modes
+
+## Standalone
+
+## Cluster
