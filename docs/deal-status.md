@@ -6,13 +6,19 @@ In this section, we will walk you through the steps to use a Delta node to get t
 
 # Content Lifecycle
 When `Delta` accepts a deal request, it will go through the following steps:
-1. `Delta` will create a content record in its database.
-2. `Delta` will create a deal proposal record in its database.
-3. `Delta` will create a deal record in its database.
-4. `Delta` will send the deal proposal to the Storage Provider.
-5. `Delta` will send the data to the Storage Provider.
-6. `Delta` will wait for the Storage Provider to finish the deal.
-7. `Delta` will update the deal record in its database.
+1. `Delta` will pin the content to the light node.
+2. `Delta` will create a content record in its database.
+3. `Delta` will create a miner assignment to a content record in its database.
+4. `Delta` will create a wallet assignment to a content record in its database.
+5. `Delta` will create a piece commitment record in its database.
+6. `Delta` will compute the piece commitment of the content.
+7. `Delta` will create a deal proposal parameters record in its database.
+8. `Delta` will create a deal proposal record in its database.
+9. `Delta` will send the deal proposal to the Storage Provider.
+10. If it's an `import` deal, there will be no data transfer and the final status will be `deal-proposal-sent`.
+11. If it's an `e2e` deal, `Delta` will send the data to the Storage Provider.
+    1. `Delta` will wait for the Storage Provider to finish the deal.
+    2. `Delta` will update the deal record in its database.
 
 Over the course of the deal, `Delta` will update the status of the deal in its database. We can use this information to get the status of the deal.
 
