@@ -4,6 +4,8 @@ Delta is a deal-making service that enables users to make deals with Storage Pro
 
 In this section, we will walk you through the steps to use a Delta node to get the status of a deal.
 
+![image](https://user-images.githubusercontent.com/4479171/226716467-e8f7b2b5-d5e8-4d19-8b53-31889422ea5c.png)
+
 # Content Lifecycle
 When `Delta` accepts a deal request, it will go through the following steps:
 1. `Delta` will pin the content to the light node.
