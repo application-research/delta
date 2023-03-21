@@ -24,6 +24,7 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 - To get started on running delta, go to the [getting started to run delta](getting-started-run-delta.md)
 - To get started on using a live delta instance, go to the [getting started to use delta](getting-started-run-delta.md)
 - To learn more about deployment modes, go to the [deployment modes](deployment-modes.md)
+- To get estuary api key, go to the [estuary api keys](getting-estuary-api-key.md)
 - To manage wallets, go to the [managing wallets](manage-wallets.md)
 - To make an end-to-end deal, go to the [make e2e deals](make-e2e-deal.md)
 - To make an import deal, go to the [make import deals](make-import-deal.md)
