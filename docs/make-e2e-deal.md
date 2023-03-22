@@ -57,7 +57,7 @@ The response will look like this:
     "status": "success",
     "message": "File uploaded and pinned successfully",
     "content_id": 1,
-    "request_meta": {
+    "deal_request_meta": {
         "cid": "bafybeib6l6odanq5zrspbw4c7fys4jspshgwzuuhotnpljsivhdythw6xu",
         "miner": "f02031042",
         "wallet": {

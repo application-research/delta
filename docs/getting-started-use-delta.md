@@ -60,7 +60,7 @@ The response will look like this:
     "status": "success",
     "message": "File uploaded and pinned successfully",
     "content_id": 1,
-    "request_meta": {
+    "deal_request_meta": {
         "cid": "bafybeib6l6odanq5zrspbw4c7fys4jspshgwzuuhotnpljsivhdythw6xu",
         "miner": "f02031042",
         "wallet": {
@@ -108,7 +108,7 @@ The response will look like this:
         "status": "success",
         "message": "File uploaded and pinned successfully",
         "content_id": 1,
-        "request_meta": {
+        "deal_request_meta": {
             "cid": "bafybeidylyizmuhqny6dj5vblzokmrmgyq5tocssps3nw3g22dnlty7bhy",
             "miner": "f01963614",
             "duration_in_days": 537,
