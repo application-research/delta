@@ -31,6 +31,8 @@ type DeltaConfig struct {
 		EnableWebsocket bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
 		CommpMode       string `env:"COMMP_MODE" envDefault:"filboost"` // option "parallel"
 		StatsCollection bool   `env:"STATS_COLLECTION" envDefault:"true"`
+		Commit          string `env:"COMMIT"`
+		Version         string `env:"VERSION"`
 	}
 
 	Standalone struct {

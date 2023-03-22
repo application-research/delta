@@ -123,11 +123,15 @@ func handleNodeInfo(node *core.DeltaNode) func(c echo.Context) error {
 		nodeName := node.Config.Node.Name
 		nodeDescription := node.Config.Node.Description
 		nodeType := node.Config.Node.Type
+		commit := node.Config.Common.Commit
+		version := node.Config.Common.Version
 
 		return c.JSON(200, map[string]string{
 			"name":        nodeName,
 			"description": nodeDescription,
 			"type":        nodeType,
+			"commit":      commit,
+			"version":     version,
 		})
 	}
 }

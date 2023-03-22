@@ -5,6 +5,7 @@ package main
 import (
 	"delta/cmd"
 	c "delta/config"
+	_ "embed"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli/v2"
 	_ "net/http"
@@ -15,11 +16,16 @@ var (
 	log = logging.Logger("api")
 )
 
+var Commit string
+var Version string
+
 // It initializes the config, gets all the commands, and runs the app.
 func main() {
 
 	// get the config
 	cfg := c.InitConfig()
+	cfg.Common.Commit = Commit
+	cfg.Common.Version = Version
 
 	// get all the commands
 	var commands []*cli.Command
