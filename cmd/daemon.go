@@ -65,17 +65,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			if err != nil {
 				fmt.Println("Error getting public IP:", err)
 			}
-			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-				ObjectType: "DeltaStartupLogs",
-				Object: db_models.DeltaStartupLogs{
-					NodeInfo:      core.GetHostname(),
-					OSDetails:     runtime.GOARCH + " " + runtime.GOOS,
-					IPAddress:     ip,
-					DeltaNodeUuid: cfg.Node.InstanceUuid,
-					CreatedAt:     time.Now(),
-					UpdatedAt:     time.Now(),
-				},
-			})
 
 			fmt.Println(utils.Blue + "Starting Delta daemon..." + utils.Reset)
 			repo := c.String("repo")
@@ -176,10 +165,25 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 By: Protocol Labs - Outercore Engineering
 ` + utils.Reset + utils.Red + "version: v0.0.1" + utils.Reset)
+
+			fmt.Println(utils.Blue + "Reporting Delta startup logs" + utils.Reset)
+			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
+				ObjectType: "DeltaStartupLogs",
+				Object: db_models.DeltaStartupLogs{
+					NodeInfo:      core.GetHostname(),
+					OSDetails:     runtime.GOARCH + " " + runtime.GOOS,
+					IPAddress:     ip,
+					DeltaNodeUuid: cfg.Node.InstanceUuid,
+					CreatedAt:     time.Now(),
+					UpdatedAt:     time.Now(),
+				},
+			})
+			fmt.Println(utils.Blue + "Reporting Delta startup logs... DONE" + utils.Reset)
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
 			fmt.Println("----------------------------------")
 			api.InitializeEchoRouterConfig(ln, *cfg)
+
 			api.LoopForever()
 
 			return nil
