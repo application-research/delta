@@ -164,7 +164,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 (ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)
 
 By: Protocol Labs - Outercore Engineering
-` + utils.Reset + utils.Red + "version: v0.0.1" + utils.Reset)
+` + utils.Reset + utils.Red + "version: " + cfg.Common.Version + utils.Reset)
 
 			fmt.Println(utils.Blue + "Reporting Delta startup logs" + utils.Reset)
 			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
