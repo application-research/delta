@@ -6,7 +6,7 @@ Filecoin Storage Deal Making Service
 ![image](https://user-images.githubusercontent.com/4479171/226853191-e19e8fa4-abc1-4652-970f-d3d6cea0df13.png)
 
 
-For more information, check out the [docs](docs/overview.md)
+For more information, check out the [docs](docs)
 
 ## Quick set-up: Build and Run Delta
 
