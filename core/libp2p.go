@@ -20,7 +20,6 @@ import (
 func SetDataTransferEventsSubscribe(i *DeltaNode) {
 	fmt.Println(utils.Purple + "Subscribing to transfer channel events..." + utils.Reset)
 	i.FilClient.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {
-		fmt.Println("Event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
 		switch event.Code {
 		case datatransfer.Error, datatransfer.Disconnected, datatransfer.ReceiveDataError, datatransfer.Cancel, datatransfer.RequestTimedOut, datatransfer.SendDataError:
 			fmt.Println("Error event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
