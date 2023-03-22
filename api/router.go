@@ -96,7 +96,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	)
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			_, span := otel.Tracer("GlobalRouterRequest").Start(context.Background(), "handleNodeHostApiKey")
+			_, span := otel.Tracer("GlobalRouterRequest").Start(context.Background(), "GlobalRouterRequest")
 			defer span.End()
 			span.SetName("Request: " + c.Request().Method + " " + c.Path())
 			span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))

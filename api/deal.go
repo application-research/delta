@@ -10,10 +10,12 @@ import (
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/ipfs/go-cid"
+	ipld "github.com/ipfs/go-ipld-format"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -71,7 +73,6 @@ type DealResponse struct {
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	statsService := core.NewStatsStatsService(node)
-
 	dealMake := e.Group("/deal")
 
 	// upload limiter middleware
@@ -867,7 +868,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		return err
 	}
 
-	node.DB.Transaction(func(tx *gorm.DB) error {
+	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 		// let's create a commp but only if we have
 		// a cid, a piece_cid, a padded_piece_size, size
 		var pieceCommp model.PieceCommitment
@@ -1024,6 +1025,10 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		//
 		return nil
 	})
+
+	if errTxn != nil {
+		return errors.New("Error creating the piece-commitment record" + " " + errTxn.Error())
+	}
 	return nil
 }
 
@@ -1302,6 +1307,10 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("start_epoch_in_days can only be 14 days or less")
 	}
 
+	if (DealRequest{} != dealRequest && dealRequest.Replication > 6) {
+		return errors.New("replication count is more than allowed (6)")
+	}
+
 	// connection mode is required
 	if (DealRequest{} != dealRequest) {
 		switch dealRequest.ConnectionMode {
@@ -1367,28 +1376,168 @@ func handleAnnounceCommitmentPieces() {
 
 }
 
-// Approach:
-//
-//{
-//"cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
-//"wallet": {},
-//"commp": {
-//"piece": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
-//"padded_piece_size": 4294967296
-//},
-//"connection_mode": "offline",
-//"size": 2500366291,
-//"online_sign":false
-//}
-// "{ uuid:'','hexed_unsigned_deal_proposal'}"
-// "{ uuid:'','hexed_signed_deal_proposal'}"
-//
-///deal/prepare/content - prepare a proposal and send back the unsigned network proposal
-///deal/prepare/piece-commitment - prepare a proposal and send back the unsigned network proposal
-///deal/prepare/piece-commitments - prepare a proposal and send back the unsigned network proposal
-//
-///deal/announce/content (accepts a signed HEX)
-///deal/announce/piece-commitment (accepts a signed HEX)
-///deal/announce/piece-commitments (accepts a collection of signed HEX)
+func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest, addNode ipld.Node, file *multipart.FileHeader, authParts []string) error {
+	var err error
+	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 
-// commp-sign --wallet=wallet.json --proposal-meta=// "{ uuid:'','hexed_unsigned_deal_proposal'}"
+		// let's create a commp but only if we have
+		// a cid, a piece_cid, a padded_piece_size, size
+		var pieceCommp model.PieceCommitment
+		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+			(dealRequest.Size != 0) {
+
+			// if commp is there, make sure the piece and size are there. Use default duration.
+			pieceCommp.Cid = addNode.Cid().String()
+			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+			pieceCommp.Size = file.Size
+			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+			pieceCommp.CreatedAt = time.Now()
+			pieceCommp.UpdatedAt = time.Now()
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+			node.DB.Create(&pieceCommp)
+
+			dealRequest.PieceCommitment = PieceCommitmentRequest{
+				Piece:             pieceCommp.Piece,
+				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+			}
+		}
+
+		// save the content to the DB with the piece_commitment_id
+		content := model.Content{
+			Name:              file.Filename,
+			Size:              file.Size,
+			Cid:               addNode.Cid().String(),
+			RequestingApiKey:  authParts[1],
+			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
+			ConnectionMode:    dealRequest.ConnectionMode,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+		node.DB.Create(&content)
+		dealRequest.Cid = content.Cid
+
+		//	assign a miner
+		if dealRequest.Miner != "" {
+			contentMinerAssignment := model.ContentMiner{
+				Miner:     dealRequest.Miner,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentMinerAssignment)
+			dealRequest.Miner = contentMinerAssignment.Miner
+		}
+
+		if (WalletRequest{} != dealRequest.Wallet) {
+
+			// get wallet from wallets database
+			var wallet model.Wallet
+
+			if dealRequest.Wallet.Address != "" {
+				node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+			} else if dealRequest.Wallet.Uuid != "" {
+				node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+			} else {
+				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+			}
+
+			if wallet.ID == 0 {
+				return errors.New("Wallet not found, please make sure the wallet is registered")
+			}
+
+			// create the wallet request object
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = wallet.KeyType
+			hexedWallet.PrivateKey = wallet.PrivateKey
+
+			if err != nil {
+				return errors.New("Error encoding the wallet")
+			}
+
+			// assign the wallet to the content
+			contentWalletAssignment := model.ContentWallet{
+				WalletId:  wallet.ID,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			node.DB.Create(&contentWalletAssignment)
+
+			dealRequest.Wallet = WalletRequest{
+				Id:      dealRequest.Wallet.Id,
+				Address: wallet.Addr,
+			}
+		}
+
+		var dealProposalParam model.ContentDealProposalParameters
+		dealProposalParam.CreatedAt = time.Now()
+		dealProposalParam.UpdatedAt = time.Now()
+		dealProposalParam.Content = content.ID
+		dealProposalParam.Label = content.Cid
+		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+		// start epoch
+		if dealRequest.StartEpoch != 0 {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+		// duration
+		if dealRequest.Duration == 0 {
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		} else {
+			dealProposalParam.Duration = dealRequest.Duration
+		}
+
+		if dealRequest.StartEpochInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
+			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
+		}
+
+		if dealRequest.DurationInDays > 540 {
+			return errors.New("Duration cannot be more than 540 days")
+		}
+
+		if dealRequest.DurationInDays != 0 {
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
+		}
+
+		// remove unsealed copy
+		if dealRequest.RemoveUnsealedCopies == false {
+			dealProposalParam.RemoveUnsealedCopy = false
+		} else {
+			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		// deal proposal parameters
+		node.DB.Create(&dealProposalParam)
+
+		var dispatchJobs core.IProcessor
+		if pieceCommp.ID != 0 {
+			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+		} else {
+			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+		}
+
+		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
+
+		err = c.JSON(200, DealResponse{
+			Status:      "success",
+			Message:     "File uploaded and pinned successfully",
+			ContentId:   content.ID,
+			DealRequest: dealRequest,
+		})
+		if err != nil {
+			return err
+		}
+
+		// return transaction
+		return nil
+	})
+	if errTxn != nil {
+		return errors.New("Error creating the content record" + " " + errTxn.Error())
+	}
+	return nil
+}

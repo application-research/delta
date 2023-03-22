@@ -1,6 +1,8 @@
 # Δ Delta
 Filecoin Storage Deal Making Service
 
+*Delta is in active development and is not ready for production use.*
+
 ![image](https://user-images.githubusercontent.com/4479171/218267752-9a7af133-4e36-4f4c-95da-16b3c7bd73ae.png)
 
 For more information, check out the [docs](https://delta.estuary.tech/docs/overview)
