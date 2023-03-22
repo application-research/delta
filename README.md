@@ -8,8 +8,9 @@ Filecoin Storage Deal Making Service
 
 For more information, check out the [docs](docs)
 
-## Quick set-up: Build and Run Delta
+# Build and Run Delta
 
+## Prepare to `build`
 Copy the `.env.example` file to `.env` and update the values as needed.
 
 ```
@@ -29,7 +30,7 @@ MAX_CLEANUP_WORKERS=1500
 
 Running this the first time will generate a wallet. Make sure to get FIL/DataCap from the [faucet](https://verify.glif.io/) and fund the wallet
 
-## Install the following pre-req
+### Install the following pre-req
 - go 1.18
 - [jq](https://stedolan.github.io/jq/)
 - [hwloc](https://www.open-mpi.org/projects/hwloc/)
@@ -44,15 +45,13 @@ apt-get install -y wget jq hwloc ocl-icd-opencl-dev git libhwloc-dev pkg-config 
 apt-get install -y cargo
 ```
 
-## Build and run
-
 ### Using `make` lang
 ```
 make all
 ./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
-### Using `go` lang
+### Using `go build`
 ```
 go build -tags netgo -ldflags '-s -w' -o delta
 ./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
@@ -64,7 +63,7 @@ docker build -t delta .
 docker run -it --rm -p 1414:1414 delta --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
-## Running Delta
+## Run `Delta`
 ```
 ./delta daemon --mode=standalone
 ```
