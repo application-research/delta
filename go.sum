@@ -88,6 +88,8 @@ github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/application-research/delta-db v0.0.2-0.20230321030937-044413db7277 h1:386qIfYuborh6io/liiPduN6ESH4KY2ZOtEa3BB+eQE=
 github.com/application-research/delta-db v0.0.2-0.20230321030937-044413db7277/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
+github.com/application-research/delta-db v0.0.2-0.20230322102216-fe7920b79230 h1:/PLLD+iP5FUPyrCkLUbC03hqd/7xzRYK/Y1ucGEW/jo=
+github.com/application-research/delta-db v0.0.2-0.20230322102216-fe7920b79230/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
 github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9 h1:x60eXkdBR8JkyFaxQYsep0cEo7HfwzxrkZ5H5YaYvmk=
 github.com/application-research/filclient v0.5.0-rc1.0.20230223164100-9a428cb812a9/go.mod h1:QI5TGGs8M43kdVOqOshBLqRwMwnAgdcSODgtyIeQE4o=
 github.com/application-research/whypfs-core v0.1.1 h1:BY40N15Ge9BlyAT3f4T4B/CAlaL7A1RYaRrNS3HIyEk=

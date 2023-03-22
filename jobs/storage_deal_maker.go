@@ -559,6 +559,7 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 
 // Sending a proposal to the peer.
 func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool) (bool, error) {
+
 	// Create an auth token to be used in the request
 	authToken, err := httptransport.GenerateAuthToken()
 	if err != nil {

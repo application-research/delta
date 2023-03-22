@@ -60,10 +60,11 @@ type DealRequest struct {
 
 // DealResponse Creating a new struct called DealResponse and then returning it.
 type DealResponse struct {
-	Status      string      `json:"status"`
-	Message     string      `json:"message"`
-	ContentId   int64       `json:"content_id,omitempty"`
-	DealRequest interface{} `json:"request_meta,omitempty"`
+	Status                       string      `json:"status"`
+	Message                      string      `json:"message"`
+	ContentId                    int64       `json:"content_id,omitempty"`
+	DealRequest                  interface{} `json:"deal_request_meta,omitempty"`
+	DealProposalParameterRequest interface{} `json:"deal_proposal_parameter_request_meta,omitempty"`
 }
 
 // ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
@@ -608,10 +609,11 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		err = c.JSON(200, DealResponse{
-			Status:      "success",
-			Message:     "File uploaded and pinned successfully",
-			ContentId:   content.ID,
-			DealRequest: dealRequest,
+			Status:                       "success",
+			Message:                      "File uploaded and pinned successfully",
+			ContentId:                    content.ID,
+			DealRequest:                  dealRequest,
+			DealProposalParameterRequest: dealProposalParam,
 		})
 		if err != nil {
 			return err
@@ -768,6 +770,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.Content = content.ID
 		dealProposalParam.Label = content.Cid
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
@@ -783,6 +786,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
 		}
 
 		if dealRequest.DurationInDays > 540 {
@@ -813,10 +817,11 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		err = c.JSON(200, DealResponse{
-			Status:      "success",
-			Message:     "File uploaded and pinned successfully",
-			ContentId:   content.ID,
-			DealRequest: dealRequest,
+			Status:                       "success",
+			Message:                      "File uploaded and pinned successfully",
+			ContentId:                    content.ID,
+			DealRequest:                  dealRequest,
+			DealProposalParameterRequest: dealProposalParam,
 		})
 		if err != nil {
 			return err
@@ -1014,10 +1019,11 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		err = c.JSON(200, DealResponse{
-			Status:      "success",
-			Message:     "File uploaded and pinned successfully",
-			ContentId:   content.ID,
-			DealRequest: dealRequest,
+			Status:                       "success",
+			Message:                      "File uploaded and pinned successfully",
+			ContentId:                    content.ID,
+			DealRequest:                  dealRequest,
+			DealProposalParameterRequest: dealProposalParam,
 		})
 		if err != nil {
 			return err
@@ -1524,10 +1530,11 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
 
 		err = c.JSON(200, DealResponse{
-			Status:      "success",
-			Message:     "File uploaded and pinned successfully",
-			ContentId:   content.ID,
-			DealRequest: dealRequest,
+			Status:                       "success",
+			Message:                      "File uploaded and pinned successfully",
+			ContentId:                    content.ID,
+			DealRequest:                  dealRequest,
+			DealProposalParameterRequest: dealProposalParam,
 		})
 		if err != nil {
 			return err

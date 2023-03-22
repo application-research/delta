@@ -73,7 +73,7 @@ The response will look like this:
         "status": "success",
         "message": "File uploaded and pinned successfully",
         "content_id": 1,
-        "request_meta": {
+        "deal_request_meta": {
             "cid": "bafybeidylyizmuhqny6dj5vblzokmrmgyq5tocssps3nw3g22dnlty7bhy",
             "miner": "f01963614",
             "duration_in_days": 537,
