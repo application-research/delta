@@ -48,10 +48,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "stats-collection",
 				Usage: "enable stats collection or not",
 			},
-			&cli.StringFlag{
-				Name:  "commp-mode",
-				Usage: "enable stats collection or not",
-			},
 		},
 
 		Action: func(c *cli.Context) error {

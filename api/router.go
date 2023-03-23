@@ -304,6 +304,8 @@ func ErrorHandler(err error, c echo.Context) {
 		log.Error(errP)
 	}
 
+	// get the request body and log it
+
 	s := struct {
 		RemoteIP     string `json:"remote_ip"`
 		PublicIP     string `json:"public_ip"`

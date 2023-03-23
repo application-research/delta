@@ -401,7 +401,7 @@ func CleanUpContentAndPieceComm(ln *DeltaNode) {
 	// if the transfer was started upon restart, then we need to update the status to failed
 	ln.DB.Transaction(func(tx *gorm.DB) error {
 
-		rowsAffected := tx.Model(&model.Content{}).Where("status in (?,?)", utils.DEAL_STATUS_TRANSFER_STARTED, utils.CONTENT_PIECE_COMPUTING).Updates(
+		rowsAffected := tx.Model(&model.Content{}).Where("status in (?,?,?,?,?)", utils.DEAL_STATUS_TRANSFER_STARTED, utils.CONTENT_PIECE_COMPUTING, utils.CONTENT_DEAL_MAKING_PROPOSAL, utils.CONTENT_PIECE_COMPUTING, utils.CONTENT_DEAL_SENDING_PROPOSAL).Updates(
 			model.Content{
 				Status:      utils.DEAL_STATUS_TRANSFER_FAILED,
 				UpdatedAt:   time.Now(),
