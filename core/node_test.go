@@ -1,8 +1,10 @@
 package core
 
 import (
+	model "github.com/application-research/delta-db/db_models"
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/filecoin-project/lotus/api/v1api"
+	"github.com/filecoin-project/lotus/chain/wallet"
 	"reflect"
 	"testing"
 )
@@ -57,22 +59,6 @@ func TestGetPublicIP(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("GetPublicIP() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGetVersion(t *testing.T) {
-	tests := []struct {
-		name string
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GetVersion(); got != tt.want {
-				t.Errorf("GetVersion() = %v, want %v", got, tt.want)
 			}
 		})
 	}

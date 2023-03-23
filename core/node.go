@@ -314,11 +314,6 @@ func GetHostname() string {
 	return hostname
 }
 
-// It returns a string
-func GetVersion() string {
-	return "v0.0.1"
-}
-
 // ScanHostComputeResources Setting the global node meta.
 // > This function sets the global node metadata for the given node
 func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
