@@ -34,8 +34,7 @@ docker-compose-build:
 
 .PHONY: docker-compose-up
 docker-compose-up:
-	docker-compose -f $(DOCKER_COMPOSE_FILE) up -p 127.0.0.1:1414:1414
-
+	docker-compose -f $(DOCKER_COMPOSE_FILE) up
 .PHONY: docker-compose-run
 docker-compose-run: docker-compose-build docker-compose-up
 
