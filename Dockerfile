@@ -31,7 +31,7 @@ RUN apt-get update && \
     apt-get install -y hwloc libhwloc-dev ocl-icd-opencl-dev
 WORKDIR /root/
 
-COPY --from=builder /app/delta/delta ./
+COPY --from=builder /app/delta ./
 COPY ${WALLET_DIR} /root/config/wallet
 
 CMD ./delta daemon --repo=${REPO} --wallet-dir=/root/config/wallet

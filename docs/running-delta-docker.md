@@ -6,7 +6,7 @@ Make sure you have docker installed on your machine.
 ### Build a delta image with a specific wallet address
 If you already have a wallet with datacap, you can pass it to the command below. This copies over the wallet directory to the containerized app and sets it as the default wallet.
 ```
-make docker-compose-build WALLET_DIR=<walletdir> DESCRIPTION=MY_OWN_DELTA_WITH_A_SPECIFIC_WALLET
+make docker-compose-build WALLET_DIR=<walletdir> DESCRIPTION=MY_OWN_DELTA_WITH_A_SPECIFIC_WALLET TAG
 ```
 You can then run the containerized app using the command below
 ```
