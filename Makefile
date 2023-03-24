@@ -28,15 +28,6 @@ docker-compose-build:
 	COMMIT=$(shell git rev-parse HEAD) \
 	VERSION=$(shell git describe --always --tag --dirty) \
 	WALLET_DIR=$(WALLET_DIR) \
-	DESCRIPTION=$(DESCRIPTION)
-	docker-compose -f $(DOCKER_COMPOSE_FILE) build --build-arg WALLET_DIR=$(WALLET_DIR)
-
-.PHONY: docker-compose-build
-docker-compose-build:
-	BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
-	COMMIT=$(shell git rev-parse HEAD) \
-	VERSION=$(shell git describe --always --tag --dirty) \
-	WALLET_DIR=$(WALLET_DIR) \
 	DESCRIPTION=$(DESCRIPTION) \
 	TAG=$(TAG) \
 	docker-compose -f $(DOCKER_COMPOSE_FILE) build --build-arg WALLET_DIR=$(WALLET_DIR) --build-arg REPO=$(REPO)
