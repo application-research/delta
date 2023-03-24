@@ -45,7 +45,7 @@ apt-get install -y wget jq hwloc ocl-icd-opencl-dev git libhwloc-dev pkg-config 
 apt-get install -y cargo
 ```
 
-### Using `make` lang
+### Using `make` 
 ```
 make all
 ./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
@@ -57,15 +57,23 @@ go build -tags netgo -ldflags '-s -w' -o delta
 ./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
-### Using `docker`
-```
-docker build -t delta .
-docker run -it --rm -p 1414:1414 delta --repo=.whypfs --wallet-dir=<walletdir>
-```
-
 ## Run `Delta`
 ```
 ./delta daemon --mode=standalone
+```
+
+## Install and Run `Delta` using `docker`
+Make sure you have docker installed on your machine.
+
+### Run the current delta clone using docker-compose
+```
+make docker-compose-up WALLET_DIR=<walletdir>
+```
+
+### Run a specific docker image tag from the docker hub artifactory
+```
+cd docker
+./run.sh <TAG>
 ```
 
 ## Test the API server

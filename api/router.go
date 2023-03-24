@@ -245,15 +245,19 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 
 	// admin api
 	ConfigureAdminRouter(adminApiGroup, ln)
-	// api
-	ConfigMetricsRouter(apiGroup)
+
+	// protected
 	ConfigureDealRouter(apiGroup, ln)
 	ConfigureStatsCheckRouter(apiGroup, ln)
 	ConfigureRepairRouter(apiGroup, ln)
+
 	// open api
 	ConfigureNodeInfoRouter(openApiGroup, ln)
 	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
 	ConfigureOpenInfoCheckRouter(openApiGroup, ln)
+
+	// metrics
+	ConfigMetricsRouter(openApiGroup)
 
 	// It's checking if the websocket is enabled.
 	if config.Common.EnableWebsocket {
