@@ -30,6 +30,22 @@ MAX_CLEANUP_WORKERS=1500
 
 Running this the first time will generate a wallet. Make sure to get FIL/DataCap from the [faucet](https://verify.glif.io/) and fund the wallet
 
+## Install and run `Delta` using `docker`
+Make sure you have docker installed on your machine.
+
+### Run the current delta clone using docker-compose
+If you already have a wallet with datacap, you can pass it to the command below. This copies over the wallet directory to the containerized app and sets it as the default wallet.
+```
+make docker-compose-run WALLET_DIR=<walletdir>
+```
+
+### Run a specific docker image tag from the docker hub artifactory
+```
+cd docker
+./run.sh <TAG> 
+```
+
+## Install, build from source and run `Delta`
 ### Install the following pre-req
 - go 1.18
 - [jq](https://stedolan.github.io/jq/)
@@ -45,7 +61,7 @@ apt-get install -y wget jq hwloc ocl-icd-opencl-dev git libhwloc-dev pkg-config 
 apt-get install -y cargo
 ```
 
-### Using `make` lang
+### Using `make` 
 ```
 make all
 ./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
@@ -57,16 +73,11 @@ go build -tags netgo -ldflags '-s -w' -o delta
 ./delta daemon --repo=.whypfs --wallet-dir=<walletdir>
 ```
 
-### Using `docker`
-```
-docker build -t delta .
-docker run -it --rm -p 1414:1414 delta --repo=.whypfs --wallet-dir=<walletdir>
-```
-
 ## Run `Delta`
 ```
 ./delta daemon --mode=standalone
 ```
+
 
 ## Test the API server
 Try the following endpoints to test the API server
@@ -84,6 +95,7 @@ If it return the following, then the API server is working
 # Getting Started with `Delta`
 - To get started on running delta, go to the [getting started to run delta](docs/getting-started-run-delta.md)
 - To get started on using a live delta instance, go to the [getting started to use delta](docs/getting-started-use-delta.md)
+- To learn more about running delta using docker, go to the [run delta using docker](docs/running-delta-docker.md)
 - To learn more about deployment modes, go to the [deployment modes](docs/deployment-modes.md)
 - To get estuary api key, go to the [estuary api keys](docs/getting-estuary-api-key.md)
 - To manage wallets, go to the [managing wallets](docs/manage-wallets.md)

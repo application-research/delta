@@ -5,8 +5,6 @@
 There are several statistics and information endpoints that are open to the public. These endpoints are useful for monitoring the health of the delta service.
 
 ## Stats
-
-
 ### Get stats by miner
 ### Get deals by miner
 ### Get stats by content
@@ -16,6 +14,7 @@ There are several statistics and information endpoints that are open to the publ
 ### Get deal by cid
 ### Get deal by uuid
 ### Get deal by deal id
-
-
 ## Information
+### Get node information
+### Get node connected peers
+### Get node uuids

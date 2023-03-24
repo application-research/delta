@@ -176,6 +176,7 @@ By: Protocol Labs - Outercore Engineering
 			fmt.Println(utils.Blue + "Reporting Delta startup logs... DONE" + utils.Reset)
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)
+			fmt.Println(utils.Green + "You can check the documentation at: " + utils.Reset + utils.Purple + "https://github.com/application-research/delta/tree/main/docs" + utils.Reset
 			fmt.Println("----------------------------------")
 			api.InitializeEchoRouterConfig(ln, *cfg)
 
