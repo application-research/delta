@@ -27,7 +27,12 @@ docker-compose-build:
 
 .PHONY: docker-compose-up
 docker-compose-up:
-	docker-compose -f $(DOCKER_COMPOSE_FILE) up
+	docker-compose -f $(DOCKER_COMPOSE_FILE) up --build-arg WALLET_DIR=$(WALLET_DIR)
+
+.PHONY: docker-compose-run
+docker-compose-run:
+	docker-compose -f $(DOCKER_COMPOSE_FILE) build --build-arg WALLET_DIR=$(WALLET_DIR)
+	docker-compose -f $(DOCKER_COMPOSE_FILE) up --build-arg WALLET_DIR=$(WALLET_DIR)
 
 .PHONY: docker-compose-down
 docker-compose-down:

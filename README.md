@@ -30,6 +30,22 @@ MAX_CLEANUP_WORKERS=1500
 
 Running this the first time will generate a wallet. Make sure to get FIL/DataCap from the [faucet](https://verify.glif.io/) and fund the wallet
 
+## Install and run `Delta` using `docker`
+Make sure you have docker installed on your machine.
+
+### Run the current delta clone using docker-compose
+If you already have a wallet with datacap, you can pass it to the command below. This copies over the wallet directory to the containerized app and sets it as the default wallet.
+```
+make docker-compose-run WALLET_DIR=<walletdir>
+```
+
+### Run a specific docker image tag from the docker hub artifactory
+```
+cd docker
+./run.sh <TAG> 
+```
+
+## Install, build from source and run `Delta`
 ### Install the following pre-req
 - go 1.18
 - [jq](https://stedolan.github.io/jq/)
@@ -62,19 +78,6 @@ go build -tags netgo -ldflags '-s -w' -o delta
 ./delta daemon --mode=standalone
 ```
 
-## Install and Run `Delta` using `docker`
-Make sure you have docker installed on your machine.
-
-### Run the current delta clone using docker-compose
-```
-make docker-compose-up WALLET_DIR=<walletdir>
-```
-
-### Run a specific docker image tag from the docker hub artifactory
-```
-cd docker
-./run.sh <TAG>
-```
 
 ## Test the API server
 Try the following endpoints to test the API server
