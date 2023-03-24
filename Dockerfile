@@ -21,7 +21,7 @@ RUN RUSTFLAGS="-C target-cpu=native -g" FFI_BUILD_FROM_SOURCE=1 FFI_USE_BLST_POR
 
 FROM golang:1.19
 
-ARG WALLET_DIR="/root/config/wallet"
+ARG WALLET_DIR=""
 ARG REPO="/root/config/.whypfs"
 
 RUN echo "Building docker image for delta-dm"
@@ -33,6 +33,5 @@ WORKDIR /root/
 
 COPY --from=builder /app/delta ./
 COPY ${WALLET_DIR} /root/config/wallet
-
-CMD ./delta daemon --repo=${REPO} --wallet-dir=/root/config/wallet
+CMD ./delta daemon --repo=${REPO} --wallet-dir=${WALLET_DIR}
 EXPOSE 1414
