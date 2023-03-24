@@ -18,3 +18,17 @@ Alternatively, you can build and run the current delta clone using docker-compos
 ```
 make docker-compose-run WALLET_DIR=<walletdir> DESCRIPTION=MY_OWN_DELTA_WITH_A_SPECIFIC_WALLET
 ```
+
+### Check localhost
+You can check the localhost to see if the delta app is running
+```
+curl --location --request GET 'http://localhost:1414/open/node/info'
+```
+
+# Next
+Now that you can access a live Delta node, you are now ready to make a deal. You can now go to the following guides:
+
+- [Make an e2e deal](make-e2e-deal.md)
+- [Make an import deal](make-import-deal.md)
+
+If you to run your own `Delta` node, go to [getting started running a delta node](getting-started-run-delta.md).

@@ -35,7 +35,6 @@ docker-compose-build:
 .PHONY: docker-compose-up
 docker-compose-up:
 	docker-compose -f $(DOCKER_COMPOSE_FILE) up
-
 .PHONY: docker-compose-run
 docker-compose-run: docker-compose-build docker-compose-up
 

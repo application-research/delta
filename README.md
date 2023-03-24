@@ -39,11 +39,28 @@ If you already have a wallet with datacap, you can pass it to the command below.
 make docker-compose-run WALLET_DIR=<walletdir>
 ```
 
+**Check localhost**
+
+You can check the localhost to see if the delta app is running
+```
+curl --location --request GET 'http://localhost:1414/open/node/info'
+```
+
+**Next**
+
+Now that you can access a live Delta node, you are now ready to make a deal. You can now go to the following guides:
+
+- [Make an e2e deal](docs/make-e2e-deal.md)
+- [Make an import deal](docs/make-import-deal.md)
+
+
 ### Run a specific docker image tag from the docker hub artifactory
+We have a few pre-built images on the docker hub artifactory. You can run the following command to run a specific image tag 
 ```
 cd docker
 ./run.sh <TAG> 
 ```
+Note: no tag means it'll just get the latest image.
 
 ## Install, build from source and run `Delta`
 ### Install the following pre-req
@@ -78,7 +95,6 @@ go build -tags netgo -ldflags '-s -w' -o delta
 ./delta daemon --mode=standalone
 ```
 
-
 ## Test the API server
 Try the following endpoints to test the API server
 ```
@@ -91,6 +107,7 @@ If it return the following, then the API server is working
 ```
 {"name":"stg-deal-maker","description":"Experimental Deal Maker","type":"delta-main"}
 ```
+
 
 # Getting Started with `Delta`
 - To get started on running delta, go to the [getting started to run delta](docs/getting-started-run-delta.md)
