@@ -23,22 +23,39 @@ install:
 
 .PHONY: docker-compose-build
 docker-compose-build:
+	BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+	COMMIT=$(shell git rev-parse HEAD) \
+	VERSION=$(shell git describe --always --tag --dirty) \
+	WALLET_DIR=$(WALLET_DIR) \
+	DESCRIPTION=$(DESCRIPTION)
 	docker-compose -f $(DOCKER_COMPOSE_FILE) build --build-arg WALLET_DIR=$(WALLET_DIR)
 
-.PHONY: docker-compose-up
+.PHONY: prepare-spec
+prepare-spec:
+	BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+	COMMIT=$(shell git rev-parse HEAD) \
+	VERSION=$(shell git describe --always --tag --dirty) \
+	WALLET_DIR=$(WALLET_DIR) \
+	DESCRIPTION=$(DESCRIPTION)
+
+.PHONY: prepare-spec docker-compose-build-label
+docker-compose-build:
+	docker-compose -f $(DOCKER_COMPOSE_FILE) -t build --build-arg WALLET_DIR=$(WALLET_DIR)
+
+.PHONY: prepare-spec docker-compose-up
 docker-compose-up:
-	docker-compose -f $(DOCKER_COMPOSE_FILE) up --build-arg WALLET_DIR=$(WALLET_DIR)
+	docker-compose -f $(DOCKER_COMPOSE_FILE) up
 
-.PHONY: docker-compose-run
+.PHONY: prepare-spec docker-compose-run
 docker-compose-run:
-	docker-compose -f $(DOCKER_COMPOSE_FILE) build --build-arg WALLET_DIR=$(WALLET_DIR)
-	docker-compose -f $(DOCKER_COMPOSE_FILE) up --build-arg WALLET_DIR=$(WALLET_DIR)
+	docker-compose -f $(DOCKER_COMPOSE_FILE) build --build-arg WALLET_DIR=$(WALLET_DIR) --build-arg REPO=$(REPO)
+	docker-compose -f $(DOCKER_COMPOSE_FILE) up
 
 .PHONY: docker-compose-down
 docker-compose-down:
 	docker-compose -f $(DOCKER_COMPOSE_FILE) down
 
-.PHONY: docker-push
+.PHONY: prepare-spec docker-push
 docker-push:
 	docker build -t delta:$(VERSION) .
 	docker tag delta:$(VERSION) 0utercore/delta:$(VERSION)

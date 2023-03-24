@@ -95,6 +95,7 @@ If it return the following, then the API server is working
 # Getting Started with `Delta`
 - To get started on running delta, go to the [getting started to run delta](docs/getting-started-run-delta.md)
 - To get started on using a live delta instance, go to the [getting started to use delta](docs/getting-started-use-delta.md)
+- To learn more about running delta using docker, go to the [run delta using docker](docs/running-delta-docker.md)
 - To learn more about deployment modes, go to the [deployment modes](docs/deployment-modes.md)
 - To get estuary api key, go to the [estuary api keys](docs/getting-estuary-api-key.md)
 - To manage wallets, go to the [managing wallets](docs/manage-wallets.md)

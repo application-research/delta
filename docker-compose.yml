@@ -2,6 +2,12 @@ version: "3.9"
 services:
   app:
     build: .
+    labels:
+      - "build-date=${BUILD_DATE}"
+      - "commit=${COMMIT}"
+      - "version=${VERSION}"
+      - "wallet=${WALLET_DIR}"
+      - "description=${DESCRIPTION}"
     ports:
       - "${APP_PORT:-1414}:1414"
     environment:
