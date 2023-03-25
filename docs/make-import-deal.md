@@ -144,5 +144,5 @@ Once a wallet is registered, we can add a `wallet` field to the `metadata` reque
 # Next
 Now that we can make an import deal, we can move on to the next step
 - [Make an e2e deal](make-e2e-deal.md)
-- [Check the status of your deal](deal-status.md)
+- [Check the status of your deal](content-deal-status.md)
 - [Learn how to repair a deal](repair.md)

@@ -31,7 +31,7 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 - To make an import deal, go to the [make import deals](make-import-deal.md)
 - To learn how to repair a deal, go to the [repairing and retrying deals](repair.md)
 - To learn how to access the open statistics and information, go to the [open statistics and information](open-stats-info.md)
-- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](deal-status.md)
+- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](content-deal-status.md)
 
 # Author
 Protocol Labs Outercore Engineering.

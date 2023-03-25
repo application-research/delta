@@ -24,7 +24,10 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 	daemonCmd := &cli.Command{
 		Name:  "daemon",
-		Usage: "A light version of Estuary that allows users to upload and download data from the Filecoin network.",
+		Usage: "Run the delta daemon",
+		Description: "The delta daemon is the main process that runs the delta node. It is responsible for " +
+			"handling all the incoming requests and processing them. It also runs the background jobs " +
+			"that are required for the node to function properly.",
 
 		Flags: []cli.Flag{
 			&cli.StringFlag{
