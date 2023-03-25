@@ -30,9 +30,9 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 - To manage wallets, go to the [managing wallets](manage-wallets.md)
 - To make an end-to-end deal, go to the [make e2e deals](make-e2e-deal.md)
 - To make an import deal, go to the [make import deals](make-import-deal.md)
-- To learn how to repair a deal, go to the [repairing and retrying deals](repair.md)
-- To learn how to access the open statistics and information, go to the [open statistics and information](open-stats-info.md)
-- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](content-deal-status.md)
+- To learn how to repair a deal, go to the [repairing and retrying deals](repair.md) **[WIP]**
+- To learn how to access the open statistics and information, go to the [open statistics and information](open-stats-info.md) **[WIP]**
+- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](content-deal-status.md) **[WIP]**
 
 # Author
 Protocol Labs Outercore Engineering.
