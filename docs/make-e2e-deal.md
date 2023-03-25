@@ -8,7 +8,7 @@ Create an online deal for a content by sending a `POST` request to the `/api/v1/
 
 # Prepare the deal `metadata` request.
 In order to create a successful deal, Delta requires the following information `metadata` request:
-- `Estuary API Key`. This is used to authenticate the request. This is attached to the Authentication Header of the request.
+- `API_KEY`. This is used to authenticate the request. This is attached to the Authentication Header of the request.
 - The content to be stored or the piece-commitment of the content.
     - `data file or cid`: The content to be stored. This can be a file or a directory.
     - `piece-commitment`: The piece-commitment of the content. This is the pre-computed piece cid, piece size (padded and unpadded) and file size.
@@ -39,7 +39,7 @@ Here's the complete structure of the `metadata` request.
 ## Request
 ```
 curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Authorization: Bearer [API_KEY]' \
 --form 'data=@"my-file"' \
 --form 'metadata="{\"miner\":\"f01963614\",\"connection_mode\":\"e2e\"}"'
 --form 'metadata="{\"miner\":\"f02031042\",\"connection_mode\":\"e2e\", \"wallet\":{\"address\":\"f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi\"}}"'
@@ -75,7 +75,7 @@ To get the status of the deal, we can use the `/api/v1/stats/content/:content_id
 ## Request
 ```
 curl --location --request GET 'http://localhost:1414/api/v1/stats/content/:content_id' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]'
+--header 'Authorization: Bearer [API_KEY]'
 ```
 
 ## Response
@@ -166,7 +166,7 @@ To register a wallet to a live Delta node, we can use the `/admin/wallet/registe
 ### Request
 ```
 curl --location --request POST 'http://localhost:1414/admin/wallet/register-hex' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Authorization: Bearer [API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '{"hex_key":"<HEX FROM LOTUS / BOOSTD WALLET EXPORT>"}'
 ```
@@ -188,7 +188,7 @@ We can now use the `wallet_addr` value to make a deal.
 Once a wallet is registered, we can add a `wallet` field to the `metadata` request to make a deal using that wallet.
 ```
 curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Authorization: Bearer [API_KEY]' \
 --form 'data=@"my-file"' \
 --form 'metadata="{\"miner\":\"f02031042\",\"connection_mode\":\"e2e\", \"wallet\":{\"address\":\"f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi\"}}"'
 ```

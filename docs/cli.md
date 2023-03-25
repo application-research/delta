@@ -120,24 +120,24 @@ Run delta node first with a wallet address that has datacap. You can use the fol
 ./delta daemon --wallet-dir=/path/to/wallet
 ```
 Note that you can register multiple wallets with Delta. Once the daemon is up, you can register a wallet using the instructions at [registering a wallet](manage-wallets.md)
-You also need an Estuary API key to run. Use the following command to get an Estuary API key.
+You also need an API_KEY to run. Use the following command to get an API_KEY.
 ```
 curl --location --request GET 'https://auth.estuary.tech/register-new-token'
 
 {
 "expires": "2123-02-03T21:12:15.632368998Z",
-"token": "<ESTUARY_API_KEY>"
+"token": "<API_KEY>"
 }
 ```
 
 #### Make an E2E deal
 ```
-./delta deal --api-key=<ESTUARY_API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false}'
+./delta deal --api-key=<API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false}'
 ```
 
 Making a deal with a registered wallet
 ```
-./delta deal --api-key=<ESTUARY_API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false,"wallet":{"address":<address>}}'
+./delta deal --api-key=<API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false,"wallet":{"address":<address>}}'
 ```
 
 **Output**
@@ -169,7 +169,7 @@ Take note of the content_id. You'll use this to get the status of the deal.
 
 #### Make an Import deal
 ```
-./delta deal --api-key=<ESTUARY_API_KEY> --type=import --metadata='[
+./delta deal --api-key=<API_KEY> --type=import --metadata='[
     {
         "cid": "bafybeidylyizmuhqny6dj5vblzokmrmgyq5tocssps3nw3g22dnlty7bhy",
         "wallet": {

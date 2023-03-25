@@ -10,7 +10,7 @@ If you want to stand up your own node, you can follow the instructions in [this]
 
 # Prepare the deal `metadata` request.
 In order to create a successful deal, Delta requires the following information `metadata` request:
-- `Estuary API Key`. This is used to authenticate the request. This is attached to the Authentication Header of the request.
+- `API_KEY`. This is used to authenticate the request. This is attached to the Authentication Header of the request.
 - The content to be stored or the piece-commitment of the content.
     - `data file or cid`: The content to be stored. This can be a file or a directory.
     - `piece-commitment`: The piece-commitment of the content. This is the pre-computed piece cid, piece size (padded and unpadded) and file size.
@@ -43,7 +43,7 @@ Create a deal for a pre-computed piece-commitment by sending a `POST` request to
 ## Request
 ```
 curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitments' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Authorization: Bearer [API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '[{
     "cid": "bafybeidty2dovweduzsne3kkeeg3tllvxd6nc2ifh6ztexvy4krc5pe7om",
@@ -103,7 +103,7 @@ To register a wallet to a live Delta node, we can use the `/admin/wallet/registe
 ### Request
 ```
 curl --location --request POST 'http://localhost:1414/admin/wallet/register-hex' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]' \
+--header 'Authorization: Bearer [API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '{"hex_key":"<HEX FROM LOTUS / BOOSTD WALLET EXPORT>"}'
 ```

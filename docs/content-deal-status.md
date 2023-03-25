@@ -55,7 +55,7 @@ To get the status of the deal, we can use the `/api/v1/stats/content/:content_id
 ## Request
 ```
 curl --location --request GET 'http://localhost:1414/api/v1/stats/content/:content_id' \
---header 'Authorization: Bearer [ESTUARY_API_KEY]'
+--header 'Authorization: Bearer [API_KEY]'
 ```
 
 ## Response

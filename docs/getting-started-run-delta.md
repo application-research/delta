@@ -35,7 +35,7 @@ NODE_TYPE=delta-main
 # Database configuration
 MODE=standalone
 DB_DSN=delta.db
-DELTA_AUTH=[NODE_ESTUARY_API_KEY_HERE]
+DELTA_AUTH=[NODE_API_KEY_HERE]
 
 # Frequencies
 MAX_CLEANUP_WORKERS=1500

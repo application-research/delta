@@ -13,6 +13,6 @@ curl --location --request GET 'https://auth.estuary.tech/register-new-token'
 ```
 {
 "expires": "2123-02-03T21:12:15.632368998Z",
-"token": "<ESTUARY_API_KEY>"
+"token": "<API_KEY>"
 }
 ```

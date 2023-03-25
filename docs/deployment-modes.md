@@ -12,7 +12,7 @@ NODE_TYPE=delta-main
 # Database configuration
 MODE=standalone
 DB_DSN=delta.db
-DELTA_AUTH=[NODE_ESTUARY_API_KEY_HERE]
+DELTA_AUTH=[NODE_API_KEY_HERE]
 
 # Frequencies
 MAX_CLEANUP_WORKERS=1500
@@ -41,7 +41,7 @@ With `.env` file in place, run the following command to start the node in standa
 ## MODE=Cluster
 By default, delta will run on cluster mode. This mode will create a local database that can be reconfigured to use a remote HA database and estuary-auth as the authentication and authorizatio component.
 
-When running in cluster mode, users need to register for an ESTUARY_API_KEY using the following command.
+When running in cluster mode, users need to register for an API_KEY using the following command.
 
 ## Request
 ```
@@ -52,11 +52,11 @@ curl --location --request GET 'https://auth.estuary.tech/register-new-token'
 ```
 {
 "expires": "2123-02-03T21:12:15.632368998Z",
-"token": "<ESTUARY_API_KEY>"
+"token": "<API_KEY>"
 }
 ```
 
-Place the ESTUARY_API_KEY in the .env file.
+Place the API_KEY in the .env file.
 
 ### Run in cluster mode
 With `.env` file in place, run the following command to start the node in standalone mode.
