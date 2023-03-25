@@ -196,5 +196,5 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
 # Next
 Now that we can make an e2e deal, let's look at how to make an import deal.
 - [Make an import deal](./make-import-deal.md)
-- [Check the status of your deal](deal-status.md)
+- [Check the status of your deal](content-deal-status.md)
 - [Learn how to repair a deal](repair.md)

@@ -4,6 +4,7 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	"delta/jobs"
 	"delta/utils"
 	"fmt"
 	"github.com/application-research/delta-db/db_models"
@@ -23,7 +24,10 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 	daemonCmd := &cli.Command{
 		Name:  "daemon",
-		Usage: "A light version of Estuary that allows users to upload and download data from the Filecoin network.",
+		Usage: "Run the delta daemon",
+		Description: "The delta daemon is the main process that runs the delta node. It is responsible for " +
+			"handling all the incoming requests and processing them. It also runs the background jobs " +
+			"that are required for the node to function properly.",
 
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -138,9 +142,9 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println(utils.Blue + "Subscribing the event listeners... DONE" + utils.Reset)
 
 			// run the clean up every 30 minutes so we can retry and also remove the unecessary files on the blockstore.
-			fmt.Println(utils.Blue + "Running the atomatic cron jobs" + utils.Reset)
+			fmt.Println(utils.Blue + "Running the atomic cron jobs" + utils.Reset)
 			RunScheduledCleanupAndRetryCron(ln)
-			fmt.Println(utils.Blue + "Running the atomatic cron jobs... DONE" + utils.Reset)
+			fmt.Println(utils.Blue + "Running the atomic cron jobs... DONE" + utils.Reset)
 
 			// launch the API node
 			fmt.Println(utils.Blue + "Starting Delta." + utils.Reset)
@@ -201,12 +205,13 @@ func RunScheduledCleanupAndRetryCron(ln *core.DeltaNode) {
 	maxCleanUpJobs := ln.Config.Dispatcher.MaxCleanupWorkers
 
 	s := gocron.NewScheduler()
-	s.Every(30).Minutes().Do(func() { // let's clean and retry every 30 minutes. It'll only get the old data.
+	s.Every(24).Hour().Do(func() { // let's clean and retry every 30 minutes. It'll only get the old data.
 		dispatcher := core.CreateNewDispatcher()
 		//dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
-		//dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
 
+		core.CleanUpContentAndPieceComm(ln)
 		core.ScanHostComputeResources(ln, ln.Node.Config.Blockstore)
 	})
 

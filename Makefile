@@ -3,6 +3,7 @@ GO_BUILD_IMAGE?=golang:1.19
 VERSION=$(shell git describe --always --tag --dirty)
 COMMIT=$(shell git rev-parse --short HEAD)
 DOCKER_COMPOSE_FILE=docker-compose.yml
+DOCKER_ORG=0utercore
 
 .PHONY: all
 all: build
@@ -45,5 +46,5 @@ docker-compose-down:
 .PHONY: prepare-spec docker-push
 docker-push:
 	docker build -t delta:$(VERSION) .
-	docker tag delta:$(VERSION) 0utercore/delta:$(VERSION)
-	docker push 0utercore/delta:$(VERSION)
+	docker tag delta:$(VERSION) $(DOCKER_ORG)/delta:$(VERSION)
+	docker push $(DOCKER_ORG)/delta:$(VERSION)

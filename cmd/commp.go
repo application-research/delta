@@ -41,8 +41,10 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 	var commpCommands []*cli.Command
 	var commpService = new(core.CommpService)
 	commpFileCmd := &cli.Command{
-		Name:  "commp",
-		Usage: "run the piece commitment computation / generation for a given file.",
+		Name:        "commp",
+		Usage:       "run the piece commitment computation / generation for a given file.",
+		Description: " `commp` is a CLI command that generates a piece commitment for a given file or a directory of files.",
+
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "file",

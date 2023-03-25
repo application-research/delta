@@ -33,8 +33,14 @@ func main() {
 	// commands
 	commands = append(commands, cmd.DaemonCmd(&cfg)...)
 	commands = append(commands, cmd.CommpCmd(&cfg)...)
+	commands = append(commands, cmd.DealCmd(&cfg)...)
+	commands = append(commands, cmd.StatusCmd(&cfg)...)
+
 	app := &cli.App{
-		Commands: commands,
+		Commands:    commands,
+		Name:        "delta",
+		Description: "A deal making engine microservice for the filecoin network",
+		Usage:       "delta [command] [arguments]",
 	}
 
 	if err := app.Run(os.Args); err != nil {

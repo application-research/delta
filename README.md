@@ -120,7 +120,8 @@ If it return the following, then the API server is working
 - To make an import deal, go to the [make import deals](docs/make-import-deal.md)
 - To learn how to repair a deal, go to the [repairing and retrying deals](docs/repair.md)
 - To learn how to access the open statistics and information, go to the [open statistics and information](docs/open-stats-info.md)
-- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](docs/deal-status.md)
+- To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](docs/content-deal-status.md)
+- To use Delta cli to manage deals, go to the [delta cli](docs/cli.md)
 
 ## Author
 Protocol Labs Outercore Engineering.
