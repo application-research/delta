@@ -43,8 +43,8 @@ type FSBuilder struct {
 }
 
 type CidMapValue struct {
-	IsDir bool
-	Cid   string
+	IsDir bool   `json:"is_dir"`
+	Cid   string `json:"cid"`
 }
 
 func getDirKey(dirList []string, i int) (key string) {

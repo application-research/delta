@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	c "delta/config"
 	"delta/utils"
-	"encoding/json"
 	"fmt"
 	"github.com/filecoin-project/go-fil-commp-hashhash"
 	"github.com/google/uuid"
@@ -25,11 +25,11 @@ type CommpResult struct {
 }
 
 type Result struct {
-	Ipld      *utils.FsNode
-	DataCid   string
-	PieceCid  string
-	PieceSize uint64
-	CidMap    map[string]utils.CidMapValue
+	Ipld      *utils.FsNode                `json:"ipld"`
+	DataCid   string                       `json:"data_cid"`
+	PieceCid  string                       `json:"piece_cid"`
+	PieceSize uint64                       `json:"piece_size"`
+	CidMap    map[string]utils.CidMapValue `json:"cid_map"`
 }
 
 type Input []utils.Finfo
@@ -71,7 +71,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 		Action: func(c *cli.Context) error {
 			sourceInput := c.String("source")
 			splitSizeInput := c.String("split-size")
-			outDir := c.String("out-dir")
+			outDir := c.String("output-dir")
 			fmt.Println(splitSizeInput)
 
 			if splitSizeInput != "" {
@@ -98,7 +98,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 					if err != nil {
 						return err
 					}
-					//defer sourceFile.Close()
 
 					// Create a new directory for the file chunks.
 					fileName := info.Name()
@@ -162,19 +161,20 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							CidMap:  cidMap,
 						})
 					}
-
-					outputj, err := json.Marshal(outputs)
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(outputj))
 					return nil
 				})
+				var buffer bytes.Buffer
+				err = utils.PrettyEncode(outputs, &buffer)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println(buffer.String())
 				if err != nil {
 					panic(err)
 				}
 			} else {
 				var input Input
+				var outputs []Result
 				stat, err := os.Stat(sourceInput)
 				if err != nil {
 					return err
@@ -211,17 +211,23 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						if err != nil {
 							return err
 						}
-						output, err := json.Marshal(Result{
+
+						output := Result{
 							Ipld:    ipld,
 							DataCid: cid,
 							CidMap:  cidMap,
-						})
-						if err != nil {
-							return err
 						}
-						fmt.Println(string(output))
+						outputs = append(outputs, output)
 						return nil
 					})
+
+					var buffer bytes.Buffer
+					err = utils.PrettyEncode(outputs, &buffer)
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(buffer.String())
+					return nil
 					if err != nil {
 						return err
 					}
@@ -249,15 +255,20 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						return err
 					}
 
-					output, err := json.Marshal(Result{
+					output := Result{
 						Ipld:    ipld,
 						DataCid: cid,
 						CidMap:  cidMap,
-					})
+					}
 					if err != nil {
 						return err
 					}
-					fmt.Println(string(output))
+					var buffer bytes.Buffer
+					err = utils.PrettyEncode(output, &buffer)
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(buffer.String())
 				}
 				return nil
 			}
