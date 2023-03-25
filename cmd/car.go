@@ -7,6 +7,7 @@ import (
 	c "delta/config"
 	"delta/utils"
 	"fmt"
+	commcid "github.com/filecoin-project/go-fil-commcid"
 	"github.com/filecoin-project/go-fil-commp-hashhash"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
@@ -67,12 +68,22 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "Output directory for the car file. If not specified, the car file will be created in the same directory as the input file",
 				Value: ".",
 			},
+			&cli.BoolFlag{
+				Name:  "include-commp",
+				Usage: "Include commp in the output",
+				Value: false,
+			},
 		},
 		Action: func(c *cli.Context) error {
 			sourceInput := c.String("source")
 			splitSizeInput := c.String("split-size")
 			outDir := c.String("output-dir")
-			fmt.Println(splitSizeInput)
+			includeCommp := c.Bool("include-commp")
+
+			// make sure outDir exist
+			if _, err := os.Stat(outDir); os.IsNotExist(err) {
+				return err
+			}
 
 			if splitSizeInput != "" {
 				splitSizeA, err := strconv.Atoi(splitSizeInput)
@@ -154,12 +165,29 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						if err != nil {
 							return err
 						}
-
-						outputs = append(outputs, Result{
+						output := Result{
 							Ipld:    ipld,
 							DataCid: cid,
 							CidMap:  cidMap,
-						})
+						}
+						if includeCommp {
+							rawCommP, pieceSize, err := cp.Digest()
+							if err != nil {
+								return err
+							}
+							commCid, err := commcid.DataCommitmentV1ToCID(rawCommP)
+							if err != nil {
+								return err
+							}
+							err = os.Rename(outPath, path.Join(outDir, commCid.String()+".car"))
+							if err != nil {
+								return err
+							}
+							output.PieceCid = commCid.String()
+							output.PieceSize = pieceSize
+						}
+						outputs = append(outputs, output)
+
 					}
 					return nil
 				})
@@ -217,6 +245,22 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							DataCid: cid,
 							CidMap:  cidMap,
 						}
+						if includeCommp {
+							rawCommP, pieceSize, err := cp.Digest()
+							if err != nil {
+								return err
+							}
+							commCid, err := commcid.DataCommitmentV1ToCID(rawCommP)
+							if err != nil {
+								return err
+							}
+							err = os.Rename(outPath, path.Join(outDir, commCid.String()+".car"))
+							if err != nil {
+								return err
+							}
+							output.PieceCid = commCid.String()
+							output.PieceSize = pieceSize
+						}
 						outputs = append(outputs, output)
 						return nil
 					})
@@ -254,11 +298,26 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 					if err != nil {
 						return err
 					}
-
 					output := Result{
 						Ipld:    ipld,
 						DataCid: cid,
 						CidMap:  cidMap,
+					}
+					if includeCommp {
+						rawCommP, pieceSize, err := cp.Digest()
+						if err != nil {
+							return err
+						}
+						commCid, err := commcid.DataCommitmentV1ToCID(rawCommP)
+						if err != nil {
+							return err
+						}
+						err = os.Rename(outPath, path.Join(outDir, commCid.String()+".car"))
+						if err != nil {
+							return err
+						}
+						output.PieceCid = commCid.String()
+						output.PieceSize = pieceSize
 					}
 					if err != nil {
 						return err

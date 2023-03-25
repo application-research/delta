@@ -33,6 +33,13 @@ mkdir -p output
 ./delta car --source=<dir> --output-dir=output --split-size=1024
 ```
 
+#### Running `delta car` on a directory and generate piece_commitment for each file
+This will generate a car file for each file in the directory. The car file will be split into chunks of the specified size.
+```bash
+mkdir -p output
+./delta car --source=<dir> --output-dir=output --split-size=1024 --include-commp=true
+```
+
 This will generate collection of car files with split-size of 1024 bytes for each file in the directory.
 
 ### Piece Commitment computation cli
