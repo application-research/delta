@@ -1,6 +1,6 @@
-# Getting Estuary API Token/Key
+# Getting API Token/Key
 
-Delta uses Estuary API to make deals. To make deals, you need to get an API token from Estuary. You can get an API token from [here](https://estuary.tech/).
+Delta requires an API key to make deals. To make deals, you need to get an API token. You can get an API token from [here](https://estuary.tech/).
 
 Alternatively, you can also get an API token by running the following request:
 
