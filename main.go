@@ -32,6 +32,7 @@ func main() {
 
 	// commands
 	commands = append(commands, cmd.DaemonCmd(&cfg)...)
+	commands = append(commands, cmd.CarCmd(&cfg)...)
 	commands = append(commands, cmd.CommpCmd(&cfg)...)
 	commands = append(commands, cmd.DealCmd(&cfg)...)
 	commands = append(commands, cmd.StatusCmd(&cfg)...)

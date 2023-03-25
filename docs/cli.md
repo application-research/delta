@@ -5,11 +5,106 @@ Delta CLI tools are used to interact with the Delta node. It provides a set of c
 
 Delta CLI is packaged with the Delta node. Build and install `Delta` node as described in [getting started running a delta node](getting-started-run-delta.md).
 
-- Storage deal making cli
+- Car file generation cli
 - Piece commitment computation cli
+- Storage deal making cli
 - Content status check cli
 
 ## Usage
+### Car file generation cli
+#### Running `delta car` on a file
+This will generate a car file for the file.
+```bash
+mkdir -p output
+./delta car --source=<file> --output-dir=output
+```
+
+#### Running `delta car` on a directory
+This will generate a car file for each file in the directory.
+```bash
+mkdir -p output
+./delta car --source=<dir> --output-dir=output
+```
+
+#### Running `delta car` on a directory with a split size
+This will generate a car file for each file in the directory. The car file will be split into chunks of the specified size.
+```bash
+mkdir -p output
+./delta car --source=<dir> --output-dir=output --split-size=1024
+```
+
+This will generate collection of car files with split-size of 1024 bytes for each file in the directory.
+
+### Piece Commitment computation cli
+#### Running `delta commp` on a file
+
+Get the piece commitment of a file
+```
+./delta commp --file=README.md --include-payload-cid=false --mode=parallel 
+```
+**Output**
+```
+{
+    "file_name": "README.md",
+    "size": 4317,
+    "cid": "bafybeifjbv6uenj75owkbdhz7aiaribxmgpufelpaeznp2m74x65b5soxq",
+    "piece_commitment": {
+        "piece_cid": "baga6ea4seaqniq6k5yh3iiguuj4rhsz235n7wnbqrkqkjrdzwbihsctujtlpgcq",
+        "padded_piece_size": 8192,
+        "unpadded_piece_size": 8128
+    }
+}
+
+```
+
+#### Running `delta commp` on a directory
+Get the piece commitment of all the files in a directory
+```
+./delta commp --dir=<dir> --include-payload-cid=false --mode=parallel 
+```
+
+**Output**
+```
+[
+    {
+        "file_name": "docs/open-stats-info.md",
+        "size": 544,
+        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
+        "piece_commitment": {
+            "piece_cid": "baga6ea4seaqecjhgezzr4arsswzyvx5weqv6twh6bth6tuv7ftip5bmjg55q6aa",
+            "padded_piece_size": 1024,
+            "unpadded_piece_size": 1016
+        }
+    },
+    {
+        "file_name": "docs/repair.md",
+        "size": 302,
+        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
+        "piece_commitment": {
+            "piece_cid": "baga6ea4seaqmriuea5uxxnq6oqv7akpng5asuiq7f6wvbijr5u24mieob6yzknq",
+            "padded_piece_size": 512,
+            "unpadded_piece_size": 508
+        }
+    },
+    {
+        "file_name": "docs/running-delta-docker.md",
+        "size": 1476,
+        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
+        "piece_commitment": {
+            "piece_cid": "baga6ea4seaqddn2heeq3dqytsxmhl6sejddqbhijedmys35yuzjpdifb2rvtqga",
+            "padded_piece_size": 2048,
+            "unpadded_piece_size": 2032
+        }
+    },
+    {
+        "file_name": "docs/storage-deals.md",
+        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
+        "piece_commitment": {
+            "piece_cid": "baga6ea4seaqomqafu276g53zko4k23xzh4h4uecjwicbmvhsuqi7o4bhthhm4aq"
+        }
+    }
+]
+```
 ### Storage deal making cli
 The storage deal making cli needs a running Delta daemon to work. 
 
@@ -133,76 +228,6 @@ Take note of all the content_ids.
 
 ```
 
-### Piece Commitment computation cli
-#### Running `delta commp` on a file
-
-Get the piece commitment of a file
-```
-./delta commp --file=README.md --include-payload-cid=false --mode=parallel 
-```
-**Output**
-```
-{
-    "file_name": "README.md",
-    "size": 4317,
-    "cid": "bafybeifjbv6uenj75owkbdhz7aiaribxmgpufelpaeznp2m74x65b5soxq",
-    "piece_commitment": {
-        "piece_cid": "baga6ea4seaqniq6k5yh3iiguuj4rhsz235n7wnbqrkqkjrdzwbihsctujtlpgcq",
-        "padded_piece_size": 8192,
-        "unpadded_piece_size": 8128
-    }
-}
-
-```
-
-#### Running `delta commp` on a directory
-Get the piece commitment of all the files in a directory
-```
-./delta commp --dir=<dir> --include-payload-cid=false --mode=parallel 
-```
-
-**Output**
-```
-[
-    {
-        "file_name": "docs/open-stats-info.md",
-        "size": 544,
-        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
-        "piece_commitment": {
-            "piece_cid": "baga6ea4seaqecjhgezzr4arsswzyvx5weqv6twh6bth6tuv7ftip5bmjg55q6aa",
-            "padded_piece_size": 1024,
-            "unpadded_piece_size": 1016
-        }
-    },
-    {
-        "file_name": "docs/repair.md",
-        "size": 302,
-        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
-        "piece_commitment": {
-            "piece_cid": "baga6ea4seaqmriuea5uxxnq6oqv7akpng5asuiq7f6wvbijr5u24mieob6yzknq",
-            "padded_piece_size": 512,
-            "unpadded_piece_size": 508
-        }
-    },
-    {
-        "file_name": "docs/running-delta-docker.md",
-        "size": 1476,
-        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
-        "piece_commitment": {
-            "piece_cid": "baga6ea4seaqddn2heeq3dqytsxmhl6sejddqbhijedmys35yuzjpdifb2rvtqga",
-            "padded_piece_size": 2048,
-            "unpadded_piece_size": 2032
-        }
-    },
-    {
-        "file_name": "docs/storage-deals.md",
-        "cid": "bafybeif7ztnhq65lumvvtr4ekcwd2ifwgm3awq4zfr3srh462rwyinlb4y",
-        "piece_commitment": {
-            "piece_cid": "baga6ea4seaqomqafu276g53zko4k23xzh4h4uecjwicbmvhsuqi7o4bhthhm4aq"
-        }
-    }
-]
-```
 
 ### Status of a content 
 Once you get a deal request made, you can get the status of a content.
