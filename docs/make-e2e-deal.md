@@ -42,7 +42,6 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
 --header 'Authorization: Bearer [ESTUARY_API_KEY]' \
 --form 'data=@"my-file"' \
 --form 'metadata="{\"miner\":\"f01963614\",\"connection_mode\":\"e2e\"}"'
---form 'metadata="{\"miner\":\"f02031042\",\"connection_mode\":\"e2e\", \"wallet\":{\"address\":\"f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi\"}}"'
 ```
 
 A few things to note here:
