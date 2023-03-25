@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    labels:
+      - "build-date=${BUILD_DATE}"
+      - "commit=${COMMIT}"
+      - "version=${VERSION}"
+      - "wallet=${WALLET_DIR}"
+      - "description=${DESCRIPTION}"
+    ports:
+      - "${APP_PORT:-1414}:1414"
+      - "${ANNOUNCE_ADDR_PORT:-6745}:6745/tcp"
+    environment:
+      - NODE_NAME=${NODE_NAME:-"delta-node"}
+      - NODE_DESCRIPTION=${NODE_DESCRIPTION:-"Delta Node"}
+      - NODE_TYPE=${NODE_TYPE:-"delta"}
+      - MODE=${MODE:-"cluster"}
+      - DB_DSN=${DB_DSN:-"delta.db"}
+      - DELTA_AUTH=${DELTA_AUTH:-""}
+      - MAX_CLEANUP_WORKERS=${MAX_CLEANUP_WORKERS:-"1"}
