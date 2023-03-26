@@ -26,11 +26,12 @@ type CommpResult struct {
 }
 
 type Result struct {
-	Ipld      *utils.FsNode                `json:"ipld"`
-	DataCid   string                       `json:"data_cid"`
-	PieceCid  string                       `json:"piece_cid"`
-	PieceSize uint64                       `json:"piece_size"`
-	CidMap    map[string]utils.CidMapValue `json:"cid_map"`
+	//Ipld       *utils.FsNode                `json:"ipld"`
+	PayloadCid string                       `json:"payload_cid"`
+	Commp      string                       `json:"commp"`
+	PaddedSize uint64                       `json:"padded_size"`
+	Size       uint64                       `json:"size"`
+	CidMap     map[string]utils.CidMapValue `json:"cid_map"`
 }
 
 type Input []utils.Finfo
@@ -157,7 +158,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						}
 						cp := new(commp.Calc)
 						writer := bufio.NewWriterSize(io.MultiWriter(carF, cp), BufSize)
-						ipld, cid, cidMap, err := utils.GenerateCar(ctx, input, "", "", writer)
+						_, cid, cidMap, err := utils.GenerateCar(ctx, input, "", "", writer)
 						if err != nil {
 							return err
 						}
@@ -166,9 +167,9 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							return err
 						}
 						output := Result{
-							Ipld:    ipld,
-							DataCid: cid,
-							CidMap:  cidMap,
+							//Ipld:       ipld,
+							PayloadCid: cid,
+							CidMap:     cidMap,
 						}
 						if includeCommp {
 							rawCommP, pieceSize, err := cp.Digest()
@@ -183,8 +184,9 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							if err != nil {
 								return err
 							}
-							output.PieceCid = commCid.String()
-							output.PieceSize = pieceSize
+							output.Commp = commCid.String()
+							output.PaddedSize = pieceSize
+							output.Size = uint64(written)
 						}
 						outputs = append(outputs, output)
 
@@ -231,7 +233,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						}
 						cp := new(commp.Calc)
 						writer := bufio.NewWriterSize(io.MultiWriter(carF, cp), BufSize)
-						ipld, cid, cidMap, err := utils.GenerateCar(ctx, input, "", "", writer)
+						_, cid, cidMap, err := utils.GenerateCar(ctx, input, "", "", writer)
 						if err != nil {
 							return err
 						}
@@ -241,9 +243,9 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						}
 
 						output := Result{
-							Ipld:    ipld,
-							DataCid: cid,
-							CidMap:  cidMap,
+							//Ipld:       ipld,
+							PayloadCid: cid,
+							CidMap:     cidMap,
 						}
 						if includeCommp {
 							rawCommP, pieceSize, err := cp.Digest()
@@ -258,8 +260,9 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							if err != nil {
 								return err
 							}
-							output.PieceCid = commCid.String()
-							output.PieceSize = pieceSize
+							output.Commp = commCid.String()
+							output.PaddedSize = pieceSize
+							output.Size = uint64(info.Size())
 						}
 						outputs = append(outputs, output)
 						return nil
@@ -290,7 +293,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 					}
 					cp := new(commp.Calc)
 					writer := bufio.NewWriterSize(io.MultiWriter(carF, cp), BufSize)
-					ipld, cid, cidMap, err := utils.GenerateCar(ctx, input, "", "", writer)
+					_, cid, cidMap, err := utils.GenerateCar(ctx, input, "", "", writer)
 					if err != nil {
 						return err
 					}
@@ -299,9 +302,9 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						return err
 					}
 					output := Result{
-						Ipld:    ipld,
-						DataCid: cid,
-						CidMap:  cidMap,
+						//Ipld:       ipld,
+						PayloadCid: cid,
+						CidMap:     cidMap,
 					}
 					if includeCommp {
 						rawCommP, pieceSize, err := cp.Digest()
@@ -316,8 +319,9 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						if err != nil {
 							return err
 						}
-						output.PieceCid = commCid.String()
-						output.PieceSize = pieceSize
+						output.Commp = commCid.String()
+						output.PaddedSize = pieceSize
+						output.Size = uint64(stat.Size())
 					}
 					if err != nil {
 						return err
