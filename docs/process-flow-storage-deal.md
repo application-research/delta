@@ -1,12 +1,15 @@
 # Storage Deal Making Process flow
 
+(*This is a work in progress*)
+
 Delta is a deal-making service that enables users to make deals with Storage Providers. It is an application that allows users to upload files to the Filecoin network and get them stored by Storage Providers.
 
 A content goes thru different stages in delta. 
 
-## Deal Preparation
+## Piece Commitment and Deal Proposal Preparation
 - To start, the user will initiate the process by uploading the desired content onto Delta's platform. Once uploaded, Delta will assign the content to a light node and create a corresponding record in its database. To ensure the security and reliability of the content, Delta will assign a miner and wallet to the content record, and create a piece commitment record in its database. This involves computing the piece commitment of the content, which essentially verifies that the content has not been altered in any way.
 - Delta will create a deal proposal parameters record in its database, which outlines the terms and conditions of the proposed deal. Based on this record, Delta will then create a deal proposal record, which will serve as a formal agreement between the user and Delta regarding the storage and access of the content on Delta's platform.
+- The content status is updated to "CONTENT_PIECE_ASSIGNED" to indicate that a piece commitment has been generated, and the ID of the newly [created piece commitment record](process-flow-piece-commitment-compute.md) is associated with the content.
 - Once all the meta is available, Delta will then dispatch a job that will call a method called `makeStorageDeal` to make a storage deal proposal for the content.
 
 ## Making a Storage Deal
