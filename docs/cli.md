@@ -41,6 +41,8 @@ mkdir -p output
 ./delta car --source=<dir> --output-dir=output --split-size=1024 --include-commp=true
 ```
 
+This will generate collection of car files with split-size of 1024 bytes for each file in the directory.
+
 **Output along with the CAR files generated on the `output-dir` folder**
 ```
 [
@@ -98,7 +100,7 @@ mkdir -p output
     },
 ]
 ```
-This will generate collection of car files with split-size of 1024 bytes for each file in the directory.
+
 
 ### Piece Commitment computation cli
 #### Running `delta commp` on a file
