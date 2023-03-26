@@ -33,6 +33,8 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 - To learn how to repair a deal, go to the [repairing and retrying deals](repair.md) **[WIP]**
 - To learn how to access the open statistics and information, go to the [open statistics and information](open-stats-info.md) **[WIP]**
 - To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](content-deal-status.md) **[WIP]**
+- To learn about the piece commitment computation process flow, go to the [piece commitment computation process flow](process-flow-piece-commitment-compute.md) **[WIP]**
+- To learn about the storage deal process flow, go to the [storage deal process flow](process-flow-storage-deal.md) **[WIP]**
 
 # Author
 Protocol Labs Outercore Engineering.
