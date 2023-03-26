@@ -11,9 +11,9 @@ import (
 // It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 	repair := e.Group("/repair")
-	repair.GET("/force-retry-all", handleForceRetryPendingContents(node))
-	repair.GET("/content/:contentId", handleRepairDealContent(node))
-	repair.GET("/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
+	repair.GET("/deal/force-retry-all", handleForceRetryPendingContents(node))
+	repair.GET("/deal/content/:contentId", handleRepairDealContent(node))
+	repair.GET("/deal/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
 }
 
 // It takes a piece commitment id, finds the piece commitment, and re-queues the job
