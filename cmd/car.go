@@ -52,7 +52,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 	var carCommands []*cli.Command
 	carCmd := &cli.Command{
 		Name:  "car",
-		Usage: "Create a car file from a list of files",
+		Usage: "Generate car file(s) from a given file or directory",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "source",

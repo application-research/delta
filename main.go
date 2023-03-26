@@ -36,6 +36,7 @@ func main() {
 	commands = append(commands, cmd.CommpCmd(&cfg)...)
 	commands = append(commands, cmd.DealCmd(&cfg)...)
 	commands = append(commands, cmd.StatusCmd(&cfg)...)
+	commands = append(commands, cmd.WalletCmd(&cfg)...)
 
 	app := &cli.App{
 		Commands:    commands,

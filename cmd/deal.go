@@ -23,7 +23,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 	dealCmd := &cli.Command{
 		Name:        "deal",
-		Usage:       "Make a delta storage deal",
+		Usage:       "Make a Network Storage Deal on Delta",
 		Description: "Make a delta storage deal. The type of deal can be either e2e (online) or import (offline).",
 		Flags: []cli.Flag{
 			&cli.StringFlag{

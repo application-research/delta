@@ -9,6 +9,7 @@ Delta CLI is packaged with the Delta node. Build and install `Delta` node as des
 - Piece commitment computation cli
 - Storage deal making cli
 - Content status check cli
+- Wallet cli
 
 ## Usage
 ### Car file generation cli
@@ -292,3 +293,47 @@ You can get the status of a content by running the following command.
 }
 
 ```
+
+### Wallet CLI
+
+#### Register a wallet
+To register a wallet, you need to export the wallet from lotus/boostd and use the hex value to register the wallet.
+```
+./delta wallet register --delta-host="https://cake.delta.store" --hex="<HEX FROM LOTUS/BOOSTD EXPORT" --api-key=<API_KEY>
+{
+    "message": "Successfully imported a wallet address. Please take note of the following information.",
+    "wallet_addr": "f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi",
+    "wallet_uuid": "18a21dd5-cb7c-11ed-a090-3cecef773e44"
+}
+
+```
+#### List all wallets
+To list all wallets associated to an API KEY, run the following command.
+```
+./delta wallet list --delta-host="https://cake.delta.store" --api-key=<API_KEY>
+{
+    "wallets": [
+        {
+            "ID": 1,
+            "uuid": "84a029e2-c93c-11ed-98be-3cecef773e44",
+            "addr": "f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi",
+            "owner": <API_KEY>,
+            "key_type": "secp256k1",
+            "private_key": "<KEY>",
+            "created_at": "2023-03-23T05:35:27.866873092Z",
+            "updated_at": "2023-03-23T05:35:27.866873092Z"
+        },
+        {
+            "ID": 3,
+            "uuid": "ad7c03ad-cb77-11ed-a090-3cecef773e44",
+            "addr": "f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi",
+            "owner": <API_KEY>,
+            "key_type": "secp256k1",
+            "private_key": "<KEY>",
+            "created_at": "2023-03-26T01:43:59.049178076Z",
+            "updated_at": "2023-03-26T01:43:59.049178076Z"
+        },
+    ]
+} 
+```
+
