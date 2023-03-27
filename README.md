@@ -1,4 +1,5 @@
 [![CodeQL](https://img.shields.io/github/actions/workflow/status/application-research/delta/codeql.yml?label=CodeQL&style=for-the-badge)](https://github.com/application-research/delta/actions/workflows/codeql.yml)
+[![Unit Tests](https://img.shields.io/github/actions/workflow/status/application-research/delta/go-unit-tests.yml?label=UnitTests&style=for-the-badge)](https://github.com/application-research/delta/actions/workflows/go-unit-tests.yml)
 [![Release](https://img.shields.io/github/v/release/application-research/delta?display_name=release&style=for-the-badge)](https://github.com/application-research/delta/releases)
 
 # Δ Delta
