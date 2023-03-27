@@ -7,7 +7,7 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 - Make e2e / online and import / offline storage deals.
 - Compute piece_commitments using variety of methods
   - boost piece commitment computation
-  - parallel piece commitment computation
+  - fast piece commitment computation
   - filclient piece commitment computation
 - Assign deals to specific miners
 - Assign deals to specific wallets

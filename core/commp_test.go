@@ -2,14 +2,15 @@ package core
 
 import (
 	"context"
+	"io"
+	"reflect"
+	"testing"
+
 	"github.com/filecoin-project/go-commp-utils/writer"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	carv2 "github.com/ipld/go-car/v2"
-	"io"
-	"reflect"
-	"testing"
 )
 
 func TestCommpService_GenerateCommPCarV2(t *testing.T) {
@@ -109,13 +110,13 @@ func TestCommpService_GenerateParallelCommp(t *testing.T) {
 			c := CommpService{
 				DeltaNode: tt.fields.DeltaNode,
 			}
-			got, err := c.GenerateParallelCommp(tt.args.readerFromFile)
+			got, err := c.GenerateCommp(tt.args.readerFromFile)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GenerateParallelCommp() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GenerateCommp() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GenerateParallelCommp() got = %v, want %v", got, tt.want)
+				t.Errorf("GenerateCommp() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

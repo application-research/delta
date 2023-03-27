@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+
 	"github.com/application-research/filclient"
 	"github.com/filecoin-project/go-commp-utils/writer"
 	"github.com/filecoin-project/go-state-types/abi"
@@ -11,7 +13,6 @@ import (
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	carv2 "github.com/ipld/go-car/v2"
 	"github.com/labstack/gommon/log"
-	"io"
 )
 
 type CommpService struct {
@@ -28,6 +29,9 @@ func (c CommpService) GenerateCommPFile(context context.Context, payloadCid cid.
 // Generating a CommP file from a CARv2 file.
 func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceInfo, error) {
 	bytesFromCar, err := io.ReadAll(readerFromFile)
+	if err != nil {
+		return nil, fmt.Errorf("error reading car stream: %w", err)
+	}
 	rd, err := carv2.NewReader(bytes.NewReader(bytesFromCar))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CARv2 reader: %w", err)
@@ -73,16 +77,9 @@ func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceIn
 	}, nil
 }
 
-// Generating a CommP file from a CARv2 file.
-func (c CommpService) GenerateParallelCommp(readerFromFile io.Reader) (writer.DataCIDSize, error) {
-	bytesFromCar, err := io.ReadAll(readerFromFile)
-	if err != nil {
-		return writer.DataCIDSize{}, err
-	}
-
-	writer := &writer.Writer{}
-	writer.Write(bytesFromCar)
-	return writer.Sum()
+// Generate a commP from a reader
+func (c CommpService) GenerateCommp(readerFromFile io.Reader) (writer.DataCIDSize, error) {
+	return fastCommp(readerFromFile)
 }
 
 // GetSize Getting the size of the file.
