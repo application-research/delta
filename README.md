@@ -1,3 +1,6 @@
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/application-research/delta/codeql.yml?label=CodeQL&style=for-the-badge)](https://github.com/application-research/delta/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/application-research/delta?display_name=release&style=for-the-badge)](https://github.com/application-research/delta/releases)
+
 # Δ Delta
 Filecoin Storage Deal Making Service
 

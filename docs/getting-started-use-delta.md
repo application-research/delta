@@ -39,10 +39,10 @@ Here's the complete structure of the `metadata` request.
 ```
 
 # Make an e2e / online deal
-Create a deal for a content by sending a `POST` request to the `/api/v1/deal/content` endpoint. The `data` request is the content to be stored. The `metadata` request is the information required to make the deal.
+Create a deal for a content by sending a `POST` request to the `/api/v1/deal/end-to-end` endpoint. The `data` request is the content to be stored. The `metadata` request is the information required to make the deal.
 ## Request
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/end-to-end' \
 --header 'Authorization: Bearer [API_KEY]' \
 --form 'data=@"my-file"' \
 --form 'metadata="{\"miner\":\"f01963614\",\"connection_mode\":\"e2e\"}"'
@@ -58,7 +58,7 @@ The response will look like this:
 ```
 {
     "status": "success",
-    "message": "File uploaded and pinned successfully",
+    "message": "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
     "content_id": 1,
     "deal_request_meta": {
         "cid": "bafybeib6l6odanq5zrspbw4c7fys4jspshgwzuuhotnpljsivhdythw6xu",
@@ -74,10 +74,10 @@ The response will look like this:
 Take note of the `content_id` field. This is the id of the content that was uploaded. This is used to get the status of the deal.
 
 # Make an import / offline deal.
-Create a deal for a pre-computed piece-commitment by sending a `POST` request to the `/api/v1/deal/piece-commitments` endpoint. The `metadata` request is the information required to make the deal.
+Create a deal for a pre-computed piece-commitment by sending a `POST` request to the `/api/v1/deal/imports` endpoint. The `metadata` request is the information required to make the deal.
 ## Request
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitments' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/imports' \
 --header 'Authorization: Bearer [API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '[{
@@ -106,7 +106,7 @@ The response will look like this:
 [
     {
         "status": "success",
-        "message": "File uploaded and pinned successfully",
+        "message": "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
         "content_id": 1,
         "deal_request_meta": {
             "cid": "bafybeidylyizmuhqny6dj5vblzokmrmgyq5tocssps3nw3g22dnlty7bhy",
