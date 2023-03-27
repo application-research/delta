@@ -43,6 +43,65 @@ mkdir -p output
 
 This will generate collection of car files with split-size of 1024 bytes for each file in the directory.
 
+**Output along with the CAR files generated on the `output-dir` folder**
+```
+[
+    {
+        "payload_cid": "bafybeibgymnw3smet7qzkxdbt6o33rxdzgyz7u5e4tebomgy72tigdb22y",
+        "commp": "baga6ea4seaqd5q5y7fgdv3gsot4pxzoojov7cwobm3yy54ygy2n3msksatkaepy",
+        "padded_size": 2048,
+        "size": 1024,
+        "cid_map": {
+            "": {
+                "is_dir": true,
+                "cid": "bafybeibgymnw3smet7qzkxdbt6o33rxdzgyz7u5e4tebomgy72tigdb22y"
+            },
+            "output": {
+                "is_dir": true,
+                "cid": "bafybeid3wn5zdwg6focmh2mmul3shq75t6iakwogfx5ur36gxsixa5wugi"
+            },
+            "output/README.md": {
+                "is_dir": true,
+                "cid": "bafybeiey4qtix73tuka6s5fjflub63dv4opjs4wgylxgs5xxwcewosg44q"
+            },
+            "output/README.md/README.md_0000": {
+                "is_dir": false,
+                "cid": "bafkreibgngawuoylmk4lq2gvltd2c2kksfhpwok7smjtnrsfxgm2efbwqm"
+            }
+        }
+    },
+    {
+        "payload_cid": "bafybeibt7rhs7qke6xyw4h4jrrjbastlcense443oyh73rhpokkkk4zqy4",
+        "commp": "baga6ea4seaqevyznwx7sqrhwuvooftdqaaonlq6ovjtgvescpkixvcav7fzwogi",
+        "padded_size": 4096,
+        "size": 1024,
+        "cid_map": {
+            "": {
+                "is_dir": true,
+                "cid": "bafybeibt7rhs7qke6xyw4h4jrrjbastlcense443oyh73rhpokkkk4zqy4"
+            },
+            "output": {
+                "is_dir": true,
+                "cid": "bafybeifmzm2n2stcttfaskpmckyke4gdall7sr7o6npq2cln3l5cmctjha"
+            },
+            "output/README.md": {
+                "is_dir": true,
+                "cid": "bafybeidndf3333a7ytd4vk6phawfv7vrmycobl3pjd4hpsdh2yuraran6u"
+            },
+            "output/README.md/README.md_0000": {
+                "is_dir": false,
+                "cid": "bafkreibgngawuoylmk4lq2gvltd2c2kksfhpwok7smjtnrsfxgm2efbwqm"
+            },
+            "output/README.md/README.md_0001": {
+                "is_dir": false,
+                "cid": "bafkreie5uynugmo6okjcyk4tpmpjacn37rwnkeofqc7qrdfkgdef4m56ni"
+            }
+        }
+    },
+]
+```
+
+
 ### Piece Commitment computation cli
 #### Running `delta commp` on a file
 
@@ -147,7 +206,7 @@ Take note of the content_id. You'll use this to get the status of the deal.
 ```
 {
     "status": "success",
-    "message": "File uploaded and pinned successfully",
+    "message": "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
     "content_id": 12,
     "deal_request_meta": {
         "cid": "bafybeifjbv6uenj75owkbdhz7aiaribxmgpufelpaeznp2m74x65b5soxq",

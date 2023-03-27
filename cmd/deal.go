@@ -99,7 +99,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					fmt.Println(buffer.String())
 				}
 
-				endpoint = url + "/deal/content"
+				endpoint = url + "/deal/end-to-end"
 
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("POST", endpoint, nil)
@@ -203,7 +203,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					}
 					fmt.Println(buffer.String())
 				}
-				endpoint = url + "/deal/piece-commitments"
+				endpoint = url + "/deal/imports"
 
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(metadataParam)))
