@@ -9,6 +9,10 @@ import (
 	"delta/core"
 	"delta/utils"
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+
 	"github.com/application-research/filclient"
 	"github.com/application-research/whypfs-core"
 	"github.com/filecoin-project/go-commp-utils/writer"
@@ -16,9 +20,6 @@ import (
 	"github.com/ipfs/go-cid"
 	_ "github.com/ipfs/go-merkledag"
 	"github.com/urfave/cli/v2"
-	"io/fs"
-	"os"
-	"path/filepath"
 )
 
 type PieceCommitmentResult struct {
@@ -56,8 +57,8 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 			},
 			&cli.StringFlag{
 				Name:  "mode",
-				Usage: "specify the mode of the piece commitment generation (default: parallel. options: filboost, stream, parallel)",
-				Value: "parallel",
+				Usage: "specify the mode of the piece commitment generation (default: fast. options: filboost, stream, parallel, fast)",
+				Value: "fast",
 			},
 			&cli.BoolFlag{
 				Name:  "include-payload-cid",
@@ -107,12 +108,29 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 				if c.String("mode") == "stream" {
 					fileToStream, err := os.Open(file)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
 					fileToStreamReader := bufio.NewReader(fileToStream)
 					carV2PieceInfo, err = commpService.GenerateCommPCarV2(fileToStreamReader)
 					if err != nil {
 						fmt.Println(err)
 						return err
 					}
+				} else if c.String("mode") == "parallel" {
+					fileToParallelCommp, err := os.Open(file)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					fileToParallelCommpReader := bufio.NewReader(fileToParallelCommp)
+					dataCidPieceInfo, err = commpService.GenerateParallelCommp(fileToParallelCommpReader)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+
 				} else if c.String("mode") == "filboost" {
 					cidToCompute, err := cid.Decode(commpRequest.Cid)
 					if err != nil {
@@ -120,16 +138,22 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 						return err
 					}
 					payloadCid, paddedPieceSize, unpaddedPieceSize, err := filclient.GeneratePieceCommitment(context.Background(), cidToCompute, whypfsNode.Blockstore)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
 					filclientCommp = FilclientCommp{
 						PayloadCid:        payloadCid,
 						PaddedPieceSize:   paddedPieceSize,
 						UnpaddedPieceSize: unpaddedPieceSize,
 					}
-
 				} else {
-					fileToParallelCommp, err := os.Open(file)
-					fileToParallelCommpReader := bufio.NewReader(fileToParallelCommp)
-					dataCidPieceInfo, err = commpService.GenerateParallelCommp(fileToParallelCommpReader)
+					fileToStream, err := os.Open(file)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					dataCidPieceInfo, err = commpService.GenerateCommp(fileToStream)
 					if err != nil {
 						fmt.Println(err)
 						return err
