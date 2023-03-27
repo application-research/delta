@@ -70,11 +70,16 @@ The response will look like this:
 Take note of the `content_id` field. This is the id of the content that was uploaded. This is used to get the status of the deal.
 
 # Get the status of the deal.
-To get the status of the deal, we can use the `/api/v1/stats/content/:content_id` endpoint.
+To get the status of the deal, we can use the `/api/v1/stats/content/:content_id` or `/open/stats/content/:content_id` endpoint.
 ## Request
 ```
 curl --location --request GET 'http://localhost:1414/api/v1/stats/content/:content_id' \
 --header 'Authorization: Bearer [API_KEY]'
+```
+Alternatively, you can view the status of the deal using the `/open/stats/content` endpoint.
+Note: This endpoint does not require an API key.
+```
+curl --location --request GET 'http://localhost:1414/open/stats/content/:content_id'
 ```
 
 ## Response
