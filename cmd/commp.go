@@ -57,7 +57,7 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 			},
 			&cli.StringFlag{
 				Name:  "mode",
-				Usage: "specify the mode of the piece commitment generation (default: fast. options: filboost, stream, parallel, fast)",
+				Usage: "specify the mode of the piece commitment generation (default: fast. options: filboost, stream, fast)",
 				Value: "fast",
 			},
 			&cli.BoolFlag{
@@ -118,19 +118,6 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 						fmt.Println(err)
 						return err
 					}
-				} else if c.String("mode") == "parallel" {
-					fileToParallelCommp, err := os.Open(file)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					fileToParallelCommpReader := bufio.NewReader(fileToParallelCommp)
-					dataCidPieceInfo, err = commpService.GenerateParallelCommp(fileToParallelCommpReader)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-
 				} else if c.String("mode") == "filboost" {
 					cidToCompute, err := cid.Decode(commpRequest.Cid)
 					if err != nil {
@@ -272,7 +259,7 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 						}
 					} else {
 						fileToParallelCommpReader := bufio.NewReader(fileOpen)
-						dataCidPieceInfo, err = commpService.GenerateParallelCommp(fileToParallelCommpReader)
+						dataCidPieceInfo, err = commpService.GenerateCommp(fileToParallelCommpReader)
 						if err != nil {
 							fmt.Println(err)
 							return err

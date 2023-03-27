@@ -4,13 +4,14 @@ import (
 	"context"
 	"delta/core"
 	"delta/utils"
+	"io"
+	"time"
+
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/filclient"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	"github.com/labstack/gommon/log"
-	"io"
-	"time"
 )
 
 // PieceCommpProcessor `PieceCommpProcessor` is a struct that contains a `context.Context`, a `*core.DeltaNode`, a `model.Content`, a
@@ -72,7 +73,7 @@ func (i PieceCommpProcessor) Run() error {
 
 	if i.LightNode.Config.Common.CommpMode == utils.COMMP_MODE_PARALLEL {
 
-		pieceInfo, err := i.CommpService.GenerateParallelCommp(node)
+		pieceInfo, err := i.CommpService.GenerateCommp(node)
 		if err != nil {
 			i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,

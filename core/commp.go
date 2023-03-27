@@ -77,18 +77,6 @@ func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceIn
 	}, nil
 }
 
-// Generating a CommP file from a CARv2 file.
-func (c CommpService) GenerateParallelCommp(readerFromFile io.Reader) (writer.DataCIDSize, error) {
-	bytesFromCar, err := io.ReadAll(readerFromFile)
-	if err != nil {
-		return writer.DataCIDSize{}, err
-	}
-
-	writer := &writer.Writer{}
-	writer.Write(bytesFromCar)
-	return writer.Sum()
-}
-
 // Generate a commP from a reader
 func (c CommpService) GenerateCommp(readerFromFile io.Reader) (writer.DataCIDSize, error) {
 	return fastCommp(readerFromFile)
