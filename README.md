@@ -1,3 +1,5 @@
+[![CodeQL](https://github.com/application-research/delta/actions/workflows/codeql.yml/badge.svg)](https://github.com/application-research/delta/actions/workflows/codeql.yml)
+
 # Δ Delta
 Filecoin Storage Deal Making Service
 
