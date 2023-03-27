@@ -675,7 +675,13 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		return err
 	}
 
+	if dealRequest.ConnectionMode == "import" {
+		return errors.New("Connection mode import is not supported for end-to-end deal endpoint")
+	}
+
+	// fail safe
 	dealRequest.ConnectionMode = "e2e"
+
 	err = ValidateMeta(dealRequest)
 
 	if err != nil {
@@ -885,6 +891,10 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 	if err != nil {
 		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
+	}
+
+	if dealRequest.ConnectionMode == "e2e" {
+		return errors.New("Connection mode e2e is not supported on this import endpoint")
 	}
 
 	dealRequest.ConnectionMode = "import"
@@ -1097,6 +1107,9 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 		var dealResponses []DealResponse
 		for _, dealRequest := range dealRequests {
+			if dealRequest.ConnectionMode == "e2e" {
+				return errors.New("Connection mode e2e is not supported on this import endpoint")
+			}
 			dealRequest.ConnectionMode = "import"
 			err = ValidateMeta(dealRequest)
 			if err != nil {
