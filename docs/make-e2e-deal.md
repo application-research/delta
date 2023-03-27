@@ -1,6 +1,6 @@
 # Make an e2e / online deal.
 
-Create an online deal for a content by sending a `POST` request to the `/api/v1/deal/content` endpoint. The `data` request is the content to be stored. The `metadata` request is the information required to make the deal.
+Create an online deal for a content by sending a `POST` request to the `/api/v1/deal/end-to-end` endpoint. The `data` request is the content to be stored. The `metadata` request is the information required to make the deal.
 
 # Make sure you have a `Delta` node.
 - If you are looking for a running Delta node, you can use [node.delta.store](https://node.delta.store).
@@ -38,7 +38,7 @@ Here's the complete structure of the `metadata` request.
 
 ## Request
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/end-to-end' \
 --header 'Authorization: Bearer [API_KEY]' \
 --form 'data=@"my-file"' \
 --form 'metadata="{\"miner\":\"f01963614\",\"connection_mode\":\"e2e\"}"'
@@ -54,7 +54,7 @@ The response will look like this:
 ```
 {
     "status": "success",
-    "message": "File uploaded and pinned successfully",
+    "message": "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
     "content_id": 1,
     "deal_request_meta": {
         "cid": "bafybeib6l6odanq5zrspbw4c7fys4jspshgwzuuhotnpljsivhdythw6xu",
@@ -186,7 +186,7 @@ We can now use the `wallet_addr` value to make a deal.
 ## Use wallet to prepare the `metadata` request
 Once a wallet is registered, we can add a `wallet` field to the `metadata` request to make a deal using that wallet.
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/content' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/end-to-end' \
 --header 'Authorization: Bearer [API_KEY]' \
 --form 'data=@"my-file"' \
 --form 'metadata="{\"miner\":\"f02031042\",\"connection_mode\":\"e2e\", \"wallet\":{\"address\":\"f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi\"}}"'

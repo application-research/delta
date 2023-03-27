@@ -206,7 +206,7 @@ Take note of the content_id. You'll use this to get the status of the deal.
 ```
 {
     "status": "success",
-    "message": "File uploaded and pinned successfully",
+    "message": "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
     "content_id": 12,
     "deal_request_meta": {
         "cid": "bafybeifjbv6uenj75owkbdhz7aiaribxmgpufelpaeznp2m74x65b5soxq",

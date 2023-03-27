@@ -39,10 +39,10 @@ Here's the complete structure of the `metadata` request.
 ```
 
 # Make an import / offline deal.
-Create a deal for a pre-computed piece-commitment by sending a `POST` request to the `/api/v1/deal/piece-commitments` endpoint. The `metadata` request is the information required to make the deal.
+Create a deal for a pre-computed piece-commitment by sending a `POST` request to the `/api/v1/deal/imports` endpoint. The `metadata` request is the information required to make the deal.
 ## Request
 ```
-curl --location --request POST 'http://localhost:1414/api/v1/deal/piece-commitments' \
+curl --location --request POST 'http://localhost:1414/api/v1/deal/imports' \
 --header 'Authorization: Bearer [API_KEY]' \
 --header 'Content-Type: application/json' \
 --data-raw '[{
@@ -71,7 +71,7 @@ The response will look like this:
 [
     {
         "status": "success",
-        "message": "File uploaded and pinned successfully",
+        "message": "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
         "content_id": 1,
         "deal_request_meta": {
             "cid": "bafybeidylyizmuhqny6dj5vblzokmrmgyq5tocssps3nw3g22dnlty7bhy",
