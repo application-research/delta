@@ -90,16 +90,28 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	dealStatus := dealMake.Group("/status")
 
 	dealMake.POST("/content", func(c echo.Context) error {
-		return handleContentAdd(c, node)
+		return handleEndToEndDeal(c, node)
+	})
+
+	dealMake.POST("/end-to-end", func(c echo.Context) error {
+		return handleEndToEndDeal(c, node)
 	})
 
 	dealMake.POST("/piece-commitment", func(c echo.Context) error {
-		return handleCommPieceAdd(c, node)
+		return handleImportDeal(c, node)
+	})
+
+	dealMake.POST("/import", func(c echo.Context) error {
+		return handleImportDeal(c, node)
 	})
 
 	// make piece-commitments
 	dealMake.POST("/piece-commitments", func(c echo.Context) error {
-		return handleCommPiecesAdd(c, node)
+		return handleMultipleImportDeals(c, node)
+	})
+
+	dealMake.POST("/imports", func(c echo.Context) error {
+		return handleMultipleImportDeals(c, node)
 	})
 
 	dealMake.POST("/existing/content", func(c echo.Context) error {
@@ -111,7 +123,7 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 
 	dealMake.POST("/existing/piece-commitment", func(c echo.Context) error {
-		return handleCommPieceAdd(c, node)
+		return handleImportDeal(c, node)
 	})
 
 	dealPrepare.POST("/content", func(c echo.Context) error {
@@ -419,7 +431,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 
 			dealResponses = append(dealResponses, DealResponse{
 				Status:                       "success",
-				Message:                      "File uploaded and pinned successfully",
+				Message:                      "Deal request received. Please take note and check the status of the deal using the content_id.",
 				ContentId:                    content.ID,
 				DealRequest:                  dealRequest,
 				DealProposalParameterRequest: dealProposalParam,
@@ -631,7 +643,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 		err = c.JSON(200, DealResponse{
 			Status:                       "success",
-			Message:                      "File uploaded and pinned successfully",
+			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
 			ContentId:                    content.ID,
 			DealRequest:                  dealRequest,
 			DealProposalParameterRequest: dealProposalParam,
@@ -648,16 +660,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// handleContentStats returns the status of a content
-// @Summary returns the status of a content
-// @Description returns the status of a content
-// @Tags deal
-// @Accept  json
-// @Produce  json
-// @Param contentId path int true "Content ID"
-// @Success 200 {object} DealResponse
-// @Router /deal/content/{contentId} [post]
-func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
+func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
 	// lets record this.
@@ -672,7 +675,9 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 		return err
 	}
 
+	dealRequest.ConnectionMode = "e2e"
 	err = ValidateMeta(dealRequest)
+
 	if err != nil {
 		// return the error from the validation
 		return err
@@ -844,7 +849,7 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 		err = c.JSON(200, DealResponse{
 			Status:                       "success",
-			Message:                      "File uploaded and pinned successfully",
+			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
 			ContentId:                    content.ID,
 			DealRequest:                  dealRequest,
 			DealProposalParameterRequest: dealProposalParam,
@@ -864,13 +869,13 @@ func handleContentAdd(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// handleCommPieceAdd handles the request to add a commp record.
+// handleImportDeal handles the request to add a commp record.
 // @Summary Add a commp record
 // @Description Add a commp record
 // @Tags deals
 // @Accept  json
 // @Produce  json
-func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
+func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
 	// lets record this.
@@ -882,7 +887,9 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
 	}
 
+	dealRequest.ConnectionMode = "import"
 	err = ValidateMeta(dealRequest)
+
 	if err != nil {
 		return err
 	}
@@ -1050,7 +1057,7 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 
 		err = c.JSON(200, DealResponse{
 			Status:                       "success",
-			Message:                      "File uploaded and pinned successfully",
+			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
 			ContentId:                    content.ID,
 			DealRequest:                  dealRequest,
 			DealProposalParameterRequest: dealProposalParam,
@@ -1068,13 +1075,13 @@ func handleCommPieceAdd(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// handleCommPiecesAdd handles the request to add a commp record.
+// handleMultipleImportDeals handles the request to add a commp record.
 // @Summary Add a commp record
 // @Description Add a commp record
 // @Tags CommP
 // @Accept  json
 // @Produce  json
-func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
+func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
 	// lets record this.
@@ -1090,7 +1097,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 		var dealResponses []DealResponse
 		for _, dealRequest := range dealRequests {
-
+			dealRequest.ConnectionMode = "import"
 			err = ValidateMeta(dealRequest)
 			if err != nil {
 				tx.Rollback()
@@ -1254,7 +1261,7 @@ func handleCommPiecesAdd(c echo.Context, node *core.DeltaNode) error {
 
 			dealResponses = append(dealResponses, DealResponse{
 				Status:                       "success",
-				Message:                      "Request received",
+				Message:                      "Deal request received. Please take note of the content_id",
 				ContentId:                    content.ID,
 				DealRequest:                  dealRequest,
 				DealProposalParameterRequest: dealProposalParam,
@@ -1579,7 +1586,7 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 
 		err = c.JSON(200, DealResponse{
 			Status:                       "success",
-			Message:                      "File uploaded and pinned successfully",
+			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
 			ContentId:                    content.ID,
 			DealRequest:                  dealRequest,
 			DealProposalParameterRequest: dealProposalParam,
