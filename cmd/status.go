@@ -89,9 +89,6 @@ func StatusCmd(cfg *c.DeltaConfig) []*cli.Command {
 			var dealStatusResponse StatusResponse
 			url := deltaHostParam + "/open/stats/" + typeParam + "/" + idParam
 			if typeParam == "content" {
-				//curl --location 'http://localhost:1414/open/stats/content/4' \
-				//--header 'Authorization: Bearer EST4dfeb470-48b8-4978-8c00-d1f07fc75b66ARY'
-
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("GET", url, nil)
 				if err != nil {

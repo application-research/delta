@@ -198,6 +198,7 @@ func handleGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 
 	var content model.Content
 	node.DB.Raw("select c.* from contents c where c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&content)
+	content.RequestingApiKey = ""
 
 	var contentDeal []model.ContentDeal
 	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ? and c.requesting_api_key = ?", c.Param("contentId"), authParts[1]).Scan(&contentDeal)
