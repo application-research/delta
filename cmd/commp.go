@@ -258,15 +258,15 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 							requestInDir.FileName = fileOpen.Name()
 						}
 					} else {
-						fileToParallelCommpReader := bufio.NewReader(fileOpen)
-						dataCidPieceInfo, err = commpService.GenerateCommp(fileToParallelCommpReader)
+						fileToFastCommpReader := bufio.NewReader(fileOpen)
+						dataCidPieceInfo, err = commpService.GenerateCommp(fileToFastCommpReader)
 						if err != nil {
 							fmt.Println(err)
 							return err
 						}
 						if includePayloadCID {
 
-							fileNode, err := whypfsNode.AddPinFile(context.Background(), fileToParallelCommpReader, nil)
+							fileNode, err := whypfsNode.AddPinFile(context.Background(), fileToFastCommpReader, nil)
 							if err != nil {
 								fmt.Println(err)
 								return err

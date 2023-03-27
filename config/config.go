@@ -29,7 +29,7 @@ type DeltaConfig struct {
 		Mode            string `env:"MODE" envDefault:"standalone"`
 		DBDSN           string `env:"DB_DSN" envDefault:"delta.db"`
 		EnableWebsocket bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
-		CommpMode       string `env:"COMMP_MODE" envDefault:"filboost"` // option "parallel"
+		CommpMode       string `env:"COMMP_MODE" envDefault:"fast"` // option "filboost"
 		StatsCollection bool   `env:"STATS_COLLECTION" envDefault:"true"`
 		Commit          string `env:"COMMIT"`
 		Version         string `env:"VERSION"`

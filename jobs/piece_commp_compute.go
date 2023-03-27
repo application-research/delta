@@ -71,7 +71,7 @@ func (i PieceCommpProcessor) Run() error {
 	var unPaddedPieceSize abi.UnpaddedPieceSize
 	var paddedPieceSize abi.PaddedPieceSize
 
-	if i.LightNode.Config.Common.CommpMode == utils.COMMP_MODE_PARALLEL {
+	if i.LightNode.Config.Common.CommpMode == utils.COMMP_MODE_FAST {
 
 		pieceInfo, err := i.CommpService.GenerateCommp(node)
 		if err != nil {

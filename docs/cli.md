@@ -107,7 +107,7 @@ This will generate collection of car files with split-size of 1024 bytes for eac
 
 Get the piece commitment of a file
 ```
-./delta commp --file=README.md --include-payload-cid=false --mode=parallel 
+./delta commp --file=README.md --include-payload-cid=false --mode=fast 
 ```
 **Output**
 ```
@@ -127,7 +127,7 @@ Get the piece commitment of a file
 #### Running `delta commp` on a directory
 Get the piece commitment of all the files in a directory
 ```
-./delta commp --dir=<dir> --include-payload-cid=false --mode=parallel 
+./delta commp --dir=<dir> --include-payload-cid=false --mode=fast 
 ```
 
 **Output**
