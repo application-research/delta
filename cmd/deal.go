@@ -7,11 +7,12 @@ import (
 	"delta/utils"
 	"encoding/json"
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+
+	"github.com/urfave/cli/v2"
 )
 
 type DealMetadata api.DealRequest
@@ -27,11 +28,6 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 		Description: "Make a delta storage deal. The type of deal can be either e2e (online) or import (offline).",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "delta-host",
-				Usage: "the delta host",
-				Value: "http://localhost:1414",
-			},
-			&cli.StringFlag{
 				Name:  "type",
 				Usage: "e2e (online) or import (offline)",
 			},
@@ -43,16 +39,15 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "metadata",
 				Usage: "metadata to store",
 			},
-			&cli.StringFlag{
-				Name:  "api-key",
-				Usage: "The API key to use for the request",
-			},
 		},
 		Action: func(context *cli.Context) error {
-			deltaHostParam := context.String("delta-host")
+			cmd, err := NewDeltaCmdNode(context)
+			if err != nil {
+				return err
+			}
+
 			fileParam := context.String("file")
 			typeParam := context.String("type")
-			apiKeyParam := context.String("api-key")
 			metadataParam := context.String("metadata")
 			var metadata DealMetadata
 			var metadataArr []DealMetadata
@@ -65,10 +60,6 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					fmt.Println("file is required for e2e deals")
 					os.Exit(1)
 				}
-			}
-			if apiKeyParam == "" {
-				fmt.Println("api-key is required")
-				os.Exit(1)
 			}
 			if metadataParam == "" {
 				fmt.Println("metadata is required")
@@ -83,7 +74,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 			}
 
 			var endpoint string
-			url := deltaHostParam + "/api/v1"
+			// url := deltaHostParam + "/api/v1"
 			if typeParam == "e2e" {
 
 				err := json.Unmarshal([]byte(metadataParam), &metadata)
@@ -99,7 +90,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					fmt.Println(buffer.String())
 				}
 
-				endpoint = url + "/deal/end-to-end"
+				endpoint = cmd.DeltaApi + "/deal/end-to-end"
 
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("POST", endpoint, nil)
@@ -108,7 +99,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 				}
 
 				// Set the Authorization header.
-				req.Header.Set("Authorization", "Bearer "+apiKeyParam)
+				req.Header.Set("Authorization", "Bearer "+cmd.DeltaAuth)
 
 				// Create a new multipart writer for the request body.
 				body := &bytes.Buffer{}
@@ -203,7 +194,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					}
 					fmt.Println(buffer.String())
 				}
-				endpoint = url + "/deal/imports"
+				endpoint = cmd.DeltaApi + "/deal/imports"
 
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(metadataParam)))
@@ -212,7 +203,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 				}
 
 				// Set the Authorization and Content-Type headers.
-				req.Header.Set("Authorization", "Bearer "+apiKeyParam)
+				req.Header.Set("Authorization", "Bearer "+cmd.DeltaAuth)
 				req.Header.Set("Content-Type", "application/json")
 
 				// Send the HTTP request and print the response.

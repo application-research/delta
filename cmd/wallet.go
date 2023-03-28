@@ -6,9 +6,10 @@ import (
 	"delta/utils"
 	"encoding/json"
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"net/http"
 	"time"
+
+	"github.com/urfave/cli/v2"
 )
 
 type WalletRegisterResponse struct {
@@ -44,24 +45,18 @@ func WalletCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "Register a new wallet",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:  "delta-host",
-						Usage: "the delta host",
-						Value: "http://localhost:1414",
-					},
-					&cli.StringFlag{
 						Name:  "hex",
 						Usage: "Hexed wallet from LOTUS/BOOSTD export",
 					},
-					&cli.StringFlag{
-						Name:  "api-key",
-						Usage: "The API key to use for the request",
-					},
 				},
 				Action: func(context *cli.Context) error {
-					deltaHostParam := context.String("delta-host")
+					cmd, err := NewDeltaCmdNode(context)
+					if err != nil {
+						return err
+					}
+
 					hexParam := context.String("hex")
-					apiKeyParam := context.String("api-key")
-					url := deltaHostParam + "/admin/wallet/register-hex"
+					url := cmd.DeltaApi + "/admin/wallet/register-hex"
 					payload := map[string]string{
 						"hex_key": hexParam,
 					}
@@ -71,7 +66,7 @@ func WalletCmd(cfg *c.DeltaConfig) []*cli.Command {
 					}
 
 					req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
-					req.Header.Set("Authorization", "Bearer "+apiKeyParam)
+					req.Header.Set("Authorization", "Bearer "+cmd.DeltaAuth)
 					req.Header.Set("Content-Type", "application/json")
 
 					client := &http.Client{}
@@ -97,26 +92,18 @@ func WalletCmd(cfg *c.DeltaConfig) []*cli.Command {
 			{
 				Name:  "list",
 				Usage: "List all wallets associated with the API key",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:  "delta-host",
-						Usage: "the delta host",
-						Value: "http://localhost:1414",
-					},
-					&cli.StringFlag{
-						Name:  "api-key",
-						Usage: "The API key to use for the request",
-					},
-				},
 				Action: func(context *cli.Context) error {
-					deltaHostParam := context.String("delta-host")
-					apiKeyParam := context.String("api-key")
-					url := deltaHostParam + "/admin/wallet/list"
+					cmd, err := NewDeltaCmdNode(context)
+					if err != nil {
+						return err
+					}
+
+					url := cmd.DeltaApi + "/admin/wallet/list"
 					req, err := http.NewRequest("GET", url, nil)
 					if err != nil {
 						panic(err)
 					}
-					req.Header.Set("Authorization", "Bearer "+apiKeyParam)
+					req.Header.Set("Authorization", "Bearer "+cmd.DeltaAuth)
 					req.Header.Set("Content-Type", "application/json")
 
 					var walletListResponse WalletListResponse
