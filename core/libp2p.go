@@ -22,7 +22,7 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 	i.FilClient.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {
 		switch event.Code {
 		case datatransfer.Error, datatransfer.Disconnected, datatransfer.ReceiveDataError, datatransfer.Cancel, datatransfer.RequestTimedOut, datatransfer.SendDataError:
-			fmt.Println("Error event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
+			fmt.Println("Data Transfer Error event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
 			//var content model.Content
 			//i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
 			//itemCleanup := jobs.NewItemContentCleanUpProcessor(i, content)
@@ -39,24 +39,33 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 		switch fst.Status {
 		case datatransfer.Requested:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
-			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
-				TransferStarted: time.Now(),
-				UpdatedAt:       time.Now(),
-			})
+			var contentDeal model.ContentDeal
+			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Find(&contentDeal)
+			// save the content deal
+			contentDeal.TransferStarted = time.Now()
+			contentDeal.UpdatedAt = time.Now()
+			contentDeal.LastMessage = utils.DEAL_STATUS_TRANSFER_STARTED
+			i.DB.Save(&contentDeal)
+
 		case datatransfer.TransferFinished, datatransfer.Completed:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 			transferId, err := strconv.Atoi(fst.TransferID)
 			if err != nil {
 				fmt.Println(err)
 			}
-			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
-				DealID:           int64(transferId),
-				TransferFinished: time.Now(),
-				SealedAt:         time.Now(),
-				UpdatedAt:        time.Now(),
-				OnChainAt:        time.Now(),
-				LastMessage:      utils.DEAL_STATUS_TRANSFER_FINISHED,
-			})
+
+			// save the content deal
+			var contentDeal model.ContentDeal
+			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Find(&contentDeal)
+			contentDeal.DealID = int64(transferId)
+			contentDeal.TransferFinished = time.Now()
+			contentDeal.SealedAt = time.Now()
+			contentDeal.UpdatedAt = time.Now()
+			contentDeal.OnChainAt = time.Now()
+			contentDeal.LastMessage = utils.DEAL_STATUS_TRANSFER_FINISHED
+			i.DB.Save(&contentDeal)
+
+			// save the content status
 			var content model.Content
 			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
 			content.Status = utils.DEAL_STATUS_TRANSFER_FINISHED
@@ -70,19 +79,19 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 		case datatransfer.Failed, datatransfer.Failing, datatransfer.Cancelled, datatransfer.InitiatorPaused, datatransfer.ResponderPaused, datatransfer.ChannelNotFoundError:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 			var contentDeal model.ContentDeal
-			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Updates(model.ContentDeal{
-				FailedAt:  time.Now(),
-				UpdatedAt: time.Now(),
-			}).Find(&contentDeal)
+			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Find(&contentDeal)
+			contentDeal.LastMessage = fst.Message
+			contentDeal.UpdatedAt = time.Now()
+			contentDeal.FailedAt = time.Now()
+			i.DB.Save(&contentDeal)
 
-			i.DB.Model(&model.Content{}).Joins("left join content_deals as cd on cd.content = c.id").Where("cd.id = ?", dbid).Updates(model.Content{
-				Status:    utils.DEAL_STATUS_TRANSFER_FAILED,
-				UpdatedAt: time.Now(),
-			})
-
-			// clean up the blockstore
 			var content model.Content
 			i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", dbid).Find(&content)
+			content.Status = utils.DEAL_STATUS_TRANSFER_FAILED
+			content.LastMessage = fst.Message
+			content.UpdatedAt = time.Now()
+			i.DB.Save(&content)
+
 			// remove from the blockstore
 			cidToDelete, err := cid.Decode(content.Cid)
 			if err != nil {
