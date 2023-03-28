@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -18,8 +17,8 @@ import (
 )
 
 type CarHeader struct {
-	Roots   []cid.Cid
 	Version uint64
+	Roots   []cid.Cid
 }
 
 // CarV2Header is the fixed-size header of a CARv2 file.
@@ -34,11 +33,11 @@ type CarV2Header struct {
 	IndexOffset uint64
 }
 
-func init() {
-	cbor.RegisterCborType(CarHeader{})
-}
+// Pragma is the first 11 bytes of a CARv2 file.
+var Pragma = []byte{0x0a, 0xa1, 0x67, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x02}
 
 const (
+	// BufSize is the size of the buffer used to read the CAR file.
 	BufSize = (4 << 20) / 128 * 127
 	// PragmaSize is the size of the CARv2 pragma in bytes.
 	PragmaSize = 11
@@ -48,11 +47,15 @@ const (
 	CharacteristicsSize = 16
 )
 
+func init() {
+	cbor.RegisterCborType(CarHeader{})
+}
+
 // checkCarV2 checks if the given file is a CARv2 file and returns the header if it is.
 func checkCarV2(reader io.ReadSeekCloser) (bool, *CarV2Header) {
 	defer reader.Seek(0, 0)
 	// Read the first 11 bytes of the file into a byte slice
-	pragmaHeader := make([]byte, 11)
+	pragmaHeader := make([]byte, PragmaSize)
 	_, err := reader.Read(pragmaHeader)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
@@ -61,15 +64,8 @@ func checkCarV2(reader io.ReadSeekCloser) (bool, *CarV2Header) {
 
 	carV2Header := &CarV2Header{}
 
-	// Convert the expected header to a byte slice
-	expectedHeader, err := hex.DecodeString("0aa16776657273696f6e02")
-	if err != nil {
-		fmt.Println("Error decoding hex string:", err)
-		panic(err)
-	}
-
 	// Compare the first 11 bytes of the file to the expected header
-	if bytes.Equal(pragmaHeader, expectedHeader) {
+	if bytes.Equal(pragmaHeader, Pragma) {
 		// Read the next 40 bytes of the file into a byte slice
 		header := make([]byte, 40)
 		_, err = reader.Read(header)
@@ -114,41 +110,75 @@ func extractCarV1(file io.ReadSeekCloser, offset, length int) (*bytes.Reader, er
 	return sliceReader, nil
 }
 
+// readCarHeader reads the CARv1 header from a CARv2 file
+func readCarHeader(streamBuf *bufio.Reader, streamLen int64) (carHeader *CarHeader, strLen int64, err error) {
+	// Read the first 10 bytes of the file into a byte slice
+	headerLengthBytes, err := streamBuf.Peek(10)
+	if err != nil {
+		return nil, 0, err
+	}
+	// Read the header length
+	headerLength, headerBytesRead := binary.Uvarint(headerLengthBytes)
+	if headerLength == 0 || headerBytesRead < 0 {
+		return nil, 0, fmt.Errorf("invalid header length")
+	}
+	// Read the header
+	realHeaderLength, err := io.CopyN(io.Discard, streamBuf, int64(headerBytesRead))
+	if err != nil {
+		return nil, 0, err
+	}
+	streamLen += realHeaderLength
+	headerBuffer := make([]byte, headerLength)
+	actualHdrLen, err := io.ReadFull(streamBuf, headerBuffer)
+	if err != nil {
+		return nil, 0, err
+	}
+	streamLen += int64(actualHdrLen)
+
+	// Decode the header
+	carHeader = new(CarHeader)
+	err = cbor.DecodeInto(headerBuffer, carHeader)
+	if err != nil {
+		return nil, 0, err
+	}
+	return carHeader, streamLen, nil
+}
+
+// process the carfile blocks
 func process(streamBuf *bufio.Reader, streamLen int64) (strLen int64, err error) {
 	for {
-		maybeNextFrameLen, err := streamBuf.Peek(10)
+		nextBlockBuffer, err := streamBuf.Peek(10)
 		if err == io.EOF {
 			break
 		}
 		if err != nil && err != bufio.ErrBufferFull {
-			log.Fatalf("unexpected error at offset %d: %s", streamLen, err)
+			return streamLen, err
 		}
-		if len(maybeNextFrameLen) == 0 {
-			log.Fatalf("impossible 0-length peek without io.EOF at offset %d", streamLen)
+		if len(nextBlockBuffer) == 0 {
+			return streamLen, err
 		}
 
-		frameLen, viLen := binary.Uvarint(maybeNextFrameLen)
+		blockLength, viLen := binary.Uvarint(nextBlockBuffer)
 		if viLen <= 0 {
-			// car file with trailing garbage behind it
-			return streamLen, fmt.Errorf("aborting car stream parse: undecodeable varint at offset %d", streamLen)
+			return streamLen, err
 		}
-		if frameLen > 2<<20 {
+		if blockLength > 2<<20 {
 			// anything over ~2MiB got to be a mistake
-			return streamLen, fmt.Errorf("aborting car stream parse: unexpectedly large frame length of %d bytes at offset %d", frameLen, streamLen)
+			return streamLen, fmt.Errorf("large block length too large: %d bytes at offset %d", blockLength, streamLen)
 		}
-
-		actualFrameLen, err := io.CopyN(io.Discard, streamBuf, int64(viLen)+int64(frameLen))
-		streamLen += actualFrameLen
+		actualBlockLength, err := io.CopyN(io.Discard, streamBuf, int64(viLen)+int64(blockLength))
+		streamLen += actualBlockLength
 		if err != nil {
 			if err != io.EOF {
-				log.Fatalf("unexpected error at offset %d: %s", streamLen-actualFrameLen, err)
+				log.Fatalf("unexpected error at offset %d: %s", streamLen-actualBlockLength, err)
 			}
-			return streamLen, fmt.Errorf("aborting car stream parse: truncated frame at offset %d: expected %d bytes but read %d: %s", streamLen-actualFrameLen, frameLen, actualFrameLen, err)
+			return streamLen, fmt.Errorf("aborting car stream parse: truncated block at offset %d: expected %d bytes but read %d: %s", streamLen-actualBlockLength, blockLength, actualBlockLength, err)
 		}
 	}
 	return streamLen, nil
 }
 
+// fastCommp calculates the commp of a CARv1 or CARv2 file
 func fastCommp(reader io.ReadSeekCloser) (writer.DataCIDSize, error) {
 	// Check if the file is a CARv2 file
 	isVarV2, headerInfo := checkCarV2(reader)
@@ -172,31 +202,23 @@ func fastCommp(reader io.ReadSeekCloser) (writer.DataCIDSize, error) {
 		)
 	}
 
+	// The length of the stream
 	var streamLen int64
-	var carHdr *CarHeader
 
-	if maybeHeaderLen, err := streamBuf.Peek(10); err == nil {
-		if hdrLen, viLen := binary.Uvarint(maybeHeaderLen); viLen > 0 && hdrLen > 0 {
-			actualViLen, err := io.CopyN(io.Discard, streamBuf, int64(viLen))
-			streamLen += actualViLen
-			if err == nil {
-				hdrBuf := make([]byte, hdrLen)
-				actualHdrLen, err := io.ReadFull(streamBuf, hdrBuf)
-				streamLen += int64(actualHdrLen)
-				if err == nil {
-					carHdr = new(CarHeader)
-					if cbor.DecodeInto(hdrBuf, carHdr) != nil {
-						carHdr = nil
-					} else if carHdr.Version == 1 {
-						streamLen, err = process(streamBuf, streamLen)
-						if err != nil {
-							log.Fatal(err)
-							return writer.DataCIDSize{}, err
-						}
-					}
-				}
-			}
+	// Read the header
+	carHeader, streamLen, err := readCarHeader(streamBuf, streamLen)
+	if err != nil {
+		return writer.DataCIDSize{}, err
+	}
+
+	if carHeader.Version == 1 || carHeader.Version == 2 {
+		streamLen, err = process(streamBuf, streamLen)
+		if err != nil {
+			log.Fatal(err)
+			return writer.DataCIDSize{}, err
 		}
+	} else {
+		return writer.DataCIDSize{}, fmt.Errorf("invalid car version: %d", carHeader.Version)
 	}
 
 	n, err := io.Copy(io.Discard, streamBuf)
