@@ -10,6 +10,7 @@ Delta CLI is packaged with the Delta node. Build and install `Delta` node as des
 - Storage deal making cli
 - Content status check cli
 - Wallet cli
+- SP / Miner selection cli
 
 ## Usage
 ### Car file generation cli
@@ -396,3 +397,152 @@ To list all wallets associated to an API KEY, run the following command.
 } 
 ```
 
+### SP CLI
+
+#### Get SP info
+To get the info of a storage provider, run the following command. 
+Note: Delta CLi uses data.storage.market to get the info of a storage provider. 
+```
+./delta sp info --addr=f01028552
+{
+    "id": "9fd12da9-b7d9-4dd2-ad3b-71e86e54607e",
+    "address": "f01028552",
+    "address_of_owner": "f01446744",
+    "address_of_worker": "f01454475",
+    "address_of_beneficiary": "f01446744",
+    "sector_size_bytes": "34359738368",
+    "max_piece_size_bytes": "34359738368",
+    "min_piece_size_bytes": "256",
+    "price_attofil": "500000000",
+    "price_verified_attofil": "0",
+    "balance_attofil": "105116535953590682811925",
+    "locked_funds_attofil": "75392256507422527107722",
+    "initial_pledge_attofil": "12534135370634144858963",
+    "raw_power_bytes": "15641721136218112",
+    "quality_adjusted_power_bytes": "15641721136218112",
+    "total_raw_power_bytes": "17517840057443024896",
+    "total_quality_adjusted_power_bytes": "22029550563074080768",
+    "total_storage_deal_count": "17929",
+    "total_sectors_sealed_by_post_count": "2349",
+    "peer_id": "12D3KooWPQBp5KA1CYcscRuCPzCp8Gj8vfMMf35yHLSPJp2Jz6AR",
+    "height": "2451744",
+    "lotus_version": "lotus-1.18.0+mainnet+git.0bbf64fc2.dirty",
+    "multiaddrs": {
+        "addresses": [
+            "/ip4/171.93.112.2/tcp/61234"
+        ]
+    },
+    "metadata": null,
+    "address_of_controllers": {
+        "addresses": [
+            "f01075748",
+            "f01075750",
+            "f01075727"
+        ]
+    },
+    "tipset": {
+        "cids": [
+            {
+                "/": "bafy2bzacedfjzn3mnvbnyd4nh53wxi4hkvjmlvla6abrv5263wsr4gpdnv546"
+            },
+            {
+                "/": "bafy2bzaceab5wrx2t6gn2jojmnenvw7ykdrgd4ufndxuixbfhjgyvnyqgkkzm"
+            },
+            {
+                "/": "bafy2bzacebvufoyvvzpy6pu63yp6lo4r4qucf6pdwgsghkwmpq5frdvpqlm3e"
+            },
+            {
+                "/": "bafy2bzacedpyfwz4vgaiucge2t2avtiaej7yf5dyirl4whe5c77o4bxdoaxf6"
+            },
+            {
+                "/": "bafy2bzacebrlq42hr4mlsz56nc36ahhh2fjqpepfo6shedrcl332nqbfsyyfi"
+            },
+            {
+                "/": "bafy2bzacedcocheuq7erchnsybcejxkkogngrhwebiy3w6u4azqc36jsonmw6"
+            }
+        ]
+    },
+    "created_at": "2022-12-19T06:44:58.546Z",
+    "updated_at": "2022-12-24T10:58:57.113Z"
+}
+```
+#### Get random SP
+To get a random storage provider given a min and max piece size, run the following command.
+Note: Delta CLi uses data.storage.market to get the info of a storage provider. 
+```
+./delta sp selection --min-piece-size=0 --max-piece-size=34359738368
+{
+    "id": "08434a43-d756-4393-9597-072c3c5878f9",
+    "address": "f022352",
+    "address_of_owner": "f030720",
+    "address_of_worker": "f019559",
+    "address_of_beneficiary": "f030720",
+    "sector_size_bytes": "34359738368",
+    "max_piece_size_bytes": "34359738368",
+    "min_piece_size_bytes": "1048576",
+    "price_attofil": "0",
+    "price_verified_attofil": "0",
+    "balance_attofil": "98966996562506328399329",
+    "locked_funds_attofil": "85534405635815906060095",
+    "initial_pledge_attofil": "13213254492440115698257",
+    "raw_power_bytes": "1803714465628160",
+    "quality_adjusted_power_bytes": "16839564231409664",
+    "total_raw_power_bytes": "15446195636285734912",
+    "total_quality_adjusted_power_bytes": "21805250275934568448",
+    "total_storage_deal_count": "44366",
+    "total_sectors_sealed_by_post_count": "2349",
+    "peer_id": "12D3KooWM6fEjzjvC1U5MRDeDavToE7oyZHJiywbcBs4RWa6PFRo",
+    "height": "2645233",
+    "lotus_version": "lotus-1.20.0-rc1+mainnet",
+    "multiaddrs": {
+        "addresses": [
+            "/ip4/31.169.51.133/tcp/1350"
+        ]
+    },
+    "metadata": null,
+    "address_of_controllers": {
+        "addresses": [
+            "f030720",
+            "f019559",
+            "f01829688",
+            "f010587",
+            "f0114433",
+            "f01829687",
+            "f0114434"
+        ]
+    },
+    "tipset": {
+        "cids": [
+            {
+                "/": "bafy2bzaceacwdb7qmmosufqojqfhajnjctivpslx75vvchu44ep2sshwohy7k"
+            },
+            {
+                "/": "bafy2bzaced5jamx4mq3gfedwewwchvb6t54zpuiwgtv5sm4drvsirtf6d56yo"
+            },
+            {
+                "/": "bafy2bzaceatwxkv3bsl4wosi26adhmqkdwvcn7rcfridbt636gobn6y4ue4oc"
+            },
+            {
+                "/": "bafy2bzaceajtkwoch6je2rddd3vc7g5gj5dyhpvybmlclzv4rhb6tnfifxnhq"
+            },
+            {
+                "/": "bafy2bzaceacnenej3iaqyft6wm3c5dq5yxu24xpuzt4zrsarkmz2pu7xhtai4"
+            },
+            {
+                "/": "bafy2bzacecc77gfvycw37l4rmfb6nglbdxkywfw7fs32jsw6guykebgglgtna"
+            },
+            {
+                "/": "bafy2bzacea7tabxi3mme7c3a3y7cjpzp4krzvk5fl7c65lmolxejnkveyylse"
+            },
+            {
+                "/": "bafy2bzacebaycgmvaqakvqifydbu7c6llvgfusam2pusnzdujw5if7je2kayw"
+            },
+            {
+                "/": "bafy2bzacecdc5ffrwqlic2jegtuibacepszlt6ltjzdmpagp7ucsaz7dpbq2k"
+            }
+        ]
+    },
+    "created_at": "2022-12-19T06:26:49.487Z",
+    "updated_at": "2023-03-01T13:30:42.776Z"
+}
+```

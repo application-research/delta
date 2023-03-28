@@ -37,6 +37,7 @@ func main() {
 	commands = append(commands, cmd.CarCmd(&cfg)...)
 	commands = append(commands, cmd.CommpCmd(&cfg)...)
 	commands = append(commands, cmd.DealCmd(&cfg)...)
+	commands = append(commands, cmd.SpCmd(&cfg)...)
 	commands = append(commands, cmd.StatusCmd(&cfg)...)
 	commands = append(commands, cmd.WalletCmd(&cfg)...)
 
