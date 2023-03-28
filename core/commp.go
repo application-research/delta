@@ -78,7 +78,7 @@ func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceIn
 }
 
 // Generate a commP from a reader
-func (c CommpService) GenerateCommp(readerFromFile io.Reader) (writer.DataCIDSize, error) {
+func (c CommpService) GenerateCommp(readerFromFile io.ReadSeekCloser) (writer.DataCIDSize, error) {
 	return fastCommp(readerFromFile)
 }
 

@@ -94,7 +94,7 @@ func TestCommpService_GenerateParallelCommp(t *testing.T) {
 		DeltaNode *DeltaNode
 	}
 	type args struct {
-		readerFromFile io.Reader
+		readerFromFile io.ReadSeekCloser
 	}
 	tests := []struct {
 		name    string

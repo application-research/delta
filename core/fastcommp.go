@@ -2,7 +2,9 @@ package core
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -20,11 +22,97 @@ type CarHeader struct {
 	Version uint64
 }
 
+// CarV2Header is the fixed-size header of a CARv2 file.
+type CarV2Header struct {
+	// Characteristics is a bitfield of characteristics that apply to the CARv2.
+	Characteristics [16]byte
+	// DataOffset is the byte offset from the beginning of the CARv2 to the beginning of the CARv1 data payload.
+	DataOffset uint64
+	// DataSize is the size of the CARv1 data payload in bytes.
+	DataSize uint64
+	// IndexOffset is the byte offset from the beginning of the CARv2 to the beginning of the CARv1 index payload.
+	IndexOffset uint64
+}
+
 func init() {
 	cbor.RegisterCborType(CarHeader{})
 }
 
-const BufSize = (4 << 20) / 128 * 127
+const (
+	BufSize = (4 << 20) / 128 * 127
+	// PragmaSize is the size of the CARv2 pragma in bytes.
+	PragmaSize = 11
+	// HeaderSize is the fixed size of CARv2 header in number of bytes.
+	HeaderSize = 40
+	// CharacteristicsSize is the fixed size of Characteristics bitfield within CARv2 header in number of bytes.
+	CharacteristicsSize = 16
+)
+
+// checkCarV2 checks if the given file is a CARv2 file and returns the header if it is.
+func checkCarV2(reader io.ReadSeekCloser) (bool, *CarV2Header) {
+	defer reader.Seek(0, 0)
+	// Read the first 11 bytes of the file into a byte slice
+	pragmaHeader := make([]byte, 11)
+	_, err := reader.Read(pragmaHeader)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		panic(err)
+	}
+
+	carV2Header := &CarV2Header{}
+
+	// Convert the expected header to a byte slice
+	expectedHeader, err := hex.DecodeString("0aa16776657273696f6e02")
+	if err != nil {
+		fmt.Println("Error decoding hex string:", err)
+		panic(err)
+	}
+
+	// Compare the first 11 bytes of the file to the expected header
+	if bytes.Equal(pragmaHeader, expectedHeader) {
+		// Read the next 40 bytes of the file into a byte slice
+		header := make([]byte, 40)
+		_, err = reader.Read(header)
+		if err != nil {
+			fmt.Println("Error reading file:", err)
+			panic(err)
+		}
+
+		// Read the characteristics
+		copy(carV2Header.Characteristics[:], header[:16])
+
+		// Read the data offset
+		carV2Header.DataOffset = binary.LittleEndian.Uint64(header[16:24])
+
+		// Read the data size
+		carV2Header.DataSize = binary.LittleEndian.Uint64(header[24:32])
+
+		// Read the index offset
+		carV2Header.IndexOffset = binary.LittleEndian.Uint64(header[32:40])
+		return true, carV2Header
+	} else {
+		return false, nil
+	}
+}
+
+// extractCarV1 extracts the CARv1 data from a CARv2 file
+func extractCarV1(file io.ReadSeekCloser, offset, length int) (*bytes.Reader, error) {
+	// Slice out the portion of the file
+	_, err := file.Seek(int64(offset), 0)
+	if err != nil {
+		return nil, err
+	}
+	slice := make([]byte, length)
+	_, err = file.Read(slice)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new io.Reader from the slice
+	sliceReader := bytes.NewReader(slice)
+
+	return sliceReader, nil
+}
 
 func process(streamBuf *bufio.Reader, streamLen int64) (strLen int64, err error) {
 	for {
@@ -61,12 +149,28 @@ func process(streamBuf *bufio.Reader, streamLen int64) (strLen int64, err error)
 	return streamLen, nil
 }
 
-func fastCommp(reader io.Reader) (writer.DataCIDSize, error) {
+func fastCommp(reader io.ReadSeekCloser) (writer.DataCIDSize, error) {
+	// Check if the file is a CARv2 file
+	isVarV2, headerInfo := checkCarV2(reader)
+	var streamBuf *bufio.Reader
 	cp := new(commp.Calc)
-	streamBuf := bufio.NewReaderSize(
-		io.TeeReader(reader, cp),
-		BufSize,
-	)
+	if isVarV2 {
+		// Extract the CARv1 data from the CARv2 file
+		sliced, err := extractCarV1(reader, int(headerInfo.DataOffset), int(headerInfo.DataSize))
+		if err != nil {
+			panic(err)
+		}
+		streamBuf = bufio.NewReaderSize(
+			io.TeeReader(sliced, cp),
+			BufSize,
+		)
+	} else {
+		// Read the file as a CARv1 file
+		streamBuf = bufio.NewReaderSize(
+			io.TeeReader(reader, cp),
+			BufSize,
+		)
+	}
 
 	var streamLen int64
 	var carHdr *CarHeader
