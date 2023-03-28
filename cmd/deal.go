@@ -74,7 +74,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 			}
 
 			var endpoint string
-			// url := deltaHostParam + "/api/v1"
+			url := cmd.DeltaApi + "/api/v1"
 			if typeParam == "e2e" {
 
 				err := json.Unmarshal([]byte(metadataParam), &metadata)
@@ -90,7 +90,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					fmt.Println(buffer.String())
 				}
 
-				endpoint = cmd.DeltaApi + "/deal/end-to-end"
+				endpoint = url + "/deal/end-to-end"
 
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("POST", endpoint, nil)
@@ -194,7 +194,7 @@ func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 					}
 					fmt.Println(buffer.String())
 				}
-				endpoint = cmd.DeltaApi + "/deal/imports"
+				endpoint = url + "/deal/imports"
 
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(metadataParam)))
