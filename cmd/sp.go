@@ -17,6 +17,10 @@ import (
 type StorageProvider struct {
 	Providers []Provider `json:"storageProviders"`
 }
+
+type ProviderSelect struct {
+	Provider Provider `json:"0"`
+}
 type Provider struct {
 	ID                             string `json:"id"`
 	Address                        string `json:"address"`
@@ -76,24 +80,24 @@ func SpCmd(cfg *c.DeltaConfig) []*cli.Command {
 					},
 				}, Action: func(context *cli.Context) error {
 
-				addr := context.String("addr")
-				if addr == "" {
-					return fmt.Errorf("addr is required")
-				}
+					addr := context.String("addr")
+					if addr == "" {
+						return fmt.Errorf("addr is required")
+					}
 
-				provider, err := fetchProviderByAddr(addr)
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				var buffer bytes.Buffer
-				err = utils.PrettyEncode(provider, &buffer)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println(buffer.String())
-				return nil
-			},
+					provider, err := fetchProviderByAddr(addr)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+					var buffer bytes.Buffer
+					err = utils.PrettyEncode(provider, &buffer)
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(buffer.String())
+					return nil
+				},
 			},
 			{
 				Name:  "selection",
@@ -108,40 +112,40 @@ func SpCmd(cfg *c.DeltaConfig) []*cli.Command {
 						Usage: "The maximum piece size to consider in bytes",
 					},
 				}, Action: func(context *cli.Context) error {
-				// Parse query parameters
-				min := context.Int64("min-piece-size")
-				max := context.Int64("max-piece-size")
+					// Parse query parameters
+					min := context.Int64("min-piece-size")
+					max := context.Int64("max-piece-size")
 
-				if min == 0 {
-					min = 1
-				}
-				if max == 0 {
-					max = 1 << 62
-				}
+					if min == 0 {
+						min = 1
+					}
+					if max == 0 {
+						max = 1 << 62
+					}
 
-				providers, err := fetchProviders(min, max)
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
+					providers, err := fetchProviders(min, max)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
 
-				// Select one random provider
-				rand.Seed(time.Now().UnixNano())
-				randomIndex := rand.Intn(len(providers))
-				randomProvider := providers[randomIndex]
+					// Select one random provider
+					rand.Seed(time.Now().UnixNano())
+					randomIndex := rand.Intn(len(providers))
+					randomProvider := providers[randomIndex]
 
-				if err != nil {
-					panic(err)
-				}
-				var buffer bytes.Buffer
-				err = utils.PrettyEncode(randomProvider, &buffer)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println(buffer.String())
+					if err != nil {
+						panic(err)
+					}
+					var buffer bytes.Buffer
+					err = utils.PrettyEncode(randomProvider, &buffer)
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(buffer.String())
 
-				return nil
-			},
+					return nil
+				},
 			},
 		},
 	}
@@ -150,23 +154,23 @@ func SpCmd(cfg *c.DeltaConfig) []*cli.Command {
 	return spCommands
 }
 
-func fetchProviderByAddr(addr string) (Provider, error) {
+func fetchProviderByAddr(addr string) (ProviderSelect, error) {
 	response, err := http.Get("https://data.storage.market/api/providers/" + addr)
 	if err != nil {
-		return Provider{}, err
+		return ProviderSelect{}, err
 	}
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return Provider{}, err
+		return ProviderSelect{}, err
 	}
 
-	var providers Provider
+	var providers ProviderSelect
 	err = json.Unmarshal(body, &providers)
 
 	if err != nil {
-		return Provider{}, err
+		return ProviderSelect{}, err
 	}
 
 	return providers, nil
