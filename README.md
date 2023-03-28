@@ -15,9 +15,9 @@ Delta is a deal-making service that enables users to make deals with Storage Pro
 [![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20Content%20processed&color=brightgreen&query=total_content_consumed&url=https%3A%2F%2Fnode.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
 [![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20end-to-end%20deals&query=total_e2e_deals&color=brightgreen&url=https%3A%2F%2Fnode.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
 [![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20commp%20made&color=brightgreen&query=total_piece_commitment_made&url=https%3A%2F%2Fnode.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
-
 [![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20import%20deals&color=brightgreen&query=total_import_deals&url=https%3A%2F%2Fnode.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
 [![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20deal%20transferred&color=brightgreen&query=total_transfer_finished&url=https%3A%2F%2Fnode.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
+[![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=No.%20of%20SPs&color=brightgreen&query=total_miners&url=https%3A%2F%2Fnode.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
 
 </div>
 
