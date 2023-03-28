@@ -6,10 +6,12 @@ import (
 	"delta/cmd"
 	c "delta/config"
 	_ "embed"
-	logging "github.com/ipfs/go-log/v2"
-	"github.com/urfave/cli/v2"
+	"fmt"
 	_ "net/http"
 	"os"
+
+	logging "github.com/ipfs/go-log/v2"
+	"github.com/urfave/cli/v2"
 )
 
 var (
@@ -42,6 +44,7 @@ func main() {
 		Commands:    commands,
 		Name:        "delta",
 		Description: "A deal making engine microservice for the filecoin network",
+		Version:     fmt.Sprintf("%s+git.%s\n", cfg.Common.Version, cfg.Common.Commit),
 		Usage:       "delta [command] [arguments]",
 	}
 
