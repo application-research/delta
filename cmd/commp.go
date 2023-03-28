@@ -48,157 +48,164 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "file",
-				Usage: "specify the file",
-			},
-			&cli.StringFlag{
-				Name:  "dir",
-				Usage: "specify the directory to read and create a piece commitment for all the files in the directory",
-			},
-			&cli.StringFlag{
-				Name:  "mode",
-				Usage: "specify the mode of the piece commitment generation (default: fast. options: filboost, stream, fast)",
-				Value: "fast",
+				Name:    "file",
+				Usage:   "specify the file",
+				Aliases: []string{"f"},
 			},
 			&cli.BoolFlag{
-				Name:  "include-payload-cid",
-				Usage: "specify whether to include the payload cid in the piece commitment or not (default: false)",
-				Value: false,
+				Name:    "stdin",
+				Usage:   "stream from stdin",
+				Aliases: []string{"s"},
+				Value:   false,
+			},
+			&cli.StringFlag{
+				Name:    "dir",
+				Usage:   "specify the directory to read and create a piece commitment for all the files in the directory",
+				Aliases: []string{"d"},
+			},
+			&cli.StringFlag{
+				Name:    "mode",
+				Usage:   "specify the mode of the piece commitment generation (default: fast. options: filboost, stream, fast)",
+				Value:   "fast",
+				Aliases: []string{"m"},
+			},
+			&cli.BoolFlag{
+				Name:    "include-payload-cid",
+				Usage:   "specify whether to include the payload cid in the piece commitment or not (default: false)",
+				Value:   false,
+				Aliases: []string{"p"},
 			},
 		},
 		Action: func(c *cli.Context) error {
 
-			file := c.String("file")
+			//file := c.String("file")
 			dir := c.String("dir")
 			includePayloadCID := c.Bool("include-payload-cid")
+			useStdin := c.Bool("stdin")
 
-			// TODO: make it work for now and clean up after.
-			if file != "" {
-				var commpRequest PieceCommitmentResult
-				openFile, err := os.Open(file)
-				reader := bufio.NewReader(openFile)
-
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				var whypfsNode *whypfs.Node
-				if includePayloadCID {
-					params := whypfs.NewNodeParams{
-						Ctx:       context.Background(),
-						Datastore: whypfs.NewInMemoryDatastore(),
-					}
-					whypfsNode, err = whypfs.NewNode(params)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					fileNode, err := whypfsNode.AddPinFile(context.Background(), reader, nil)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					commpRequest.Cid = fileNode.Cid().String()
-					commpRequest.FileName = openFile.Name()
-				}
-
-				var carV2PieceInfo *abi.PieceInfo
-				var dataCidPieceInfo writer.DataCIDSize
-				var filclientCommp FilclientCommp
-
-				if c.String("mode") == "stream" {
-					fileToStream, err := os.Open(file)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					fileToStreamReader := bufio.NewReader(fileToStream)
-					carV2PieceInfo, err = commpService.GenerateCommPCarV2(fileToStreamReader)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-				} else if c.String("mode") == "filboost" {
-					cidToCompute, err := cid.Decode(commpRequest.Cid)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					payloadCid, paddedPieceSize, unpaddedPieceSize, err := filclient.GeneratePieceCommitment(context.Background(), cidToCompute, whypfsNode.Blockstore)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					filclientCommp = FilclientCommp{
-						PayloadCid:        payloadCid,
-						PaddedPieceSize:   paddedPieceSize,
-						UnpaddedPieceSize: unpaddedPieceSize,
-					}
-				} else {
-					fileToStream, err := os.Open(file)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-					dataCidPieceInfo, err = commpService.GenerateCommp(fileToStream)
-					if err != nil {
-						fmt.Println(err)
-						return err
-					}
-				}
-
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-
-				// return json to console.
-				commpRequest.PieceCommitment.Piece = func() string {
-					if c.String("mode") == "stream" {
-						return carV2PieceInfo.PieceCID.String()
-					} else if c.String("mode") == "filboost" {
-						return filclientCommp.PayloadCid.String()
-					}
-					return dataCidPieceInfo.PieceCID.String()
-				}()
-				commpRequest.PieceCommitment.PaddedPieceSize = func() uint64 {
-					if c.String("mode") == "stream" {
-						return uint64(carV2PieceInfo.Size)
-					} else if c.String("mode") == "filboost" {
-						return uint64(filclientCommp.PaddedPieceSize)
-					}
-					return uint64(dataCidPieceInfo.PieceSize)
-				}()
-
-				commpRequest.PieceCommitment.UnPaddedPieceSize = func() uint64 {
-					if c.String("mode") == "stream" {
-						return uint64(carV2PieceInfo.Size.Unpadded())
-					} else if c.String("mode") == "filboost" {
-						return uint64(filclientCommp.UnpaddedPieceSize)
-					}
-					return uint64(dataCidPieceInfo.PieceSize.Unpadded())
-				}()
-
-				if err != nil {
-					fmt.Println(err)
-					return err
-				}
-				commpRequest.Size = func() int64 {
-					if c.String("mode") == "stream" {
-						commpRequest.Size = int64(reader.Size())
-					} else if c.String("mode") == "filboost" {
-						commpRequest.Size = int64(filclientCommp.UnpaddedPieceSize)
-					}
-					return dataCidPieceInfo.PayloadSize
-				}()
-
-				var buffer bytes.Buffer
-				err = utils.PrettyEncode(commpRequest, &buffer)
-				if err != nil {
-					fmt.Println(err)
-				}
-				fmt.Println(buffer.String())
+			var openFile *os.File
+			var err error
+			if useStdin {
+				// Read from stdin
+				openFile = os.Stdin
+			} else {
+				openFile, err = os.Open(c.String("file"))
 			}
+			// TODO: make it work for now and clean up after.
+			var commpRequest PieceCommitmentResult
+			reader := bufio.NewReader(openFile)
+
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			var whypfsNode *whypfs.Node
+			if includePayloadCID {
+				params := whypfs.NewNodeParams{
+					Ctx:       context.Background(),
+					Datastore: whypfs.NewInMemoryDatastore(),
+				}
+				whypfsNode, err = whypfs.NewNode(params)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				fileNode, err := whypfsNode.AddPinFile(context.Background(), reader, nil)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				commpRequest.Cid = fileNode.Cid().String()
+				commpRequest.FileName = openFile.Name()
+			}
+
+			var carV2PieceInfo *abi.PieceInfo
+			var dataCidPieceInfo writer.DataCIDSize
+			var filclientCommp FilclientCommp
+
+			if c.String("mode") == "stream" {
+				fileToStreamReader := bufio.NewReader(openFile)
+				carV2PieceInfo, err = commpService.GenerateCommPCarV2(fileToStreamReader)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+			} else if c.String("mode") == "filboost" {
+				cidToCompute, err := cid.Decode(commpRequest.Cid)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				payloadCid, paddedPieceSize, unpaddedPieceSize, err := filclient.GeneratePieceCommitment(context.Background(), cidToCompute, whypfsNode.Blockstore)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				filclientCommp = FilclientCommp{
+					PayloadCid:        payloadCid,
+					PaddedPieceSize:   paddedPieceSize,
+					UnpaddedPieceSize: unpaddedPieceSize,
+				}
+			} else {
+				dataCidPieceInfo, err = commpService.GenerateCommp(openFile)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+			}
+
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+
+			// return json to console.
+			commpRequest.PieceCommitment.Piece = func() string {
+				if c.String("mode") == "stream" {
+					return carV2PieceInfo.PieceCID.String()
+				} else if c.String("mode") == "filboost" {
+					return filclientCommp.PayloadCid.String()
+				}
+				return dataCidPieceInfo.PieceCID.String()
+			}()
+			commpRequest.PieceCommitment.PaddedPieceSize = func() uint64 {
+				if c.String("mode") == "stream" {
+					return uint64(carV2PieceInfo.Size)
+				} else if c.String("mode") == "filboost" {
+					return uint64(filclientCommp.PaddedPieceSize)
+				}
+				return uint64(dataCidPieceInfo.PieceSize)
+			}()
+
+			commpRequest.PieceCommitment.UnPaddedPieceSize = func() uint64 {
+				if c.String("mode") == "stream" {
+					return uint64(carV2PieceInfo.Size.Unpadded())
+				} else if c.String("mode") == "filboost" {
+					return uint64(filclientCommp.UnpaddedPieceSize)
+				}
+				return uint64(dataCidPieceInfo.PieceSize.Unpadded())
+			}()
+
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			commpRequest.Size = func() int64 {
+				if c.String("mode") == "stream" {
+					commpRequest.Size = int64(reader.Size())
+				} else if c.String("mode") == "filboost" {
+					commpRequest.Size = int64(filclientCommp.UnpaddedPieceSize)
+				}
+				return dataCidPieceInfo.PayloadSize
+			}()
+
+			var buffer bytes.Buffer
+			err = utils.PrettyEncode(commpRequest, &buffer)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(buffer.String())
+
 			if dir != "" {
 
 				var dealRequests []PieceCommitmentResult
