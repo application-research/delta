@@ -10,6 +10,7 @@ Delta CLI is packaged with the Delta node. Build and install `Delta` node as des
 - Storage deal making cli
 - Content status check cli
 - Wallet cli
+- SP / Miner selection cli
 
 ## Usage
 ### Car file generation cli
@@ -395,4 +396,6 @@ To list all wallets associated to an API KEY, run the following command.
     ]
 } 
 ```
+
+### SP Selection CLI
 
