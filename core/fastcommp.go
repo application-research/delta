@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -34,11 +33,12 @@ type CarV2Header struct {
 	IndexOffset uint64
 }
 
+// Pragma is the first 11 bytes of a CARv2 file.
+var Pragma = []byte{0x0a, 0xa1, 0x67, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x02}
+
 const (
 	// BufSize is the size of the buffer used to read the CAR file.
 	BufSize = (4 << 20) / 128 * 127
-	// Pragma is the first 11 bytes of a CARv2 file.
-	Pragma = "0aa16776657273696f6e02"
 	// PragmaSize is the size of the CARv2 pragma in bytes.
 	PragmaSize = 11
 	// HeaderSize is the fixed size of CARv2 header in number of bytes.
@@ -64,15 +64,8 @@ func checkCarV2(reader io.ReadSeekCloser) (bool, *CarV2Header) {
 
 	carV2Header := &CarV2Header{}
 
-	// Convert the expected header to a byte slice
-	expectedHeader, err := hex.DecodeString(Pragma)
-	if err != nil {
-		fmt.Println("Error decoding hex string:", err)
-		panic(err)
-	}
-
 	// Compare the first 11 bytes of the file to the expected header
-	if bytes.Equal(pragmaHeader, expectedHeader) {
+	if bytes.Equal(pragmaHeader, Pragma) {
 		// Read the next 40 bytes of the file into a byte slice
 		header := make([]byte, 40)
 		_, err = reader.Read(header)
