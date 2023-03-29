@@ -355,7 +355,15 @@ You can get the status of a content by running the following command.
 ```
 
 ### Wallet CLI
-
+#### Create a new wallet
+To create a new wallet, run the following command.
+```
+./delta wallet generate  --dir=<dir where the wallet will be saved>
+Wallet address is:  f1q2ekybdnh7kxns7muldgbs36o6jsk4b5m6cmg4i
+{
+    "public_key": "f1q2ekybdnh7kxns7muldgbs36o6jsk4b5m6cmg4i"
+}
+```
 #### Register a wallet
 To register a wallet, you need to export the wallet from lotus/boostd and use the hex value to register the wallet.
 ```
