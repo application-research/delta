@@ -7,6 +7,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type RetryDealResponse struct {
+	Status       string      `json:"status"`
+	Message      string      `json:"message"`
+	NewContentId int64       `json:"new_content_id,omitempty"`
+	OldContentId interface{} `json:"old_content_id,omitempty"`
+}
+
 // ConfigureRepairRouter repair deals (re-create or re-try)
 // It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
@@ -14,6 +21,40 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 	repair.GET("/deal/force-retry-all", handleForceRetryPendingContents(node))
 	repair.GET("/deal/content/:contentId", handleRepairDealContent(node))
 	repair.GET("/deal/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
+
+	retry := e.Group("/retry")
+	retry.GET("/deal/:contentId", handleRetryContent(node))
+}
+
+func handleRetryContent(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		var contentId = c.Param("contentId")
+
+		// look up the content
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
+
+		// re-create the same content
+		var newContent = new(model.Content)
+		newContent = &content
+		newContent.ID = 0
+		node.DB.Model(&model.Content{}).Create(&newContent) // create new
+
+		// re-queue the content
+		processor := jobs.NewPieceCommpProcessor(node, *newContent)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		err := c.JSON(200, RetryDealResponse{
+			Status:       "success",
+			Message:      "Deal request received. Please take note of the new_content_id. You can use the content_id to check the status of the deal.",
+			NewContentId: newContent.ID,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
 }
 
 // It takes a piece commitment id, finds the piece commitment, and re-queues the job
