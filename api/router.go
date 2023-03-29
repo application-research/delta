@@ -155,7 +155,50 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	apiGroup := e.Group("/api/v1")
 	openApiGroup := e.Group("/open")
 	adminApiGroup := e.Group("/admin")
-	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+
+	// health check api group
+	healthCheckApiGroup := e.Group("/health")
+
+	// Authentication
+	apiGroup.Use(Authenticate(config))
+	adminApiGroup.Use(Authenticate(config))
+
+	// health check
+	ConfigureHealthCheckRouter(healthCheckApiGroup, ln)
+
+	// admin api
+	ConfigureAdminRouter(adminApiGroup, ln)
+
+	// protected
+	ConfigureDealRouter(apiGroup, ln)
+	ConfigureStatsCheckRouter(apiGroup, ln)
+	ConfigureRepairRouter(apiGroup, ln)
+
+	// open api
+	ConfigureNodeInfoRouter(openApiGroup, ln)
+	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
+	ConfigureOpenInfoCheckRouter(openApiGroup, ln)
+
+	// metrics
+	ConfigMetricsRouter(openApiGroup)
+
+	// It's checking if the websocket is enabled.
+	if config.Common.EnableWebsocket {
+		// websocket
+		fmt.Println("Websocket enabled")
+		ws := core.NewWebsocketService(ln)
+		go ws.HandlePieceCommitmentMessages()
+		go ws.HandleContentDealMessages()
+		go ws.HandleContentMessages()
+		ConfigureWebsocketRouter(openApiGroup, ln)
+	}
+
+	// Start server
+	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
+}
+
+func Authenticate(config config.DeltaConfig) func(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// check if the authorization header is present
 			authorizationString := c.Request().Header.Get("Authorization")
@@ -202,7 +245,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			}
 			// if everything is good. we can check the token against estuary-auth.
 			response, err := http.Post(
-				"https://auth.estuary.tech/check-api-key",
+				utils.API_AUTH,
 				"application/json",
 				strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
 			)
@@ -241,37 +284,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			}
 			return next(c)
 		}
-	})
-
-	// admin api
-	ConfigureAdminRouter(adminApiGroup, ln)
-
-	// protected
-	ConfigureDealRouter(apiGroup, ln)
-	ConfigureStatsCheckRouter(apiGroup, ln)
-	ConfigureRepairRouter(apiGroup, ln)
-
-	// open api
-	ConfigureNodeInfoRouter(openApiGroup, ln)
-	ConfigureOpenStatsCheckRouter(openApiGroup, ln)
-	ConfigureOpenInfoCheckRouter(openApiGroup, ln)
-
-	// metrics
-	ConfigMetricsRouter(openApiGroup)
-
-	// It's checking if the websocket is enabled.
-	if config.Common.EnableWebsocket {
-		// websocket
-		fmt.Println("Websocket enabled")
-		ws := core.NewWebsocketService(ln)
-		go ws.HandlePieceCommitmentMessages()
-		go ws.HandleContentDealMessages()
-		go ws.HandleContentMessages()
-		ConfigureWebsocketRouter(openApiGroup, ln)
 	}
-
-	// Start server
-	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
 }
 
 // GetAuthResponse It's making a request to the auth API to check if the API key is valid.

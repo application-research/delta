@@ -29,26 +29,16 @@ type DeltaCmdNode struct {
 	DeltaAuth string
 }
 
+// NewDeltaCmdNode It creates a new DeltaCmdNode struct, which is a struct that contains the Delta API URL and the Delta API auth token
 func NewDeltaCmdNode(c *cli.Context) (*DeltaCmdNode, error) {
-	deltaApi := c.String("delta-api")
-	if deltaApi == "" {
-		deltaApi = os.Getenv("DELTA_API")
-		if deltaApi == "" {
-			deltaApi = "http://localhost:1414"
-		}
-	}
+	deltaApi := getFlagOrEnvVar(c, "delta-api", "DELTA_API", "http://localhost:1414")
+	deltaAuth := getFlagOrEnvVar(c, "delta-auth", "DELTA_AUTH", "")
 
-	deltaAuth := c.String("delta-auth")
 	if deltaAuth == "" {
-		deltaAuth = os.Getenv("DELTA_AUTH")
-		if deltaAuth == "" {
-			return nil, fmt.Errorf("DELTA_AUTH env variable or --delta-auth flag is required")
-		}
+		return nil, fmt.Errorf("DELTA_AUTH env variable or --delta-auth flag is required")
 	}
 
-	err := healthCheck(deltaApi, deltaAuth)
-
-	if err != nil {
+	if err := healthCheck(deltaApi, deltaAuth); err != nil {
 		return nil, fmt.Errorf("unable to communicate with delta daemon: %s", err)
 	}
 
@@ -58,9 +48,22 @@ func NewDeltaCmdNode(c *cli.Context) (*DeltaCmdNode, error) {
 	}, nil
 }
 
-// Verify that DDM API is reachable
+// If the flag is set, use it. If not, check the environment variable. If that's not set, use the default value
+func getFlagOrEnvVar(c *cli.Context, flagName, envVarName, defaultValue string) string {
+	value := c.String(flagName)
+	if value == "" {
+		value = os.Getenv(envVarName)
+		if value == "" {
+			value = defaultValue
+		}
+	}
+	return value
+}
+
+// It constructs an HTTP request to the `/open/node/info` endpoint, sets the `Authorization` header to the value of the
+// `authKey` parameter, and then makes the request. If the response status code is not 200, it returns an error
 func healthCheck(url string, authKey string) error {
-	req, err := http.NewRequest("GET", url+"/open/node/info", nil)
+	req, err := http.NewRequest("GET", url+"/health/check/auth/ping", nil)
 	if err != nil {
 		return fmt.Errorf("could not construct http request %v", err)
 	}
