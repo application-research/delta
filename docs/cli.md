@@ -478,7 +478,7 @@ Note: Delta CLi uses data.storage.market to get the info of a storage provider.
 To get a random storage provider given a min and max piece size, run the following command.
 Note: Delta CLi uses data.storage.market to get the info of a storage provider. 
 ```
-./delta sp selection --min-piece-size=0 --max-piece-size=34359738368
+./delta sp selection --size-in-bytes=34359738368
 {
     "id": "08434a43-d756-4393-9597-072c3c5878f9",
     "address": "f022352",

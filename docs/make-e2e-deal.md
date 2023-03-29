@@ -13,6 +13,10 @@ In order to create a successful deal, Delta requires the following information `
     - `data file or cid`: The content to be stored. This can be a file or a directory.
     - `piece-commitment`: The piece-commitment of the content. This is the pre-computed piece cid, piece size (padded and unpadded) and file size.
 - The `miner` to store the content.
+  - If you don't have a miner, you can use the following:
+    - run the SP miner selection cli tool `./delta sp selection --size-in-bytes=34359738368`. Get the `address` field from the response.
+    - run the SP miner selection api `curl --location --request GET 'https://simple-sp-selection.onrender.com/api/providers?size_bytes=34359738368'`, get the `address` field from the response.
+    - check out `https://data.storage.market/api/providers` to get a list of miners.
 - The connection mode to use to make the deal. This is either `e2e` or `import`.
     - `e2e` mode (online deal) is used to make deals with miners that support the `e2e` connection mode.
     - `import` mode (offline) is used to make deals with miners that support the `import` connection mode.
