@@ -28,6 +28,7 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 func handleRetryContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+
 		var contentId = c.Param("contentId")
 
 		// look up the content
