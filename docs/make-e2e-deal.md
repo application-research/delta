@@ -3,7 +3,7 @@
 Create an online deal for a content by sending a `POST` request to the `/api/v1/deal/end-to-end` endpoint. The `data` request is the content to be stored. The `metadata` request is the information required to make the deal.
 
 # Make sure you have a `Delta` node.
-- If you are looking for a running Delta node, you can use [node.delta.store](https://node.delta.store).
+- If you are looking for a running Delta node, you can use [`node.delta.store`](https://node.delta.store/open/node/info).
 - If you want to stand up your own node, you can follow the instructions in [this](./getting-started-run-delta.md) document.
 
 # Prepare the deal `metadata` request.

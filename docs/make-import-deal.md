@@ -4,7 +4,7 @@ Delta is a deal-making service that enables users to make deals with Storage Pro
 In this section, we will walk you through the steps to use a Delta node to make deals.
 
 # Make sure you have a `Delta` node.
-If you are looking for a running Delta node, you can use [node.delta.store](https://node.delta.store).
+If you are looking for a running Delta node, you can use [`node.delta.store`](https://node.delta.store/open/node/info).
 
 If you want to stand up your own node, you can follow the instructions in [this](./getting-started-run-delta.md) document.
 
