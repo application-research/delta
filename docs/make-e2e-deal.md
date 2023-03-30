@@ -17,9 +17,9 @@ In order to create a successful deal, Delta requires the following information `
     - run the SP miner selection cli tool `./delta sp selection --size-in-bytes=34359738368`. Get the `address` field from the response.
     - run the SP miner selection api `curl --location --request GET 'https://simple-sp-selection.onrender.com/api/providers?size_bytes=34359738368'`, get the `address` field from the response.
     - check out `https://data.storage.market/api/providers` to get a list of miners.
-- The connection mode to use to make the deal. This is either `e2e` or `import`.
-    - `e2e` mode (online deal) is used to make deals with miners that support the `e2e` connection mode.
-    - `import` mode (offline) is used to make deals with miners that support the `import` connection mode.
+- The `connection_mode` to use to make the deal. The default value for an import deal is `e2e`.
+  - `e2e` mode (online deal) is used to make deals with miners that support the `e2e` connection mode.
+  - `import` mode (offline) is used to make deals with miners that support the `import` connection mode.
 
 Here's the complete structure of the `metadata` request.
 ```
@@ -36,7 +36,9 @@ Here's the complete structure of the `metadata` request.
     "connection_mode": "import",
     "size": 2500366291,
     "remove_unsealed_copies":true, 
-    "skip_ipni_announce": true
+    "skip_ipni_announce": true,
+    "duration_in_days": 537,
+    "start_epoch_at_days": 3
 }
 ```
 
