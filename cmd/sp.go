@@ -104,26 +104,14 @@ func SpCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "Get a random storage provider",
 				Flags: []cli.Flag{
 					&cli.Int64Flag{
-						Name:  "min-piece-size",
-						Usage: "The minimum piece size to consider in bytes",
-					},
-					&cli.Int64Flag{
-						Name:  "max-piece-size",
-						Usage: "The maximum piece size to consider in bytes",
+						Name:  "size-in-bytes",
+						Usage: "The size of the data in bytes",
 					},
 				}, Action: func(context *cli.Context) error {
 					// Parse query parameters
-					min := context.Int64("min-piece-size")
-					max := context.Int64("max-piece-size")
+					sizeInBytes := context.Int64("size-in-bytes")
 
-					if min == 0 {
-						min = 1
-					}
-					if max == 0 {
-						max = 1 << 62
-					}
-
-					providers, err := fetchProviders(min, max)
+					providers, err := fetchProviders(sizeInBytes)
 					if err != nil {
 						fmt.Println(err)
 						return err
@@ -176,7 +164,7 @@ func fetchProviderByAddr(addr string) (ProviderSelect, error) {
 	return providers, nil
 }
 
-func fetchProviders(minPieceSize, maxPieceSize int64) ([]Provider, error) {
+func fetchProviders(sizeInBytes int64) ([]Provider, error) {
 	response, err := http.Get("https://data.storage.market/api/providers")
 	if err != nil {
 		return nil, err
@@ -198,9 +186,9 @@ func fetchProviders(minPieceSize, maxPieceSize int64) ([]Provider, error) {
 	var filteredProviders []Provider
 	for _, provider := range providers.Providers {
 
-		pvMinPieceSize, _ := strconv.Atoi(provider.MinPieceSizeBytes)
-		pvMaxPieceSize, _ := strconv.Atoi(provider.MaxPieceSizeBytes)
-		if int64(pvMinPieceSize) >= minPieceSize && int64(pvMaxPieceSize) <= maxPieceSize {
+		pvMinPieceSize, _ := strconv.ParseInt(provider.MinPieceSizeBytes, 10, 64)
+		pvMaxPieceSize, _ := strconv.ParseInt(provider.MaxPieceSizeBytes, 10, 64)
+		if pvMinPieceSize <= sizeInBytes && pvMaxPieceSize >= sizeInBytes {
 			filteredProviders = append(filteredProviders, provider)
 		}
 	}

@@ -3,7 +3,7 @@
 Create an online deal for a content by sending a `POST` request to the `/api/v1/deal/end-to-end` endpoint. The `data` request is the content to be stored. The `metadata` request is the information required to make the deal.
 
 # Make sure you have a `Delta` node.
-- If you are looking for a running Delta node, you can use [node.delta.store](https://node.delta.store).
+- If you are looking for a running Delta node, you can use [`node.delta.store`](https://node.delta.store/open/node/info).
 - If you want to stand up your own node, you can follow the instructions in [this](./getting-started-run-delta.md) document.
 
 # Prepare the deal `metadata` request.
@@ -13,6 +13,10 @@ In order to create a successful deal, Delta requires the following information `
     - `data file or cid`: The content to be stored. This can be a file or a directory.
     - `piece-commitment`: The piece-commitment of the content. This is the pre-computed piece cid, piece size (padded and unpadded) and file size.
 - The `miner` to store the content.
+  - If you don't have a miner, you can use the following:
+    - run the SP miner selection cli tool `./delta sp selection --size-in-bytes=34359738368`. Get the `address` field from the response.
+    - run the SP miner selection api `curl --location --request GET 'https://simple-sp-selection.onrender.com/api/providers?size_bytes=34359738368'`, get the `address` field from the response.
+    - check out `https://data.storage.market/api/providers` to get a list of miners.
 - The connection mode to use to make the deal. This is either `e2e` or `import`.
     - `e2e` mode (online deal) is used to make deals with miners that support the `e2e` connection mode.
     - `import` mode (offline) is used to make deals with miners that support the `import` connection mode.

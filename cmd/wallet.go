@@ -3,7 +3,10 @@ package cmd
 import (
 	"bytes"
 	c "delta/config"
+	"delta/core"
 	"delta/utils"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,6 +34,12 @@ type WalletListResponse struct {
 	} `json:"wallets"`
 }
 
+type WalletResponse struct {
+	PublicKey  string `json:"public_key,omitempty"`
+	PrivateKey string `json:"private_key,omitempty"`
+	KeyType    string `json:"key_type,omitempty"`
+}
+
 // TODO: add a command to manage wallet via CLI
 func WalletCmd(cfg *c.DeltaConfig) []*cli.Command {
 	// add a command to run API node
@@ -40,6 +49,54 @@ func WalletCmd(cfg *c.DeltaConfig) []*cli.Command {
 		Name:  "wallet",
 		Usage: "Run Delta wallet commands",
 		Subcommands: []*cli.Command{
+			{
+				Name:  "generate",
+				Usage: "Generate a new wallet",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "dir",
+						Usage: "Wallet directory where the wallet file will be stored",
+					},
+					&cli.BoolFlag{
+						Name:  "show-private-key",
+						Usage: "Show private key",
+						Value: false,
+					},
+				},
+				Action: func(context *cli.Context) error {
+					walletDir := context.String("dir")
+					showPrivateKey := context.Bool("show-private-key")
+					wallet, err := core.SetupWallet(walletDir)
+					if err != nil {
+						return err
+					}
+					walletAddr, err := wallet.GetDefault()
+
+					walletResponse := WalletResponse{
+						PublicKey: walletAddr.String(),
+					}
+
+					if showPrivateKey {
+						// import the new wallet
+						hexedKey := hex.EncodeToString(walletAddr.Payload())
+						decodeKey := base64.StdEncoding.EncodeToString([]byte(hexedKey))
+						walletResponse.PrivateKey = decodeKey
+					}
+
+					if err != nil {
+						panic(err)
+					}
+					var buffer bytes.Buffer
+					err = utils.PrettyEncode(walletResponse, &buffer)
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(buffer.String())
+					fmt.Println(utils.Purple + "Wallet generated successfully. Make sure to backup your wallet file." + utils.Purple)
+
+					return nil
+				},
+			},
 			{
 				Name:  "register",
 				Usage: "Register a new wallet",

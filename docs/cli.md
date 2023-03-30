@@ -355,7 +355,15 @@ You can get the status of a content by running the following command.
 ```
 
 ### Wallet CLI
-
+#### Create a new wallet
+To create a new wallet, run the following command.
+```
+./delta wallet generate  --dir=<dir where the wallet will be saved>
+Wallet address is:  f1q2ekybdnh7kxns7muldgbs36o6jsk4b5m6cmg4i
+{
+    "public_key": "f1q2ekybdnh7kxns7muldgbs36o6jsk4b5m6cmg4i"
+}
+```
 #### Register a wallet
 To register a wallet, you need to export the wallet from lotus/boostd and use the hex value to register the wallet.
 ```
@@ -470,7 +478,7 @@ Note: Delta CLi uses data.storage.market to get the info of a storage provider.
 To get a random storage provider given a min and max piece size, run the following command.
 Note: Delta CLi uses data.storage.market to get the info of a storage provider. 
 ```
-./delta sp selection --min-piece-size=0 --max-piece-size=34359738368
+./delta sp selection --size-in-bytes=34359738368
 {
     "id": "08434a43-d756-4393-9597-072c3c5878f9",
     "address": "f022352",
