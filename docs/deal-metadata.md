@@ -35,6 +35,8 @@ The `skip_ipni_announce` field is a boolean field that indicates whether to skip
 - The `start_epoch` field is the epoch to start the deal. This is optional.
 # deal_verify_state
 The `deal_verify_state` field is the state of the deal verification. This is to indicate if the deal is from verified FIL or not. This is optional.
+
+valid values are: `verified`, `unverified`. Default: `verified`.
 # label
 The `label` field is a label for the deal. It has a limit of less than 100 characters. This is optional.
 
