@@ -57,6 +57,7 @@ type DealRequest struct {
 	RemoveUnsealedCopies bool                   `json:"remove_unsealed_copies,omitempty"`
 	SkipIPNIAnnounce     bool                   `json:"skip_ipni_announce,omitempty"`
 	Label                string                 `json:"label,omitempty"`
+	DealVerifyState      string                 `json:"deal_verify_state,omitempty"`
 }
 
 // DealResponse Creating a new struct called DealResponse and then returning it.
@@ -379,8 +380,13 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 				}
 				return content.Cid
 			}()
-
 			dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+			dealProposalParam.VerifiedDeal = func() bool {
+				if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+					return true
+				}
+				return false
+			}()
 
 			// start epoch
 			if dealRequest.StartEpoch != 0 {
@@ -592,6 +598,12 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 			return content.Cid
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+		dealProposalParam.VerifiedDeal = func() bool {
+			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+				return true
+			}
+			return false
+		}()
 
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
@@ -662,7 +674,6 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
-
 	// lets record this.
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
@@ -807,7 +818,12 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			return content.Cid
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
-
+		dealProposalParam.VerifiedDeal = func() bool {
+			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+				return true
+			}
+			return false
+		}()
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
@@ -1019,6 +1035,13 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			return content.Cid
 		}()
 
+		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+		dealProposalParam.VerifiedDeal = func() bool {
+			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+				return true
+			}
+			return false
+		}()
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch
@@ -1034,6 +1057,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
 		}
 
 		if dealRequest.DurationInDays > 540 {
@@ -1228,8 +1252,19 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.CreatedAt = time.Now()
 			dealProposalParam.UpdatedAt = time.Now()
 			dealProposalParam.Content = content.ID
-			dealProposalParam.Label = content.Cid
-
+			dealProposalParam.Label = func() string {
+				if dealRequest.Label != "" {
+					return dealRequest.Label
+				}
+				return content.Cid
+			}()
+			dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+			dealProposalParam.VerifiedDeal = func() bool {
+				if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+					return true
+				}
+				return false
+			}()
 			// start epoch
 			if dealRequest.StartEpoch != 0 {
 				dealProposalParam.StartEpoch = dealRequest.StartEpoch
@@ -1245,6 +1280,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 				dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 				dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
+				dealProposalParam.StartEpoch = dealRequest.StartEpoch
 			}
 
 			if dealRequest.DurationInDays > 540 {
@@ -1375,9 +1411,15 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("replication count is more than allowed (6)")
 	}
 
-	// label lenght must be less than 100
+	// label length must be less than 100
 	if (DealRequest{} != dealRequest && len(dealRequest.Label) > 100) {
 		return errors.New("label length must be less than 100")
+	}
+
+	if (DealRequest{} != dealRequest && dealRequest.DealVerifyState == "") {
+		dealRequest.DealVerifyState = utils.DEAL_VERIFIED
+	} else if (DealRequest{} != dealRequest && dealRequest.DealVerifyState != utils.DEAL_VERIFIED) {
+		dealRequest.DealVerifyState = utils.DEAL_UNVERIFIED
 	}
 
 	// connection mode is required
@@ -1553,6 +1595,12 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 			return content.Cid
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+		dealProposalParam.VerifiedDeal = func() bool {
+			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+				return true
+			}
+			return false
+		}()
 		// start epoch
 		if dealRequest.StartEpoch != 0 {
 			dealProposalParam.StartEpoch = dealRequest.StartEpoch

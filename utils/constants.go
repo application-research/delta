@@ -40,6 +40,9 @@ const (
 	CONNECTION_MODE_E2E    = "e2e"
 	CONNECTION_MODE_IMPORT = "import"
 
+	DEAL_VERIFIED   = "verified"
+	DEAL_UNVERIFIED = "unverified"
+
 	LOTUS_API = "http://api.chain.love"
 	API_AUTH  = "https://auth.estuary.tech/check-api-key"
 

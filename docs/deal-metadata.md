@@ -33,7 +33,10 @@ The `skip_ipni_announce` field is a boolean field that indicates whether to skip
 # start_epoch_at_days or start_epoch
 - The `start_epoch_at_days` field is the epoch to start the deal. This is optional.
 - The `start_epoch` field is the epoch to start the deal. This is optional.
-
+# deal_verify_state
+The `deal_verify_state` field is the state of the deal verification. This is to indicate if the deal is from verified FIL or not. This is optional.
+# label
+The `label` field is a label for the deal. It has a limit of less than 100 characters. This is optional.
 
 # Here's the complete structure of the `metadata` request.
 ```
