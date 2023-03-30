@@ -41,6 +41,7 @@ const (
 	CONNECTION_MODE_IMPORT = "import"
 
 	LOTUS_API = "http://api.chain.love"
+	API_AUTH  = "https://auth.estuary.tech/check-api-key"
 
 	EPOCH_540_DAYS              = 1555200
 	EPOCH_PER_DAY               = 2880

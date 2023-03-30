@@ -6,9 +6,10 @@ import (
 	"delta/utils"
 	"encoding/json"
 	"fmt"
-	"github.com/urfave/cli/v2"
 	"net/http"
 	"time"
+
+	"github.com/urfave/cli/v2"
 )
 
 type StatusResponse struct {
@@ -59,11 +60,6 @@ func StatusCmd(cfg *c.DeltaConfig) []*cli.Command {
 		Description: "Get the status of a content, deal, or piece commitment. The type of status can be either content, deal, or piece-commitment.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "delta-host",
-				Usage: "the delta host",
-				Value: "http://localhost:1414",
-			},
-			&cli.StringFlag{
 				Name:  "type",
 				Usage: "content, deal, or piece-commitment",
 			},
@@ -71,23 +67,22 @@ func StatusCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "id",
 				Usage: "the id of the content, deal, or piece-commitment",
 			},
-			&cli.StringFlag{
-				Name:  "api-key",
-				Usage: "The API key to use for the request",
-			},
 		},
 		Action: func(context *cli.Context) error {
-			deltaHostParam := context.String("delta-host")
+			cmd, err := NewDeltaCmdNode(context)
+			if err != nil {
+				return err
+			}
+
 			typeParam := context.String("type")
-			apiKeyParam := context.String("api-key")
 			idParam := context.String("id")
 
-			fmt.Println(deltaHostParam)
+			fmt.Println(cmd.DeltaApi)
 			fmt.Println(typeParam)
-			fmt.Println(apiKeyParam)
+			fmt.Println(cmd.DeltaAuth)
 			fmt.Println(idParam)
 			var dealStatusResponse StatusResponse
-			url := deltaHostParam + "/open/stats/" + typeParam + "/" + idParam
+			url := cmd.DeltaApi + "/open/stats/" + typeParam + "/" + idParam
 			if typeParam == "content" {
 				// Create a new HTTP request with the desired method and URL.
 				req, err := http.NewRequest("GET", url, nil)
@@ -96,7 +91,7 @@ func StatusCmd(cfg *c.DeltaConfig) []*cli.Command {
 				}
 
 				// Set the Authorization header.
-				req.Header.Set("Authorization", "Bearer "+apiKeyParam)
+				req.Header.Set("Authorization", "Bearer "+cmd.DeltaAuth)
 
 				// Send the HTTP request and print the response.
 				resp, err := http.DefaultClient.Do(req)

@@ -46,6 +46,7 @@ func main() {
 		Name:        "delta",
 		Description: "A deal making engine microservice for the filecoin network",
 		Version:     fmt.Sprintf("%s+git.%s\n", cfg.Common.Version, cfg.Common.Commit),
+		Flags:       cmd.CLIConnectFlags,
 		Usage:       "delta [command] [arguments]",
 	}
 
