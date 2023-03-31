@@ -1,3 +1,4 @@
+// A package that is used to define the constants used in the project.
 package utils
 
 import "github.com/application-research/delta-db/messaging"
@@ -53,5 +54,6 @@ const (
 	DEFAULT_DURATION            = EPOCH_540_DAYS - (EPOCH_PER_DAY * 21)
 
 	COMMP_MODE_FAST     = "fast"
+	COMMP_MODE_STREAM   = "stream"
 	COMPP_MODE_FILBOOST = "filboost"
 )

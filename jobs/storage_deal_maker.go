@@ -150,7 +150,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,
-		fc.DealWithVerified(true),
+		fc.DealWithVerified(dealProposal.VerifiedDeal),
 		fc.DealWithFastRetrieval(!dealProposal.RemoveUnsealedCopy),
 		fc.DealWithLabel(label),
 		fc.DealWithPieceInfo(fc.DealPieceInfo{

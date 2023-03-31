@@ -839,7 +839,7 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+			//dealProposalParam.StartEpoch = dealRequest.StartEpoch
 		}
 
 		if dealRequest.DurationInDays > 540 {
@@ -1056,8 +1056,10 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		if dealRequest.StartEpochInDays != 0 {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+			//dealStart := head.Height() + (epochsPerHour * 24 * 7)
+			//dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
+			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * (7 - dealRequest.StartEpochInDays))
+			//dealProposalParam.StartEpoch = dealRequest.StartEpoch
 		}
 
 		if dealRequest.DurationInDays > 540 {
@@ -1280,7 +1282,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 				dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
 				dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-				dealProposalParam.StartEpoch = dealRequest.StartEpoch
+				//dealProposalParam.StartEpoch = dealRequest.StartEpoch
 			}
 
 			if dealRequest.DurationInDays > 540 {
@@ -1310,7 +1312,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 
 			dealResponses = append(dealResponses, DealResponse{
 				Status:                       "success",
-				Message:                      "Deal request received. Please take note of the content_id",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
 				ContentId:                    content.ID,
 				DealRequest:                  dealRequest,
 				DealProposalParameterRequest: dealProposalParam,
