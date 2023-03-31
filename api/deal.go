@@ -43,21 +43,21 @@ type PieceCommitmentRequest struct {
 }
 
 type DealRequest struct {
-	Cid                  string                 `json:"cid,omitempty"`
-	Miner                string                 `json:"miner,omitempty"`
-	Duration             int64                  `json:"duration,omitempty"`
-	DurationInDays       int64                  `json:"duration_in_days,omitempty"`
-	Wallet               WalletRequest          `json:"wallet,omitempty"`
-	PieceCommitment      PieceCommitmentRequest `json:"piece_commitment,omitempty"`
-	ConnectionMode       string                 `json:"connection_mode,omitempty"`
-	Size                 int64                  `json:"size,omitempty"`
-	StartEpoch           int64                  `json:"start_epoch,omitempty"`
-	StartEpochInDays     int64                  `json:"start_epoch_at_days,omitempty"`
-	Replication          int64                  `json:"replication,omitempty"`
-	RemoveUnsealedCopies bool                   `json:"remove_unsealed_copies,omitempty"`
-	SkipIPNIAnnounce     bool                   `json:"skip_ipni_announce,omitempty"`
-	Label                string                 `json:"label,omitempty"`
-	DealVerifyState      string                 `json:"deal_verify_state,omitempty"`
+	Cid                string                 `json:"cid,omitempty"`
+	Miner              string                 `json:"miner,omitempty"`
+	Duration           int64                  `json:"duration,omitempty"`
+	DurationInDays     int64                  `json:"duration_in_days,omitempty"`
+	Wallet             WalletRequest          `json:"wallet,omitempty"`
+	PieceCommitment    PieceCommitmentRequest `json:"piece_commitment,omitempty"`
+	ConnectionMode     string                 `json:"connection_mode,omitempty"`
+	Size               int64                  `json:"size,omitempty"`
+	StartEpoch         int64                  `json:"start_epoch,omitempty"`
+	StartEpochInDays   int64                  `json:"start_epoch_at_days,omitempty"`
+	Replication        int64                  `json:"replication,omitempty"`
+	RemoveUnsealedCopy bool                   `json:"remove_unsealed_copy,omitempty"`
+	SkipIPNIAnnounce   bool                   `json:"skip_ipni_announce,omitempty"`
+	Label              string                 `json:"label,omitempty"`
+	DealVerifyState    string                 `json:"deal_verify_state,omitempty"`
 }
 
 // DealResponse Creating a new struct called DealResponse and then returning it.
@@ -413,7 +413,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 				dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
 			}
 			// remove unsealed copy
-			if dealRequest.RemoveUnsealedCopies == false {
+			if dealRequest.RemoveUnsealedCopy == false {
 				dealProposalParam.RemoveUnsealedCopy = false
 			} else {
 				dealProposalParam.RemoveUnsealedCopy = true
@@ -631,10 +631,16 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		}
 
 		// remove unsealed copy
-		if dealRequest.RemoveUnsealedCopies == false {
+		if dealRequest.RemoveUnsealedCopy == false {
 			dealProposalParam.RemoveUnsealedCopy = false
 		} else {
 			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		if dealRequest.SkipIPNIAnnounce == false {
+			dealProposalParam.SkipIPNIAnnounce = false
+		} else {
+			dealProposalParam.SkipIPNIAnnounce = true
 		}
 
 		// deal proposal parameters
@@ -824,10 +830,6 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 			return false
 		}()
-		// start epoch
-		if dealRequest.StartEpoch != 0 {
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
 		// duration
 		if dealRequest.Duration == 0 {
 			dealProposalParam.Duration = utils.DEFAULT_DURATION
@@ -835,26 +837,40 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.Duration = dealRequest.Duration
 		}
 
-		if dealRequest.StartEpochInDays != 0 {
-			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-			//dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
-
+		// override duration if duration in days is set
 		if dealRequest.DurationInDays > 540 {
 			return errors.New("Duration cannot be more than 540 days")
 		}
-
 		if dealRequest.DurationInDays != 0 {
-			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays)
+		}
+
+		// start epoch
+		if dealRequest.StartEpoch != 0 {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+		//	override start epoch if start epoch in days is set
+		if dealRequest.StartEpochInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime) // + (utils.EPOCH_PER_HOUR * 24 * 7)
+			fmt.Println("Start Epoch: ", dealRequest.StartEpoch)
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+
+			endEpochTime := time.Now().AddDate(0, 0, int(dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = utils.DateToHeight(endEpochTime)
 		}
 
 		// remove unsealed copy
-		if dealRequest.RemoveUnsealedCopies == false {
+		if dealRequest.RemoveUnsealedCopy == false {
 			dealProposalParam.RemoveUnsealedCopy = false
 		} else {
 			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		if dealRequest.SkipIPNIAnnounce == false {
+			dealProposalParam.SkipIPNIAnnounce = false
+		} else {
+			dealProposalParam.SkipIPNIAnnounce = true
 		}
 
 		// deal proposal parameters
@@ -1042,10 +1058,6 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 			return false
 		}()
-		// start epoch
-		if dealRequest.StartEpoch != 0 {
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
 		// duration
 		if dealRequest.Duration == 0 {
 			dealProposalParam.Duration = utils.DEFAULT_DURATION
@@ -1053,28 +1065,40 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.Duration = dealRequest.Duration
 		}
 
-		if dealRequest.StartEpochInDays != 0 {
-			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
-			//dealStart := head.Height() + (epochsPerHour * 24 * 7)
-			//dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * (7 - dealRequest.StartEpochInDays))
-			//dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
-
+		// override duration if duration in days is set
 		if dealRequest.DurationInDays > 540 {
 			return errors.New("Duration cannot be more than 540 days")
 		}
-
 		if dealRequest.DurationInDays != 0 {
-			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays)
+		}
+
+		// start epoch
+		if dealRequest.StartEpoch != 0 {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+		//	override start epoch if start epoch in days is set
+		if dealRequest.StartEpochInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime) // + (utils.EPOCH_PER_HOUR * 24 * 7)
+			fmt.Println("Start Epoch: ", dealRequest.StartEpoch)
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+
+			endEpochTime := time.Now().AddDate(0, 0, int(dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = utils.DateToHeight(endEpochTime)
 		}
 
 		// remove unsealed copy
-		if dealRequest.RemoveUnsealedCopies == false {
+		if dealRequest.RemoveUnsealedCopy == false {
 			dealProposalParam.RemoveUnsealedCopy = false
 		} else {
 			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		if dealRequest.SkipIPNIAnnounce == false {
+			dealProposalParam.SkipIPNIAnnounce = false
+		} else {
+			dealProposalParam.SkipIPNIAnnounce = true
 		}
 
 		// deal proposal parameters
@@ -1267,10 +1291,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				}
 				return false
 			}()
-			// start epoch
-			if dealRequest.StartEpoch != 0 {
-				dealProposalParam.StartEpoch = dealRequest.StartEpoch
-			}
+
 			// duration
 			if dealRequest.Duration == 0 {
 				dealProposalParam.Duration = utils.DEFAULT_DURATION
@@ -1278,23 +1299,31 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				dealProposalParam.Duration = dealRequest.Duration
 			}
 
-			if dealRequest.StartEpochInDays != 0 {
-				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-				dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
-				dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-				//dealProposalParam.StartEpoch = dealRequest.StartEpoch
-			}
-
+			// override duration if duration in days is set
 			if dealRequest.DurationInDays > 540 {
 				return errors.New("Duration cannot be more than 540 days")
 			}
-
 			if dealRequest.DurationInDays != 0 {
-				dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
+				dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays)
+			}
+
+			// start epoch
+			if dealRequest.StartEpoch != 0 {
+				dealProposalParam.StartEpoch = dealRequest.StartEpoch
+			}
+			//	override start epoch if start epoch in days is set
+			if dealRequest.StartEpochInDays != 0 {
+				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+				dealRequest.StartEpoch = utils.DateToHeight(startEpochTime) // + (utils.EPOCH_PER_HOUR * 24 * 7)
+				fmt.Println("Start Epoch: ", dealRequest.StartEpoch)
+				dealProposalParam.StartEpoch = dealRequest.StartEpoch
+
+				endEpochTime := time.Now().AddDate(0, 0, int(dealRequest.DurationInDays))
+				dealProposalParam.EndEpoch = utils.DateToHeight(endEpochTime)
 			}
 
 			// remove unsealed copy
-			if dealRequest.RemoveUnsealedCopies == false {
+			if dealRequest.RemoveUnsealedCopy == false {
 				dealProposalParam.RemoveUnsealedCopy = false
 			} else {
 				dealProposalParam.RemoveUnsealedCopy = true
@@ -1603,10 +1632,6 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 			}
 			return false
 		}()
-		// start epoch
-		if dealRequest.StartEpoch != 0 {
-			dealProposalParam.StartEpoch = dealRequest.StartEpoch
-		}
 		// duration
 		if dealRequest.Duration == 0 {
 			dealProposalParam.Duration = utils.DEFAULT_DURATION
@@ -1614,25 +1639,40 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 			dealProposalParam.Duration = dealRequest.Duration
 		}
 
-		if dealRequest.StartEpochInDays != 0 {
-			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealRequest.StartEpoch = dealRequest.StartEpoch + (utils.EPOCH_PER_HOUR * 24 * 7)
-		}
-
+		// override duration if duration in days is set
 		if dealRequest.DurationInDays > 540 {
 			return errors.New("Duration cannot be more than 540 days")
 		}
-
 		if dealRequest.DurationInDays != 0 {
-			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - 7)
+			dealProposalParam.Duration = utils.EPOCH_PER_DAY * (dealRequest.DurationInDays)
+		}
+
+		// start epoch
+		if dealRequest.StartEpoch != 0 {
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+		}
+		//	override start epoch if start epoch in days is set
+		if dealRequest.StartEpochInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealRequest.StartEpoch = utils.DateToHeight(startEpochTime) // + (utils.EPOCH_PER_HOUR * 24 * 7)
+			fmt.Println("Start Epoch: ", dealRequest.StartEpoch)
+			dealProposalParam.StartEpoch = dealRequest.StartEpoch
+
+			endEpochTime := time.Now().AddDate(0, 0, int(dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = utils.DateToHeight(endEpochTime)
 		}
 
 		// remove unsealed copy
-		if dealRequest.RemoveUnsealedCopies == false {
+		if dealRequest.RemoveUnsealedCopy == false {
 			dealProposalParam.RemoveUnsealedCopy = false
 		} else {
 			dealProposalParam.RemoveUnsealedCopy = true
+		}
+
+		if dealRequest.SkipIPNIAnnounce == false {
+			dealProposalParam.SkipIPNIAnnounce = false
+		} else {
+			dealProposalParam.SkipIPNIAnnounce = true
 		}
 
 		// deal proposal parameters

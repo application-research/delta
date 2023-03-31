@@ -248,7 +248,7 @@ Take note of the content_id. You'll use this to get the status of the deal.
         },
         "connection_mode": "import",
         "size": 18010019221,
-        "remove_unsealed_copies": true,
+        "remove_unsealed_copy": true,
         "skip_ipni_announce": true,
         "duration_in_days": 537,
         "start_epoch_at_days": 3
@@ -273,7 +273,7 @@ Take note of all the content_ids.
                 "padded_piece_size": 34359738368,
                 "piece_cid": "baga6ea4seaqblmkqfesvijszk34r3j6oairnl4fhi2ehamt7f3knn3gwkyylmlq"
             },
-            "remove_unsealed_copies": true,
+            "remove_unsealed_copy": true,
             "size": 18010019221,
             "skip_ipni_announce": true,
             "start_epoch": 2742000,

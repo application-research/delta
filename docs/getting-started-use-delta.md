@@ -37,7 +37,7 @@ Here's the complete structure of the `metadata` request.
     },
     "connection_mode": "import",
     "size": 2500366291,
-    "remove_unsealed_copies":true, 
+    "remove_unsealed_copy":true, 
     "skip_ipni_announce": true
 }
 ```
@@ -93,7 +93,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/imports' \
     },
     "connection_mode": "import",
     "size": 2500366291,
-    "remove_unsealed_copies":true, 
+    "remove_unsealed_copy":true, 
     "skip_ipni_announce": true
 }]'
 ```
@@ -128,7 +128,7 @@ The response will look like this:
             "size": 18010019221,
             "start_epoch": 2730480,
             "start_epoch_at_days": 3,
-            "remove_unsealed_copies": true,
+            "remove_unsealed_copy": true,
             "skip_ipni_announce": true
         }
     }
@@ -179,7 +179,7 @@ Once a wallet is registered, we can add a `wallet` field to the `metadata` reque
     },
     "connection_mode": "import",
     "size": 2500366291,
-    "remove_unsealed_copies":true, 
+    "remove_unsealed_copy":true, 
     "skip_ipni_announce": true
 }
 ```

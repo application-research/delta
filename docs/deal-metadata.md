@@ -23,8 +23,8 @@ The `unpadded_piece_size` field is the unpadded piece size of the content to be 
 The `connection_mode` field is the connection mode to use to make the deal. This is either `e2e` or `import`. This is required.
 # size
 The `size` field is the size of the content to be stored. This is only required if the `connection_mode` is `import`. If the `connection_mode` is `e2e`, then the `size` field is not required.
-# remove_unsealed_copies
-The `remove_unsealed_copies` field is a boolean field that indicates whether to remove unsealed copies of the content after the deal is made. This is optional. 
+# remove_unsealed_copy
+The `remove_unsealed_copy` field is a boolean field that indicates whether to remove unsealed copies of the content after the deal is made. This is optional. 
 # skip_ipni_announce
 The `skip_ipni_announce` field is a boolean field that indicates whether to skip announcing the deal to interplanetary indexer. This is optional. 
 # duration_in_days or duration
@@ -54,7 +54,7 @@ The `label` field is a label for the deal. It has a limit of less than 100 chara
     },
     "connection_mode": "import",
     "size": 2500366291,
-    "remove_unsealed_copies":true, 
+    "remove_unsealed_copy":true, 
     "skip_ipni_announce": true,
     "duration_in_days": 540, 
     // OR "duration": "1555200" // duration in epochs (30 seconds)

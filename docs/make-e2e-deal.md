@@ -35,7 +35,7 @@ Here's the complete structure of the `metadata` request.
     },
     "connection_mode": "import",
     "size": 2500366291,
-    "remove_unsealed_copies":true, 
+    "remove_unsealed_copy":true, 
     "skip_ipni_announce": true,
     "duration_in_days": 537,
     "start_epoch_at_days": 3
