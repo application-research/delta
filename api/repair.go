@@ -24,6 +24,32 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 	retry := e.Group("/retry")
 	retry.GET("/deal/:contentId", handleRetryContent(node))
+
+	autoRetry := e.Group("/auto-retry")
+	autoRetry.GET("/deal/disable/:contentId", handleDisableAutoRetry(node))
+	autoRetry.GET("/deal/enable/:contentId", handleEnableAutoRetry(node))
+}
+
+func handleDisableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		var contentId = c.Param("contentId")
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
+		content.AutoRetry = false
+		node.DB.Model(&model.Content{}).Save(&content)
+		return nil
+	}
+}
+
+func handleEnableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+		var contentId = c.Param("contentId")
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
+		content.AutoRetry = true
+		node.DB.Model(&model.Content{}).Save(&content)
+		return nil
+	}
 }
 
 func handleRetryContent(node *core.DeltaNode) func(c echo.Context) error {

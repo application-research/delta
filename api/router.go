@@ -194,11 +194,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	}
 
 	// Start server
-	staticEndpoint := e.Group("/static")
-	staticEndpoint.Use(middleware.Static("static"))
-	staticEndpoint.GET("/uploader", func(c echo.Context) error {
-		return c.File("static/uploader/index.html")
-	})
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration
 }
 
