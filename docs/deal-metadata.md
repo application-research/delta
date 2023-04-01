@@ -63,7 +63,7 @@ The deal will be retried with a randomly selected miner based on the file and lo
     "remove_unsealed_copy":true, 
     "skip_ipni_announce": true,
     "duration_in_days": 540, 
-    "auto_retry": true,
+    "auto_retry": false,
     "start_epoch_in_days": 14, // days to delay before the deal starts
 }
 ```
@@ -72,4 +72,4 @@ The deal will be retried with a randomly selected miner based on the file and lo
 Now that you know how to create a metadata request, you can:
 - [Make an import deal](./make-import-deal.md)
 - [Check the status of your deal](content-deal-status.md)
-- [Learn how to repair a deal](repair.md)
+- [Learn how to repair a deal](repair-retry.md)
