@@ -19,6 +19,7 @@ In order to create a successful deal, Delta requires the following information `
     - run the SP miner selection cli tool `./delta sp selection --size-in-bytes=34359738368`. Get the `address` field from the response.
     - run the SP miner selection api `curl --location --request GET 'https://simple-sp-selection.onrender.com/api/providers?size_bytes=34359738368'`, get the `address` field from the response.
     - check out `https://data.storage.market/api/providers` to get a list of miners.
+    - you can also omit this field and let the daemon select a miner for you.
 - The `connection_mode` to use to make the deal. The default value for an import deal is `import`.
   - `e2e` mode (online deal) is used to make deals with miners that support the `e2e` connection mode.
   - `import` mode (offline) is used to make deals with miners that support the `import` connection mode.
@@ -59,6 +60,7 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/imports' \
     "connection_mode": "import",
     "size": 2500366291,
     "remove_unsealed_copy":true, 
+    "auto_retry": false,
     "skip_ipni_announce": true
 }]'
 ```
@@ -153,4 +155,4 @@ Once a wallet is registered, we can add a `wallet` field to the `metadata` reque
 Now that we can make an import deal, we can move on to the next step
 - [Make an e2e deal](make-e2e-deal.md)
 - [Check the status of your deal](content-deal-status.md)
-- [Learn how to repair a deal](repair.md)
+- [Learn how to repair a deal](repair-retry.md)

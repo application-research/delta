@@ -56,6 +56,7 @@ type DealRequest struct {
 	Replication        int64                  `json:"replication,omitempty"`
 	RemoveUnsealedCopy bool                   `json:"remove_unsealed_copy"`
 	SkipIPNIAnnounce   bool                   `json:"skip_ipni_announce"`
+	AutoRetry          bool                   `json:"auto_retry"`
 	Label              string                 `json:"label,omitempty"`
 	DealVerifyState    string                 `json:"deal_verify_state,omitempty"`
 }
@@ -308,6 +309,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 				Cid:               addNode.Cid().String(),
 				RequestingApiKey:  authParts[1],
 				PieceCommitmentId: pieceCommp.ID,
+				AutoRetry:         dealRequest.AutoRetry,
 				Status:            utils.CONTENT_PINNED,
 				ConnectionMode:    connMode,
 				CreatedAt:         time.Now(),
@@ -503,6 +505,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 			Cid:               addNode.Cid().String(),
 			RequestingApiKey:  authParts[1],
 			PieceCommitmentId: pieceCommp.ID,
+			AutoRetry:         dealRequest.AutoRetry,
 			Status:            utils.CONTENT_PINNED,
 			ConnectionMode:    connMode,
 			CreatedAt:         time.Now(),
@@ -706,6 +709,7 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			RequestingApiKey:  authParts[1],
 			PieceCommitmentId: pieceCommp.ID,
 			Status:            utils.CONTENT_PINNED,
+			AutoRetry:         dealRequest.AutoRetry,
 			ConnectionMode:    dealRequest.ConnectionMode,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
@@ -714,6 +718,14 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		dealRequest.Cid = content.Cid
 
 		//	assign a miner
+		if dealRequest.Miner == "" {
+			minerAssignService := core.NewMinerAssignmentService()
+			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(file.Size)
+			if errOnPv != nil {
+				return errOnPv
+			}
+			dealRequest.Miner = provider.Address
+		}
 		if dealRequest.Miner != "" {
 			contentMinerAssignment := model.ContentMiner{
 				Miner:     dealRequest.Miner,
@@ -901,6 +913,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			Cid:               dealRequest.Cid,
 			RequestingApiKey:  authParts[1],
 			PieceCommitmentId: pieceCommp.ID,
+			AutoRetry:         dealRequest.AutoRetry,
 			Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
 			ConnectionMode:    connMode,
 			CreatedAt:         time.Now(),
@@ -910,6 +923,14 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		dealRequest.Cid = content.Cid
 
 		//	assign a miner
+		if dealRequest.Miner == "" {
+			minerAssignService := core.NewMinerAssignmentService()
+			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
+			if errOnPv != nil {
+				return errOnPv
+			}
+			dealRequest.Miner = provider.Address
+		}
 		if dealRequest.Miner != "" {
 			contentMinerAssignment := model.ContentMiner{
 				Miner:     dealRequest.Miner,
@@ -1099,6 +1120,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				Cid:               dealRequest.Cid,
 				RequestingApiKey:  authParts[1],
 				PieceCommitmentId: pieceCommp.ID,
+				AutoRetry:         dealRequest.AutoRetry,
 				Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
 				ConnectionMode:    connMode,
 				CreatedAt:         time.Now(),
@@ -1108,6 +1130,14 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			dealRequest.Cid = content.Cid
 
 			//	assign a miner
+			if dealRequest.Miner == "" {
+				minerAssignService := core.NewMinerAssignmentService()
+				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
+				if errOnPv != nil {
+					return errOnPv
+				}
+				dealRequest.Miner = provider.Address
+			}
 			if dealRequest.Miner != "" {
 				contentMinerAssignment := model.ContentMiner{
 					Miner:     dealRequest.Miner,
@@ -1283,9 +1313,9 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("invalid deal request")
 	}
 	// miner is required
-	if (DealRequest{} != dealRequest && dealRequest.Miner == "") {
-		return errors.New("miner is required")
-	}
+	//if (DealRequest{} != dealRequest && dealRequest.Miner == "") {
+	//	return errors.New("miner is required")
+	//}
 
 	if (DealRequest{} != dealRequest && dealRequest.DurationInDays > 0 && dealRequest.StartEpochInDays == 0) {
 		return errors.New("start_epoch_in_days is required when duration_in_days is set")
@@ -1419,6 +1449,7 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 			Cid:               addNode.Cid().String(),
 			RequestingApiKey:  authParts[1],
 			PieceCommitmentId: pieceCommp.ID,
+			AutoRetry:         dealRequest.AutoRetry,
 			Status:            utils.CONTENT_PINNED,
 			ConnectionMode:    dealRequest.ConnectionMode,
 			CreatedAt:         time.Now(),
@@ -1428,6 +1459,15 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 		dealRequest.Cid = content.Cid
 
 		//	assign a miner
+		if dealRequest.Miner == "" {
+			minerAssignService := core.NewMinerAssignmentService()
+			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(file.Size)
+			if errOnPv != nil {
+				return errOnPv
+			}
+			dealRequest.Miner = provider.Address
+		}
+
 		if dealRequest.Miner != "" {
 			contentMinerAssignment := model.ContentMiner{
 				Miner:     dealRequest.Miner,

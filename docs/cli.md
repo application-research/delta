@@ -250,6 +250,7 @@ Take note of the content_id. You'll use this to get the status of the deal.
         "size": 18010019221,
         "remove_unsealed_copy": true,
         "skip_ipni_announce": true,
+        "auto_retry": false,
         "duration_in_days": 537,
         "start_epoch_at_days": 3
     }

@@ -34,6 +34,8 @@ func main() {
 
 	// commands
 	commands = append(commands, cmd.DaemonCmd(&cfg)...)
+
+	// cli
 	commands = append(commands, cmd.CarCmd(&cfg)...)
 	commands = append(commands, cmd.CommpCmd(&cfg)...)
 	commands = append(commands, cmd.DealCmd(&cfg)...)
