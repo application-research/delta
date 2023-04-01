@@ -1,3 +1,4 @@
+// A package that is used to define the constants used in the project.
 package utils
 
 import "github.com/application-research/delta-db/messaging"
@@ -40,6 +41,9 @@ const (
 	CONNECTION_MODE_E2E    = "e2e"
 	CONNECTION_MODE_IMPORT = "import"
 
+	DEAL_VERIFIED   = "verified"
+	DEAL_UNVERIFIED = "unverified"
+
 	LOTUS_API = "http://api.chain.love"
 	API_AUTH  = "https://auth.estuary.tech/check-api-key"
 
@@ -50,5 +54,6 @@ const (
 	DEFAULT_DURATION            = EPOCH_540_DAYS - (EPOCH_PER_DAY * 21)
 
 	COMMP_MODE_FAST     = "fast"
+	COMMP_MODE_STREAM   = "stream"
 	COMPP_MODE_FILBOOST = "filboost"
 )

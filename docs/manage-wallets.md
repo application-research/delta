@@ -40,7 +40,7 @@ Once a wallet is registered, we can add a `wallet` field to the `metadata` reque
     },
     "connection_mode": "import",
     "size": 2500366291,
-    "remove_unsealed_copies":true, 
+    "remove_unsealed_copy":true, 
     "skip_ipni_announce": true
 }
 ```

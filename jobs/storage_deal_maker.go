@@ -150,9 +150,12 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,
-		fc.DealWithVerified(true),
+		fc.DealWithVerified(dealProposal.VerifiedDeal),
 		fc.DealWithFastRetrieval(!dealProposal.RemoveUnsealedCopy),
 		fc.DealWithLabel(label),
+		fc.DealWithStartEpoch(abi.ChainEpoch(dealProposal.StartEpoch)),
+		fc.DealWithEndEpoch(abi.ChainEpoch(dealProposal.EndEpoch)),
+		fc.DealWithPricePerEpoch(priceBigInt),
 		fc.DealWithPieceInfo(fc.DealPieceInfo{
 			Cid:         pieceCid,
 			Size:        abi.PaddedPieceSize(pieceComm.PaddedPieceSize),
@@ -172,6 +175,10 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	dealProp := prop.DealProposal
 	if dealProposal.StartEpoch != 0 {
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
+	}
+
+	if dealProposal.EndEpoch != 0 {
+		dealProp.Proposal.EndEpoch = abi.ChainEpoch(dealProposal.EndEpoch)
 	}
 
 	propnd, err := cborutil.AsIpld(dealProp)
@@ -243,164 +250,55 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	// check proposal phase if true and if there are any errors
-	if propPhase == true && err != nil {
-		if strings.Contains(err.Error(), "failed to send request: stream reset") {
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
+	if propPhase && err != nil {
+		toUpdate := model.ContentDeal{
+			LastMessage: err.Error(),
+			Failed:      true,
+			UpdatedAt:   time.Now(),
+		}
+		switch {
+		case strings.Contains(err.Error(), "failed to send request: stream reset"):
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
+				Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
+					LastMessage: err.Error(),
+					UpdatedAt:   time.Now(),
+				})
 			return nil
-		}
-
-		if strings.Contains(err.Error(), "deal proposal rejected") {
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			return nil
-		}
-
-		if strings.Contains(err.Error(), "deal proposal is identical") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
+		case strings.Contains(err.Error(), "deal proposal rejected"), strings.Contains(err.Error(), "deal duration out of bounds"),
+			strings.Contains(err.Error(), "invalid deal end epoch"), strings.Contains(err.Error(), "could not load link"),
+			strings.Contains(err.Error(), "proposal PieceCID had wrong prefix"), strings.Contains(err.Error(), "proposal piece size is invalid"):
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
+				Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
+					LastMessage: err.Error(),
+					UpdatedAt:   time.Now(),
+				})
 			return err
-		}
-
-		if strings.Contains(err.Error(), "deal duration out of bounds") {
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
+		case strings.Contains(err.Error(), "storage price per epoch less than asking price"):
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
+				Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
+					LastMessage: err.Error(),
+				})
 			return err
-		}
-
-		if strings.Contains(err.Error(), "storage price per epoch less than asking price") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-			})
+		case strings.Contains(err.Error(), "piece size less than minimum required size"), strings.Contains(err.Error(), "send proposal rpc:"):
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
+				Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
+					LastMessage: err.Error(),
+					UpdatedAt:   time.Now(),
+				})
+			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
 			return err
-		}
-		if strings.Contains(err.Error(), " piece size less than minimum required size") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			return err
-		}
-
-		if strings.Contains(err.Error(), " invalid deal end epoch") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			return err
-		}
-
-		if strings.Contains(err.Error(), "could not load link") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			return err
-		}
-
-		if strings.Contains(err.Error(), "proposal PieceCID had wrong prefix") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-			})
-			return err
-		}
-
-		if strings.Contains(err.Error(), "proposal piece size is invalid") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			return err
-		}
-
-		if strings.Contains(err.Error(), "send proposal rpc:") { // don't put it back on the queue
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-				LastMessage: err.Error(),
-				Failed:      true, // mark it as failed
-				UpdatedAt:   time.Now(),
-			})
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-				LastMessage: err.Error(),
-				UpdatedAt:   time.Now(),
-			})
-			//	retry
+		default:
 			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
 			return err
 		}
-
-		i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
-
-		return err
 	}
 
 	// if we are here, we have a deal proposal but with errors.
