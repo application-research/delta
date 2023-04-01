@@ -178,6 +178,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
+			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
 			if content.AutoRetry {
 				minerAssignService := core.NewMinerAssignmentService()
@@ -240,6 +241,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	if err != nil {
 		switch {
 		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
+			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
 			if content.AutoRetry {
 				minerAssignService := core.NewMinerAssignmentService()
@@ -328,9 +330,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "proposal piece size is invalid"),
 			strings.Contains(errProp.Error(), "piece size less than minimum required size"),
 			strings.Contains(errProp.Error(), "storage price per epoch less than asking price"),
-			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "miner connection failed: failed to dial"),
 			strings.Contains(errProp.Error(), "failed to dial"),
+			strings.Contains(errProp.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "miner is not considering online storage deals"),
 			strings.Contains(errProp.Error(), "send proposal rpc:"):
 			fmt.Println("failed to send proposal, re-assigning a miner")
@@ -366,6 +368,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		case strings.Contains(errProp.Error(), "deal duration out of bounds"),
 			strings.Contains(errProp.Error(), "invalid deal end epoch"),
 			strings.Contains(errProp.Error(), "could not load link"),
+			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "proposal PieceCID had wrong prefix"):
 			fmt.Println("case 2", errProp.Error())
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
@@ -375,7 +378,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 					LastMessage: errProp.Error(),
 					UpdatedAt:   time.Now(),
 				})
-			return err
+			return errProp
 		default:
 			fmt.Println("default", errProp.Error())
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
