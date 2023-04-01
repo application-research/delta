@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
-	github.com/application-research/delta-db v0.0.2-0.20230401000636-2487780d048f
+	github.com/application-research/delta-db v0.0.2-0.20230401154302-62cefd7da39f
 	github.com/application-research/filclient v0.5.0-rc1.0.20230331195738-9826f79f0648
 	github.com/application-research/whypfs-core v0.1.1
 	github.com/caarlos0/env/v6 v6.10.1

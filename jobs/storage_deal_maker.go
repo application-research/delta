@@ -92,30 +92,42 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	})
 
 	// any error here, fail the content
-	var minerAddress = i.GetAssignedMinerForContent(*content).Address
-	var filClient, err = i.GetAssignedFilclientForContent(*content)
-	var dealProposal = i.GetDealProposalForContent(*content)
-
-	if err != nil {
+	var miner, errOnMinerAddr = i.GetAssignedMinerForContent(*content)
+	if errOnMinerAddr != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-			LastMessage: err.Error(),
+			LastMessage: errOnMinerAddr.Error(),
 			UpdatedAt:   time.Now(),
 		})
-		return err
+		return errOnMinerAddr
+	}
+	minerAddress := miner.Address
+
+	// get filclient instance for content.
+	var filClient, errOnFilc = i.GetAssignedFilclientForContent(*content)
+
+	if errOnFilc != nil {
+		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+			LastMessage: errOnFilc.Error(),
+			UpdatedAt:   time.Now(),
+		})
+		return errOnFilc
 	}
 
-	if err != nil {
+	// prep the proposal
+	var dealProposal, errOnDealPrep = i.GetDealProposalForContent(*content)
+
+	if errOnDealPrep != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-			LastMessage: err.Error(),
+			LastMessage: errOnDealPrep.Error(),
 			UpdatedAt:   time.Now(),
 		})
-		return err
+		return errOnDealPrep
 	}
 
 	priceBigInt, err := types.BigFromString("0")
-
 	var dealDuration = utils.DEFAULT_DURATION
 	if dealProposal.ID != 0 {
 		dealDuration = int(dealProposal.Duration)
@@ -164,11 +176,43 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	)
 
 	if err != nil {
-		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-			LastMessage: err.Error(),
-			UpdatedAt:   time.Now(),
-		})
+		switch {
+		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
+			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
+			if content.AutoRetry {
+				minerAssignService := core.NewMinerAssignmentService()
+				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
+				if errOnPv != nil {
+					// just fail it then
+					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+						LastMessage: err.Error(),
+						UpdatedAt:   time.Now(),
+					})
+					return errOnPv
+				}
+
+				// create new content miner record.
+				contentMiner := &model.ContentMiner{
+					Content:   content.ID,
+					Miner:     provider.Address,
+					UpdatedAt: time.Now(),
+					CreatedAt: time.Now(),
+				}
+				if err := i.LightNode.DB.Create(contentMiner).Error; err != nil {
+					return xerrors.Errorf("failed to create database entry for content miner: %w", err)
+				}
+
+				// and dispatch the job again
+				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
+			}
+		default:
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+				LastMessage: err.Error(),
+				UpdatedAt:   time.Now(),
+			})
+		}
 		return err
 	}
 
@@ -194,11 +238,43 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	dealUUID := uuid.New()
 	proto, err := filClient.DealProtocolForMiner(i.Context, minerAddress)
 	if err != nil {
-		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-			LastMessage: err.Error(),
-			UpdatedAt:   time.Now(),
-		})
+		switch {
+		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
+			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
+			if content.AutoRetry {
+				minerAssignService := core.NewMinerAssignmentService()
+				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
+				if errOnPv != nil {
+					// just fail it then
+					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+						LastMessage: err.Error(),
+						UpdatedAt:   time.Now(),
+					})
+					return errOnPv
+				}
+
+				// create new content miner record.
+				contentMiner := &model.ContentMiner{
+					Content:   content.ID,
+					Miner:     provider.Address,
+					UpdatedAt: time.Now(),
+					CreatedAt: time.Now(),
+				}
+				if err := i.LightNode.DB.Create(contentMiner).Error; err != nil {
+					return xerrors.Errorf("failed to create database entry for content miner: %w", err)
+				}
+
+				// and dispatch the job again
+				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
+			}
+		default:
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+				Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+				LastMessage: err.Error(),
+				UpdatedAt:   time.Now(),
+			})
+		}
 		return err
 	}
 	deal := &model.ContentDeal{
@@ -232,84 +308,89 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	})
 
 	// send the proposal.
-	propPhase, err := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce)
+	_, errProp := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce)
 
 	// check all errors
-	if err != nil {
-		i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(model.ContentDeal{
-			LastMessage: err.Error(),
-			Failed:      true, // mark it as failed
+	if errProp != nil {
+		contentToUpdate := model.Content{
+			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
+			LastMessage: errProp.Error(),
 			UpdatedAt:   time.Now(),
-		})
-		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-			LastMessage: err.Error(),
-			UpdatedAt:   time.Now(),
-		})
-		return err
-	}
-
-	// check proposal phase if true and if there are any errors
-	if propPhase && err != nil {
-		toUpdate := model.ContentDeal{
-			LastMessage: err.Error(),
+		}
+		contentDealToUpdate := model.ContentDeal{
+			LastMessage: errProp.Error(),
 			Failed:      true,
 			UpdatedAt:   time.Now(),
 		}
 		switch {
-		case strings.Contains(err.Error(), "failed to send request: stream reset"):
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
-				Updates(model.Content{
-					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
-					LastMessage: err.Error(),
-					UpdatedAt:   time.Now(),
-				})
-			return nil
-		case strings.Contains(err.Error(), "deal proposal rejected"), strings.Contains(err.Error(), "deal duration out of bounds"),
-			strings.Contains(err.Error(), "invalid deal end epoch"), strings.Contains(err.Error(), "could not load link"),
-			strings.Contains(err.Error(), "proposal PieceCID had wrong prefix"), strings.Contains(err.Error(), "proposal piece size is invalid"):
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
-				Updates(model.Content{
-					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
-					LastMessage: err.Error(),
-					UpdatedAt:   time.Now(),
-				})
+		case strings.Contains(errProp.Error(), "failed to send request: stream reset"),
+			strings.Contains(errProp.Error(), "deal proposal rejected"),
+			strings.Contains(errProp.Error(), "proposal piece size is invalid"),
+			strings.Contains(errProp.Error(), "piece size less than minimum required size"),
+			strings.Contains(errProp.Error(), "storage price per epoch less than asking price"),
+			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
+			strings.Contains(errProp.Error(), "miner connection failed: failed to dial"),
+			strings.Contains(errProp.Error(), "failed to dial"),
+			strings.Contains(errProp.Error(), "miner is not considering online storage deals"),
+			strings.Contains(errProp.Error(), "send proposal rpc:"):
+			fmt.Println("failed to send proposal, re-assigning a miner")
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(&contentToUpdate)
+
+			// re-assign a miner
+			if content.AutoRetry {
+				minerAssignService := core.NewMinerAssignmentService()
+				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
+				if errOnPv != nil {
+					// just fail it then
+					i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
+					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(&contentToUpdate)
+					return errOnPv
+				}
+
+				// create new content miner record.
+				contentMiner := &model.ContentMiner{
+					Content:   content.ID,
+					Miner:     provider.Address,
+					UpdatedAt: time.Now(),
+					CreatedAt: time.Now(),
+				}
+				if err := i.LightNode.DB.Create(contentMiner).Error; err != nil {
+					return xerrors.Errorf("failed to create database entry for content miner: %w", err)
+				}
+
+				// and dispatch the job again
+				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
+			}
 			return err
-		case strings.Contains(err.Error(), "storage price per epoch less than asking price"):
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
+		case strings.Contains(errProp.Error(), "deal duration out of bounds"),
+			strings.Contains(errProp.Error(), "invalid deal end epoch"),
+			strings.Contains(errProp.Error(), "could not load link"),
+			strings.Contains(errProp.Error(), "proposal PieceCID had wrong prefix"):
+			fmt.Println("case 2", errProp.Error())
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
 				Updates(model.Content{
 					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
-					LastMessage: err.Error(),
-				})
-			return err
-		case strings.Contains(err.Error(), "piece size less than minimum required size"), strings.Contains(err.Error(), "send proposal rpc:"):
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&toUpdate)
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
-				Updates(model.Content{
-					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
-					LastMessage: err.Error(),
+					LastMessage: errProp.Error(),
 					UpdatedAt:   time.Now(),
 				})
-			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
 			return err
 		default:
-			i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
-			return err
+			fmt.Println("default", errProp.Error())
+			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
+			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
+				Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
+					LastMessage: errProp.Error(),
+					UpdatedAt:   time.Now(),
+				})
 		}
+		return errProp
 	}
 
 	// if we are here, we have a deal proposal but with errors.
-	if propPhase == false && err != nil {
-		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
-			LastMessage: err.Error(),
-			UpdatedAt:   time.Now(),
-		})
-		return nil
-	} else { // clean deal proposal.
+	if errProp == nil { // clean deal proposal.
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_SENT,
 			LastMessage: utils.CONTENT_DEAL_PROPOSAL_SENT,
@@ -317,10 +398,15 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	// if this is e2e, then we need to start the data transfer.
-	if propPhase == false && content.ConnectionMode == utils.CONNECTION_MODE_E2E {
+	if errProp == nil && content.ConnectionMode == utils.CONNECTION_MODE_E2E {
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
-		channelId, err := filClient.StartDataTransfer(i.Context, i.GetAssignedMinerForContent(*content).Address, propCid, contentCid)
+
+		assignedMinerForContent, err := i.GetAssignedMinerForContent(*content)
+		if err != nil {
+			return err
+		}
+		channelId, err := filClient.StartDataTransfer(i.Context, assignedMinerForContent.Address, propCid, contentCid)
 
 		// if this is online then the user/sp expects the data to be transferred. if it fails, re-try.
 		if err != nil {
@@ -350,7 +436,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	//	if this is import, then we need to mark the deal as deal_proposal_sent.
-	if propPhase == false && content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
+	if errProp == nil && content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
 		//content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
 		deal.LastMessage = utils.CONTENT_DEAL_PROPOSAL_SENT
@@ -372,25 +458,31 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 }
 
 // GetAssignedMinerForContent Getting the miner address for the content.
-func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Content) MinerAddress {
+func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Content) (MinerAddress, error) {
 	var storageMinerAssignment model.ContentMiner
-	i.LightNode.DB.Model(&model.ContentMiner{}).Where("content = ?", content.ID).Find(&storageMinerAssignment)
+	err := i.LightNode.DB.Model(&model.ContentMiner{}).Where("content = ?", content.ID).Order("created_at desc").First(&storageMinerAssignment).Error
+	if err != nil {
+		return MinerAddress{}, err
+	}
 	if storageMinerAssignment.ID != 0 {
 		address.CurrentNetwork = address.Mainnet
 		a, err := address.NewFromString(storageMinerAssignment.Miner)
 		if err != nil {
 			fmt.Println("error on miner address", err, a)
 		}
-		return MinerAddress{Address: a}
+		return MinerAddress{Address: a}, nil
 	}
-	return i.GetStorageProviders()[0]
+	return i.GetStorageProviders()[0], nil
 }
 
 // Getting the content deal proposal parameters for a given content.
-func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Content) model.ContentDealProposalParameters {
+func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Content) (model.ContentDealProposalParameters, error) {
 	var contentDealProposalParameters model.ContentDealProposalParameters
-	i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters)
-	return contentDealProposalParameters
+	err := i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters).Error
+	if err != nil {
+		return model.ContentDealProposalParameters{}, err
+	}
+	return contentDealProposalParameters, err
 }
 
 // Creating a new filclient for the content.

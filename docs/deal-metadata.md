@@ -28,14 +28,20 @@ The `remove_unsealed_copy` field is a boolean field that indicates whether to re
 # skip_ipni_announce
 The `skip_ipni_announce` field is a boolean field that indicates whether to skip announcing the deal to interplanetary indexer. This is optional. 
 # duration_in_days
-- The `duration_in_days` field is the duration of the deal in days. This is optional.
+The `duration_in_days` field is the duration of the deal in days. This is optional.
 # start_epoch_in_days
-- The `start_epoch_at_days` field is the epoch to start the deal. This is optional.
+The `start_epoch_at_days` field is the epoch to start the deal. This is optional.
 # deal_verify_state
 The `deal_verify_state` field is the state of the deal verification. This is to indicate if the deal is from verified FIL or not. This is optional.
 valid values are: `verified`, `unverified`. Default: `verified`.
 # label
 The `label` field is a label for the deal. It has a limit of less than 100 characters. This is optional.
+# auto_retry
+The `auto_retry` field is a boolean field that indicates whether to automatically retry the deal if it fails. This is optional.
+
+When set to true, the deal will be retried if the failure falls under the "acceptable" failures. Note that we only have a list of acceptable failures at the moment.
+
+The deal will be retried with a randomly selected miner based on the file and location of delta instance.
 
 # Here's the complete structure of the `metadata` request.
 ```
@@ -48,12 +54,16 @@ The `label` field is a label for the deal. It has a limit of less than 100 chara
     "piece_commitment": {
         "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
+        "unpadded_piece_size": 2500366291
     },
     "connection_mode": "import",
     "size": 2500366291,
+    "label": "my deal",
+    "deal_verify_state": "verified",
     "remove_unsealed_copy":true, 
     "skip_ipni_announce": true,
     "duration_in_days": 540, 
+    "auto_retry": true,
     "start_epoch_in_days": 14, // days to delay before the deal starts
 }
 ```
