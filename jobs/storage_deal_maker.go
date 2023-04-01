@@ -177,6 +177,10 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
 	}
 
+	if dealProposal.EndEpoch != 0 {
+		dealProp.Proposal.EndEpoch = abi.ChainEpoch(dealProposal.EndEpoch)
+	}
+
 	propnd, err := cborutil.AsIpld(dealProp)
 	if err != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
