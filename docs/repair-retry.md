@@ -3,9 +3,9 @@
 Delta has built-in repair and retry functionality. This is useful for when a storage deal fails for some reason. The repair and retry functionality is built into the daemon and can be accessed thru HTTP API.
 
 ## Auto Retry
-The daemon will automatically retry a storage deal if it fails
+Users whi wants to retry deals can set this up via metadata request.
 
-This can be set in the `metadata` request parameter when making a storage deal. The `metadata` parameter is a JSON object that can contain the following fields:
+The `metadata` parameter is a JSON object that can contain the following fields:
 
 - `auto_retry` - boolean value that indicates whether the daemon should automatically retry a storage deal if it fails. Default is `false`.
   When an auto_retry field is set to true, the deal will run retries on several miners using https://sp-select.delta.store/api/providers until a miner accepts the deal.
