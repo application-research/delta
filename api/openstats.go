@@ -68,6 +68,7 @@ func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
 	// total
 	var total int64
+
 	node.DB.Model(&model.ContentDeal{}).Count(&total)
 
 	// get page size
@@ -78,7 +79,10 @@ func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
 	// get deals
 	var deals []model.ContentDeal
-	node.DB.Offset((page - 1) * pageSize).Order("created_at desc").Limit(pageSize).Find(&deals)
+	// select * from content_deals c where
+	//c.id in (select id from content_deals group by content order by content desc) order by id desc;
+
+	node.DB.Raw("select * from content_deals c where c.id in (select id from content_deals group by content order by content desc) order by id desc").Limit(pageSize).Offset((page - 1) * pageSize).Find(&deals)
 
 	return c.JSON(200, map[string]interface{}{
 		"total":         total,
