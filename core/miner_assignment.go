@@ -47,14 +47,14 @@ type Provider struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type MinerAssignmentService struct {
-}
+type MinerAssignmentService struct{}
 
 // GetSPInfo
 func NewMinerAssignmentService() MinerAssignmentService {
 	return MinerAssignmentService{}
 }
 
+// A function that takes in a parameter, byteSize, and returns a Provider and an error.
 func (m MinerAssignmentService) GetSPWithGivenBytes(byteSize int64) (Provider, error) {
 	bytSizeStr := fmt.Sprintf("%d", byteSize)
 	fmt.Println("Getting SP with given bytes: ", utils.SP_SELECTION_API+"?size_bytes="+bytSizeStr)
@@ -77,6 +77,7 @@ func (m MinerAssignmentService) GetSPWithGivenBytes(byteSize int64) (Provider, e
 
 }
 
+// A function that takes in two parameters, byteSize and sourceIp, and returns a Provider and an error.
 func (m MinerAssignmentService) GetSPWithGivenBytesAndIp(byteSize string, sourceIp string) (Provider, error) {
 	resp, err := http.Get(utils.SP_SELECTION_API + "?size_bytes=" + byteSize + "&source_ip=" + sourceIp)
 	if err != nil {
