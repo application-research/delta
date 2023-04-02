@@ -368,6 +368,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		case strings.Contains(errProp.Error(), "deal duration out of bounds"),
 			strings.Contains(errProp.Error(), "invalid deal end epoch"),
 			strings.Contains(errProp.Error(), "could not load link"),
+			strings.Contains(errProp.Error(), "failed validation: proposal end"),
 			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "proposal PieceCID had wrong prefix"):
 			fmt.Println("case 2", errProp.Error())

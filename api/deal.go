@@ -396,6 +396,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
 				dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 			}
+
 			dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
 			dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 
@@ -801,6 +802,9 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
 			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
 			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+		} else {
+			dealProposalParam.StartEpoch = 0
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
 		}
 
 		dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
@@ -1006,6 +1010,9 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
 			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
 			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+		} else {
+			dealProposalParam.StartEpoch = 0
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
 		}
 		dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
@@ -1215,6 +1222,9 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
 				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
 				dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+			} else {
+				dealProposalParam.StartEpoch = 0
+				dealProposalParam.Duration = utils.DEFAULT_DURATION
 			}
 
 			dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
