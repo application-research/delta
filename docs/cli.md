@@ -8,6 +8,7 @@ Delta CLI is packaged with the Delta node. Build and install `Delta` node as des
 - Car file generation cli
 - Piece commitment computation cli
 - Storage deal making cli
+- Storage deal repair and retry cli
 - Content status check cli
 - Wallet cli
 - SP / Miner selection cli
@@ -193,12 +194,12 @@ curl --location --request GET 'https://auth.estuary.tech/register-new-token'
 
 #### Make an E2E deal
 ```
-./delta deal --api-key=<API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false}'
+./delta deal make --api-key=<API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false}'
 ```
 
 Making a deal with a registered wallet
 ```
-./delta deal --api-key=<API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false,"wallet":{"address":<address>}}'
+./delta deal make --api-key=<API_KEY> --type=e2e --file=<> --metadata='{"miner":"f01963614","connection_mode":"e2e", "skip_ipni_announce":false,"wallet":{"address":<address>}}'
 ```
 
 **Output**
@@ -230,7 +231,7 @@ Take note of the content_id. You'll use this to get the status of the deal.
 
 #### Make an Import deal
 ```
-./delta deal --api-key=<API_KEY> --type=import --metadata='[
+./delta deal make --api-key=<API_KEY> --type=import --metadata='[
     {
         "cid": "bafybeidylyizmuhqny6dj5vblzokmrmgyq5tocssps3nw3g22dnlty7bhy",
         "wallet": {
