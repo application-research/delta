@@ -17,6 +17,19 @@ type RetryDealResponse struct {
 	OldContentId interface{} `json:"old_content_id,omitempty"`
 }
 
+type MultipleImportRequest struct {
+	ContentID   string      `json:"content_id"`
+	DealRequest DealRequest `json:"metadata"`
+}
+
+type ImportRetryRequest struct {
+	ContentIds []string `json:"content_ids"`
+}
+type ImportRetryResponse struct {
+	Message string        `json:"message"`
+	Content model.Content `json:"content"`
+}
+
 // ConfigureRepairRouter repair deals (re-create or re-try)
 // It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
@@ -25,13 +38,13 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 	repair := e.Group("/repair")
 	repair.GET("/deal/end-to-end/:contentId", handleRepairDealContent(node))
 	repair.GET("/deal/import/:contentId", handleRepairImportContent(node))
-	repair.POST("/deal/imports", handleRepairImport(node))
+	repair.POST("/deal/imports", handleRepairMultipleImport(node))
 
 	// retry
 	retry := e.Group("/retry")
 	retry.GET("/deal/end-to-end/:contentId", handleRetryDealContent(node))
-	retry.GET("/deal/import/:contentId", handleRetryImport(node))
-	retry.POST("/deal/imports", handleRetryImport(node))
+	retry.GET("/deal/import/:contentId", handleRetryDealImport(node))
+	retry.POST("/deal/imports", handleRetryMultipleImport(node))
 
 	// disable auto-retry
 	autoRetry := e.Group("/auto-retry")
@@ -90,19 +103,6 @@ func handleRetryContent(node *core.DeltaNode) func(c echo.Context) error {
 		}
 
 		return nil
-	}
-}
-
-// It creates a new job processor, adds it to the dispatcher, and returns a JSON response
-func handleForceRetryPendingContents(node *core.DeltaNode) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		processor := jobs.NewRetryProcessor(node)
-		node.Dispatcher.AddJobAndDispatch(processor, 1)
-
-		return c.JSON(200, map[string]interface{}{
-			"message": "retrying all deals",
-		})
-
 	}
 }
 
@@ -221,6 +221,89 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 		})
 	}
 }
+
+func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		var multipleImportRequest []MultipleImportRequest
+		err := c.Bind(&multipleImportRequest)
+		if err != nil {
+			return c.JSON(200, map[string]interface{}{
+				"message": "invalid request",
+			})
+		}
+		var importResponse []ImportRetryResponse
+		for _, request := range multipleImportRequest {
+			paramContentId := request.ContentID
+			dealRequest := request.DealRequest
+
+			// if the deal is not in the right state, throw an error.
+			var content model.Content
+			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+			content.RequestingApiKey = ""
+
+			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+				importResponse = append(importResponse, ImportRetryResponse{
+					Message: "content is not in import mode",
+					Content: content,
+				})
+			}
+
+			// get the content deal entry
+			var contentDeal model.ContentDeal
+			node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+
+			// if not content deal entry, throw an error.
+			if contentDeal.ID == 0 {
+				importResponse = append(importResponse, ImportRetryResponse{
+					Message: "content deal not found",
+					Content: content,
+				})
+			}
+
+			// get the proposal
+			var dealProposalParam model.ContentDealProposalParameters
+			node.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", paramContentId).First(&dealProposalParam)
+
+			if dealProposalParam.ID == 0 {
+				importResponse = append(importResponse, ImportRetryResponse{
+					Message: "content deal proposal not found",
+				})
+			}
+
+			// get the miner entry
+			var dealContentMiner model.ContentMiner
+			node.DB.Model(&model.ContentMiner{}).Where("content = ?", paramContentId).First(&dealContentMiner)
+
+			// only change the miner and duration
+			// create new content miner record.
+			dealContentMiner.Miner = dealRequest.Miner
+			if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
+				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+				dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
+				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+				dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+			} else {
+				dealProposalParam.StartEpoch = 0
+				dealProposalParam.Duration = utils.DEFAULT_DURATION
+			}
+
+			var pieceComm model.PieceCommitment
+			node.DB.Model(&model.PieceCommitment{}).Where("id = ?", content.PieceCommitmentId).First(&pieceComm)
+
+			// retry it.
+			processor := jobs.NewStorageDealMakerProcessor(node, content, pieceComm)
+			node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+			importResponse = append(importResponse, ImportRetryResponse{
+				Message: "retrying deal",
+				Content: content,
+			})
+		}
+		return c.JSON(200, importResponse)
+	}
+}
+
 func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
@@ -296,16 +379,8 @@ func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error 
 	}
 }
 
-type ImportRetryRequest struct {
-	ContentIds []string `json:"content_ids"`
-}
-type ImportRetryResponse struct {
-	Message string        `json:"message"`
-	Content model.Content `json:"content"`
-}
-
 // It takes a content ID, finds the content deal entry for that content, and then retries the deal
-func handleRetryImport(node *core.DeltaNode) func(c echo.Context) error {
+func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
 		var importRetryRequest ImportRetryRequest
@@ -354,7 +429,7 @@ func handleRetryImport(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
-func handleRepairImport(node *core.DeltaNode) func(c echo.Context) error {
+func handleRetryDealImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
 		var importRetryRequest ImportRetryRequest
