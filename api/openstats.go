@@ -79,17 +79,6 @@ func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
 	// get deals
 	var deals []model.ContentDeal
-	// select * from content_deals c where
-	//c.id in (select id from content_deals group by content order by content desc) order by id desc;
-
-	//SELECT c1.*
-	//	FROM content_deals c1
-	//JOIN (
-	//	SELECT MAX(id) AS max_id, content
-	//FROM content_deals
-	//GROUP BY content
-	//) c2 ON c1.id = c2.max_id
-	//ORDER BY c1.id DESC;
 	node.DB.Raw("SELECT c1.* FROM content_deals c1 JOIN ( SELECT MAX(id) AS max_id, content FROM content_deals GROUP BY content ) c2 ON c1.id = c2.max_id ORDER BY c1.id DESC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&deals)
 
 	return c.JSON(200, map[string]interface{}{
