@@ -1356,10 +1356,10 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("label length must be less than 100")
 	}
 
-	if (DealRequest{} != dealRequest && dealRequest.DealVerifyState == "") {
-		dealRequest.DealVerifyState = utils.DEAL_VERIFIED
-	} else if (DealRequest{} != dealRequest && dealRequest.DealVerifyState != utils.DEAL_VERIFIED) {
+	if (DealRequest{} != dealRequest && dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED) {
 		dealRequest.DealVerifyState = utils.DEAL_UNVERIFIED
+	} else {
+		dealRequest.DealVerifyState = utils.DEAL_VERIFIED
 	}
 
 	// connection mode is required
