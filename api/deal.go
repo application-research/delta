@@ -581,10 +581,10 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		// start epoch
@@ -791,10 +791,10 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
@@ -1211,10 +1211,10 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			}()
 
 			dealProposalParam.VerifiedDeal = func() bool {
-				if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-					return true
+				if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+					return false
 				}
-				return false
+				return true
 			}()
 
 			if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
@@ -1546,10 +1546,10 @@ func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
