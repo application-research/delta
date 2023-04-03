@@ -3,8 +3,11 @@ package api
 import (
 	"delta/core"
 	"delta/jobs"
+	"delta/utils"
+	"encoding/json"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
+	"time"
 )
 
 type RetryDealResponse struct {
@@ -17,14 +20,20 @@ type RetryDealResponse struct {
 // ConfigureRepairRouter repair deals (re-create or re-try)
 // It's a function that configures the repair router
 func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
+
+	// repair with a different (miner, duration only)
 	repair := e.Group("/repair")
-	repair.GET("/deal/force-retry-all", handleForceRetryPendingContents(node))
-	repair.GET("/deal/content/:contentId", handleRepairDealContent(node))
-	repair.GET("/deal/piece-commitment/:pieceCommitmentId", handleRepairPieceCommitment(node))
+	repair.GET("/deal/end-to-end/:contentId", handleRepairDealContent(node))
+	repair.GET("/deal/import/:contentId", handleRepairImportContent(node))
+	repair.POST("/deal/imports", handleRepairImport(node))
 
+	// retry
 	retry := e.Group("/retry")
-	retry.GET("/deal/:contentId", handleRetryContent(node))
+	retry.GET("/deal/end-to-end/:contentId", handleRetryDealContent(node))
+	retry.GET("/deal/import/:contentId", handleRetryImport(node))
+	retry.POST("/deal/imports", handleRetryImport(node))
 
+	// disable auto-retry
 	autoRetry := e.Group("/auto-retry")
 	autoRetry.GET("/deal/disable/:contentId", handleDisableAutoRetry(node))
 	autoRetry.GET("/deal/enable/:contentId", handleEnableAutoRetry(node))
@@ -84,34 +93,6 @@ func handleRetryContent(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
-// It takes a piece commitment id, finds the piece commitment, and re-queues the job
-func handleRepairPieceCommitment(node *core.DeltaNode) func(c echo.Context) error {
-	return func(c echo.Context) error {
-
-		// get the piece commitment'
-		var pieceCommitment model.PieceCommitment
-		node.DB.Model(&model.PieceCommitment{}).Where("id = ?", c.Param("pieceCommitmentId")).First(&pieceCommitment)
-
-		// if the piece commitment is not found, throw an error.
-		if pieceCommitment.ID == 0 {
-			return c.JSON(200, map[string]interface{}{
-				"message": "piece commitment not found",
-			})
-		}
-
-		// if the piece commitment is found, re-queue the job.
-		var content model.Content
-		node.DB.Model(&model.Content{}).Where("piece_commitment_id = ?", pieceCommitment.ID).First(&content)
-
-		processor := jobs.NewPieceCommpProcessor(node, content)
-		node.Dispatcher.AddJobAndDispatch(processor, 1)
-
-		return c.JSON(200, map[string]interface{}{
-			"message": "re-queued piece commitment",
-		})
-	}
-}
-
 // It creates a new job processor, adds it to the dispatcher, and returns a JSON response
 func handleForceRetryPendingContents(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
@@ -125,8 +106,8 @@ func handleForceRetryPendingContents(node *core.DeltaNode) func(c echo.Context) 
 	}
 }
 
-// It takes a content ID, finds the content deal entry for that content, and then retries the deal
-func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
+// > This function handles the retry of a deal content
+func handleRetryDealContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
 		paramContentId := c.Param("contentId")
@@ -145,6 +126,13 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 		// if the deal is not in the right state, throw an error.
 		var content model.Content
 		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		content.RequestingApiKey = ""
+
+		if content.ConnectionMode != utils.CONNECTION_MODE_E2E {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content is not in end-to-end mode",
+			})
+		}
 
 		// retry it.
 		processor := jobs.NewPieceCommpProcessor(node, content)
@@ -154,5 +142,263 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 			"message": "retrying deal",
 			"content": content,
 		})
+	}
+}
+
+// `handleRepairDealContent` is a function that takes a `DeltaNode` and returns a function that takes a `Context` and
+// returns an `error`
+func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		paramContentId := c.Param("contentId")
+		meta := c.FormValue("metadata") // only allow miner and durations
+
+		var dealRequest DealRequest
+		err := json.Unmarshal([]byte(meta), &dealRequest)
+		if err != nil {
+			return err
+		}
+
+		// if the deal is not in the right state, throw an error.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		content.RequestingApiKey = ""
+
+		if content.ConnectionMode != utils.CONNECTION_MODE_E2E {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content is not in end-to-end mode",
+			})
+		}
+
+		// get the content deal entry
+		var contentDeal model.ContentDeal
+		node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+
+		// if not content deal entry, throw an error.
+		if contentDeal.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content deal not found",
+			})
+		}
+
+		// get the proposal
+		var dealProposalParam model.ContentDealProposalParameters
+		node.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", paramContentId).First(&dealProposalParam)
+
+		if dealProposalParam.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content deal proposal not found",
+			})
+		}
+
+		// get the miner entry
+		var dealContentMiner model.ContentMiner
+		node.DB.Model(&model.ContentMiner{}).Where("content = ?", paramContentId).First(&dealContentMiner)
+
+		// only change the miner and duration
+		// create new content miner record.
+		dealContentMiner.Miner = dealRequest.Miner
+		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+		} else {
+			dealProposalParam.StartEpoch = 0
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		}
+
+		var pieceComm model.PieceCommitment
+		node.DB.Model(&model.PieceCommitment{}).Where("id = ?", content.PieceCommitmentId).First(&pieceComm)
+
+		// retry it.
+		processor := jobs.NewStorageDealMakerProcessor(node, content, pieceComm)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		return c.JSON(200, map[string]interface{}{
+			"message": "retrying deal",
+			"content": content,
+		})
+	}
+}
+func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		paramContentId := c.Param("contentId")
+		meta := c.FormValue("metadata") // only allow miner and durations
+
+		var dealRequest DealRequest
+		err := json.Unmarshal([]byte(meta), &dealRequest)
+		if err != nil {
+			return err
+		}
+
+		// if the deal is not in the right state, throw an error.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		content.RequestingApiKey = ""
+
+		if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content is not in import mode",
+			})
+		}
+
+		// get the content deal entry
+		var contentDeal model.ContentDeal
+		node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+
+		// if not content deal entry, throw an error.
+		if contentDeal.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content deal not found",
+			})
+		}
+
+		// get the proposal
+		var dealProposalParam model.ContentDealProposalParameters
+		node.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", paramContentId).First(&dealProposalParam)
+
+		if dealProposalParam.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content deal proposal not found",
+			})
+		}
+
+		// get the miner entry
+		var dealContentMiner model.ContentMiner
+		node.DB.Model(&model.ContentMiner{}).Where("content = ?", paramContentId).First(&dealContentMiner)
+
+		// only change the miner and duration
+		// create new content miner record.
+		dealContentMiner.Miner = dealRequest.Miner
+		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+		} else {
+			dealProposalParam.StartEpoch = 0
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		}
+
+		var pieceComm model.PieceCommitment
+		node.DB.Model(&model.PieceCommitment{}).Where("id = ?", content.PieceCommitmentId).First(&pieceComm)
+
+		// retry it.
+		processor := jobs.NewStorageDealMakerProcessor(node, content, pieceComm)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		return c.JSON(200, map[string]interface{}{
+			"message": "retrying deal",
+			"content": content,
+		})
+	}
+}
+
+type ImportRetryRequest struct {
+	ContentIds []string `json:"content_ids"`
+}
+type ImportRetryResponse struct {
+	Message string        `json:"message"`
+	Content model.Content `json:"content"`
+}
+
+// It takes a content ID, finds the content deal entry for that content, and then retries the deal
+func handleRetryImport(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		var importRetryRequest ImportRetryRequest
+		err := c.Bind(&importRetryRequest)
+		if err != nil {
+			return c.JSON(200, map[string]interface{}{
+				"message": "error parsing request",
+			})
+		}
+
+		var importRetryResponse []ImportRetryResponse
+		for _, paramContentId := range importRetryRequest.ContentIds {
+
+			// get the content deal entry
+			var contentDeal model.ContentDeal
+			node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+
+			// if not content deal entry, throw an error.
+			if contentDeal.ID == 0 {
+				return c.JSON(200, map[string]interface{}{
+					"message": "content deal not found",
+				})
+			}
+
+			// if the deal is not in the right state, throw an error.
+			var content model.Content
+			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+			content.RequestingApiKey = ""
+
+			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+				return c.JSON(200, map[string]interface{}{
+					"message": "content is not in import mode",
+				})
+			}
+
+			// retry it.
+			processor := jobs.NewPieceCommpProcessor(node, content)
+			node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+			importRetryResponse = append(importRetryResponse, ImportRetryResponse{
+				Message: "retrying deal",
+				Content: content,
+			})
+		}
+		return c.JSON(200, importRetryResponse)
+	}
+}
+
+func handleRepairImport(node *core.DeltaNode) func(c echo.Context) error {
+	return func(c echo.Context) error {
+
+		var importRetryRequest ImportRetryRequest
+		err := c.Bind(&importRetryRequest)
+		if err != nil {
+			return c.JSON(200, map[string]interface{}{
+				"message": "error parsing request",
+			})
+		}
+
+		var importRetryResponse []ImportRetryResponse
+		for _, paramContentId := range importRetryRequest.ContentIds {
+
+			// get the content deal entry
+			var contentDeal model.ContentDeal
+			node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+
+			// if not content deal entry, throw an error.
+			if contentDeal.ID == 0 {
+				return c.JSON(200, map[string]interface{}{
+					"message": "content deal not found",
+				})
+			}
+
+			// if the deal is not in the right state, throw an error.
+			var content model.Content
+			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+			content.RequestingApiKey = ""
+
+			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+				return c.JSON(200, map[string]interface{}{
+					"message": "content is not in import mode",
+				})
+			}
+
+			// retry it.
+			processor := jobs.NewPieceCommpProcessor(node, content)
+			node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+			importRetryResponse = append(importRetryResponse, ImportRetryResponse{
+				Message: "retrying deal",
+				Content: content,
+			})
+		}
+		return c.JSON(200, importRetryResponse)
 	}
 }

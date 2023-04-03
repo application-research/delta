@@ -43,14 +43,30 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Name:  "mode",
 				Usage: "standalone or cluster mode",
 			},
-
 			&cli.StringFlag{
+				Name:  "commp-mode",
+				Usage: "standalone or cluster mode",
+				Value: utils.COMPP_MODE_FILBOOST,
+			},
+			&cli.BoolFlag{
 				Name:  "enable-websocket",
 				Usage: "enable websocket or not",
+				Value: false,
 			},
-			&cli.StringFlag{
+			&cli.BoolFlag{
 				Name:  "stats-collection",
 				Usage: "enable stats collection or not",
+				Value: true,
+			},
+			&cli.BoolFlag{
+				Name:  "keep-copies",
+				Usage: "keep copies of the data or not",
+				Value: false,
+			},
+			&cli.BoolFlag{
+				Name:  "miner-throttle",
+				Usage: "enable miner throttle or not",
+				Value: false,
 			},
 		},
 
@@ -69,8 +85,8 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
 			mode := c.String("mode")
-			enableWebsocket := c.String("enable-websocket")
-			statsCollection := c.String("stats-collection")
+			enableWebsocket := c.Bool("enable-websocket")
+			statsCollection := c.Bool("stats-collection")
 			commpMode := c.String("commp-mode")
 
 			if repo == "" {
@@ -87,23 +103,9 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.Mode = mode
 			}
 
-			if enableWebsocket == "" {
-				cfg.Common.EnableWebsocket = false
-			} else {
-				cfg.Common.EnableWebsocket = true
-			}
-
-			if statsCollection == "" {
-				cfg.Common.StatsCollection = true
-			} else {
-				cfg.Common.StatsCollection = false
-			}
-
-			if commpMode == "" {
-				cfg.Common.CommpMode = utils.COMPP_MODE_FILBOOST
-			} else {
-				cfg.Common.CommpMode = commpMode
-			}
+			cfg.Common.EnableWebsocket = enableWebsocket
+			cfg.Common.StatsCollection = statsCollection
+			cfg.Common.CommpMode = commpMode
 
 			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)
 			fmt.Println("repo: ", utils.Purple+repo+utils.Reset)

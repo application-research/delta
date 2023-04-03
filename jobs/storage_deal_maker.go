@@ -482,7 +482,7 @@ func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Con
 // Getting the content deal proposal parameters for a given content.
 func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Content) (model.ContentDealProposalParameters, error) {
 	var contentDealProposalParameters model.ContentDealProposalParameters
-	err := i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters).Error
+	err := i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Order("created_at desc").First(&contentDealProposalParameters).Error
 	if err != nil {
 		return model.ContentDealProposalParameters{}, err
 	}

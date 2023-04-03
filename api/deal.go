@@ -10,12 +10,10 @@ import (
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/ipfs/go-cid"
-	ipld "github.com/ipfs/go-ipld-format"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
-	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -789,7 +787,6 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 			return content.Cid
 		}()
-		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
 			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
 				return true
@@ -1421,171 +1418,4 @@ func handleAnnounceCommitmentPiece() {
 
 func handleAnnounceCommitmentPieces() {
 
-}
-
-func handleRequest(c echo.Context, node *core.DeltaNode, dealRequest DealRequest, addNode ipld.Node, file *multipart.FileHeader, authParts []string) error {
-	var err error
-	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
-
-		// let's create a commp but only if we have
-		// a cid, a piece_cid, a padded_piece_size, size
-		var pieceCommp model.PieceCommitment
-		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
-			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
-			(dealRequest.Size != 0) {
-
-			// if commp is there, make sure the piece and size are there. Use default duration.
-			pieceCommp.Cid = addNode.Cid().String()
-			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
-			pieceCommp.Size = file.Size
-			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
-			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
-			pieceCommp.CreatedAt = time.Now()
-			pieceCommp.UpdatedAt = time.Now()
-			pieceCommp.Status = utils.COMMP_STATUS_OPEN
-			node.DB.Create(&pieceCommp)
-
-			dealRequest.PieceCommitment = PieceCommitmentRequest{
-				Piece:             pieceCommp.Piece,
-				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
-				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
-			}
-		}
-
-		// save the content to the DB with the piece_commitment_id
-		content := model.Content{
-			Name:              file.Filename,
-			Size:              file.Size,
-			Cid:               addNode.Cid().String(),
-			RequestingApiKey:  authParts[1],
-			PieceCommitmentId: pieceCommp.ID,
-			AutoRetry:         dealRequest.AutoRetry,
-			Status:            utils.CONTENT_PINNED,
-			ConnectionMode:    dealRequest.ConnectionMode,
-			CreatedAt:         time.Now(),
-			UpdatedAt:         time.Now(),
-		}
-		node.DB.Create(&content)
-		dealRequest.Cid = content.Cid
-
-		//	assign a miner
-		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
-			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(file.Size)
-			if errOnPv != nil {
-				return errOnPv
-			}
-			dealRequest.Miner = provider.Address
-		}
-
-		if dealRequest.Miner != "" {
-			contentMinerAssignment := model.ContentMiner{
-				Miner:     dealRequest.Miner,
-				Content:   content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
-			node.DB.Create(&contentMinerAssignment)
-			dealRequest.Miner = contentMinerAssignment.Miner
-		}
-
-		if (WalletRequest{} != dealRequest.Wallet) {
-
-			// get wallet from wallets database
-			var wallet model.Wallet
-
-			if dealRequest.Wallet.Address != "" {
-				node.DB.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
-			} else if dealRequest.Wallet.Uuid != "" {
-				node.DB.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
-			} else {
-				node.DB.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
-			}
-
-			if wallet.ID == 0 {
-				return errors.New("Wallet not found, please make sure the wallet is registered")
-			}
-
-			// create the wallet request object
-			var hexedWallet WalletRequest
-			hexedWallet.KeyType = wallet.KeyType
-			hexedWallet.PrivateKey = wallet.PrivateKey
-
-			if err != nil {
-				return errors.New("Error encoding the wallet")
-			}
-
-			// assign the wallet to the content
-			contentWalletAssignment := model.ContentWallet{
-				WalletId:  wallet.ID,
-				Content:   content.ID,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}
-			node.DB.Create(&contentWalletAssignment)
-
-			dealRequest.Wallet = WalletRequest{
-				Id:      dealRequest.Wallet.Id,
-				Address: wallet.Addr,
-			}
-		}
-
-		var dealProposalParam model.ContentDealProposalParameters
-		dealProposalParam.CreatedAt = time.Now()
-		dealProposalParam.UpdatedAt = time.Now()
-		dealProposalParam.Content = content.ID
-		dealProposalParam.Label = func() string {
-			if dealRequest.Label != "" {
-				return dealRequest.Label
-			}
-			return content.Cid
-		}()
-		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
-		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
-			}
-			return false
-		}()
-
-		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
-			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
-			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
-		}
-
-		dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
-		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
-
-		// deal proposal parameters
-		node.DB.Create(&dealProposalParam)
-
-		var dispatchJobs core.IProcessor
-		if pieceCommp.ID != 0 {
-			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
-		} else {
-			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
-		}
-
-		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
-
-		err = c.JSON(200, DealResponse{
-			Status:                       "success",
-			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
-			ContentId:                    content.ID,
-			DealRequest:                  dealRequest,
-			DealProposalParameterRequest: dealProposalParam,
-		})
-		if err != nil {
-			return err
-		}
-
-		// return transaction
-		return nil
-	})
-	if errTxn != nil {
-		return errors.New("Error creating the content record" + " " + errTxn.Error())
-	}
-	return nil
 }
