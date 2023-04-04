@@ -327,7 +327,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		}
 		switch {
 		case strings.Contains(errProp.Error(), "failed to send request: stream reset"),
-			strings.Contains(errProp.Error(), "deal proposal rejected"),
 			strings.Contains(errProp.Error(), "proposal piece size is invalid"),
 			strings.Contains(errProp.Error(), "piece size less than minimum required size"),
 			strings.Contains(errProp.Error(), "storage price per epoch less than asking price"),
@@ -336,7 +335,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "miner is not considering online storage deals"),
 			strings.Contains(errProp.Error(), "send proposal rpc:"):
-			fmt.Println("failed to send proposal, re-assigning a miner")
+
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(&contentToUpdate)
 
@@ -371,6 +370,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "could not load link"),
 			strings.Contains(errProp.Error(), "failed validation: proposal end"),
 			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
+			strings.Contains(errProp.Error(), "deal proposal is identical to deal"),
 			strings.Contains(errProp.Error(), "proposal PieceCID had wrong prefix"):
 			fmt.Println("case 2", errProp.Error())
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
