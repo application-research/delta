@@ -75,7 +75,11 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 
 			// remove from the blockstore
 			cidToDelete, err := cid.Decode(content.Cid)
-			go i.Node.DAGService.Remove(context.Background(), cidToDelete)
+			if i.Config.Node.KeepCopies {
+				fmt.Println("Keeping a copy of the content - not removing from the blockstore - CID: ", cidToDelete, "")
+			} else {
+				go i.Node.DAGService.Remove(context.Background(), cidToDelete)
+			}
 		case datatransfer.Failed, datatransfer.Failing, datatransfer.Cancelled, datatransfer.InitiatorPaused, datatransfer.ResponderPaused, datatransfer.ChannelNotFoundError:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
 			var contentDeal model.ContentDeal
@@ -97,7 +101,11 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			go i.Node.DAGService.Remove(context.Background(), cidToDelete)
+			if i.Config.Node.KeepCopies {
+				fmt.Println("Keeping a copy of the content - not removing from the blockstore - CID: ", cidToDelete, "")
+			} else {
+				go i.Node.DAGService.Remove(context.Background(), cidToDelete)
+			}
 		default:
 		}
 	})
