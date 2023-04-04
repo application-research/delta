@@ -439,48 +439,37 @@ func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error 
 func handleRetryDealImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
-		var importRetryRequest ImportRetryRequest
-		err := c.Bind(&importRetryRequest)
-		if err != nil {
+		paramContentId := c.Param("contentId")
+
+		// get the content deal entry
+		var contentDeal model.ContentDeal
+		node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+
+		// if not content deal entry, throw an error.
+		if contentDeal.ID == 0 {
 			return c.JSON(200, map[string]interface{}{
-				"message": "error parsing request",
+				"message": "content deal not found",
 			})
 		}
 
-		var importRetryResponse []ImportRetryResponse
-		for _, paramContentId := range importRetryRequest.ContentIds {
+		// if the deal is not in the right state, throw an error.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		content.RequestingApiKey = ""
 
-			// get the content deal entry
-			var contentDeal model.ContentDeal
-			node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
-
-			// if not content deal entry, throw an error.
-			if contentDeal.ID == 0 {
-				return c.JSON(200, map[string]interface{}{
-					"message": "content deal not found",
-				})
-			}
-
-			// if the deal is not in the right state, throw an error.
-			var content model.Content
-			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
-			content.RequestingApiKey = ""
-
-			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
-				return c.JSON(200, map[string]interface{}{
-					"message": "content is not in import mode",
-				})
-			}
-
-			// retry it.
-			processor := jobs.NewPieceCommpProcessor(node, content)
-			node.Dispatcher.AddJobAndDispatch(processor, 1)
-
-			importRetryResponse = append(importRetryResponse, ImportRetryResponse{
-				Message: "retrying deal",
-				Content: content,
+		if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content is not in import mode",
 			})
 		}
-		return c.JSON(200, importRetryResponse)
+
+		// retry it.
+		processor := jobs.NewPieceCommpProcessor(node, content)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		return c.JSON(200, map[string]interface{}{
+			"message": "retrying deal",
+			"content": content,
+		})
 	}
 }
