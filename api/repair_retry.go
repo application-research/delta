@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
+	"strings"
 	"time"
 )
 
@@ -55,9 +56,14 @@ func ConfigureRepairRouter(e *echo.Group, node *core.DeltaNode) {
 
 func handleDisableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
 		var contentId = c.Param("contentId")
 		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
+
+		node.DB.Model(&model.Content{}).Where("id = ? AND requesting_api_key = ?", contentId, authParts[1]).First(&content)
 		content.AutoRetry = false
 		node.DB.Model(&model.Content{}).Save(&content)
 		return nil
@@ -66,9 +72,14 @@ func handleDisableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 
 func handleEnableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
 		var contentId = c.Param("contentId")
 		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
+
+		node.DB.Model(&model.Content{}).Where("id = ? AND requesting_api_key = ?", contentId, authParts[1]).First(&content)
 		content.AutoRetry = true
 		node.DB.Model(&model.Content{}).Save(&content)
 		return nil
@@ -79,11 +90,14 @@ func handleEnableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 func handleRetryDealContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+
 		paramContentId := c.Param("contentId")
 
 		// get the content deal entry
 		var contentDeal model.ContentDeal
-		node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
+		node.DB.Model(&model.ContentDeal{}).Where("content = ? AND requesting_api_key = ?", paramContentId, authParts[1]).First(&contentDeal)
 
 		// if not content deal entry, throw an error.
 		if contentDeal.ID == 0 {
@@ -118,7 +132,8 @@ func handleRetryDealContent(node *core.DeltaNode) func(c echo.Context) error {
 // returns an `error`
 func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
-
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
 		paramContentId := c.Param("contentId")
 		meta := c.FormValue("metadata") // only allow miner and durations
 
@@ -149,7 +164,7 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 
 		// if the deal is not in the right state, throw an error.
 		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		node.DB.Model(&model.Content{}).Where("id = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&content)
 		content.RequestingApiKey = ""
 
 		if content.ConnectionMode != utils.CONNECTION_MODE_E2E {
@@ -212,7 +227,8 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 
 func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
-
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
 		var multipleImportRequest []MultipleImportRequest
 		err := c.Bind(&multipleImportRequest)
 		if err != nil {
@@ -246,7 +262,7 @@ func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error
 
 			// if the deal is not in the right state, throw an error.
 			var content model.Content
-			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+			node.DB.Model(&model.Content{}).Where("id = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&content)
 			content.RequestingApiKey = ""
 
 			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
@@ -313,7 +329,8 @@ func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error
 
 func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
-
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
 		paramContentId := c.Param("contentId")
 		meta := c.FormValue("metadata") // only allow miner and durations
 
@@ -325,7 +342,7 @@ func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error 
 
 		// if the deal is not in the right state, throw an error.
 		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		node.DB.Model(&model.Content{}).Where("id = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&content)
 		content.RequestingApiKey = ""
 
 		if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
@@ -389,7 +406,8 @@ func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error 
 // It takes a content ID, finds the content deal entry for that content, and then retries the deal
 func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
-
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
 		var importRetryRequest ImportRetryRequest
 		err := c.Bind(&importRetryRequest)
 		if err != nil {
@@ -401,6 +419,17 @@ func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error 
 		var importRetryResponse []ImportRetryResponse
 		for _, paramContentId := range importRetryRequest.ContentIds {
 
+			// if the deal is not in the right state, throw an error.
+			var content model.Content
+			node.DB.Model(&model.Content{}).Where("id = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&content)
+			content.RequestingApiKey = ""
+
+			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+				return c.JSON(200, map[string]interface{}{
+					"message": "content is not in import mode",
+				})
+			}
+
 			// get the content deal entry
 			var contentDeal model.ContentDeal
 			node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
@@ -409,17 +438,6 @@ func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error 
 			if contentDeal.ID == 0 {
 				return c.JSON(200, map[string]interface{}{
 					"message": "content deal not found",
-				})
-			}
-
-			// if the deal is not in the right state, throw an error.
-			var content model.Content
-			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
-			content.RequestingApiKey = ""
-
-			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
-				return c.JSON(200, map[string]interface{}{
-					"message": "content is not in import mode",
 				})
 			}
 
@@ -438,49 +456,39 @@ func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error 
 
 func handleRetryDealImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		authorizationString := c.Request().Header.Get("Authorization")
+		authParts := strings.Split(authorizationString, " ")
+		paramContentId := c.Param("contentId")
 
-		var importRetryRequest ImportRetryRequest
-		err := c.Bind(&importRetryRequest)
-		if err != nil {
+		// get the content deal entry
+		var contentDeal model.ContentDeal
+		node.DB.Model(&model.ContentDeal{}).Where("content = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&contentDeal)
+
+		// if not content deal entry, throw an error.
+		if contentDeal.ID == 0 {
 			return c.JSON(200, map[string]interface{}{
-				"message": "error parsing request",
+				"message": "content deal not found",
 			})
 		}
 
-		var importRetryResponse []ImportRetryResponse
-		for _, paramContentId := range importRetryRequest.ContentIds {
+		// if the deal is not in the right state, throw an error.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		content.RequestingApiKey = ""
 
-			// get the content deal entry
-			var contentDeal model.ContentDeal
-			node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId).First(&contentDeal)
-
-			// if not content deal entry, throw an error.
-			if contentDeal.ID == 0 {
-				return c.JSON(200, map[string]interface{}{
-					"message": "content deal not found",
-				})
-			}
-
-			// if the deal is not in the right state, throw an error.
-			var content model.Content
-			node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
-			content.RequestingApiKey = ""
-
-			if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
-				return c.JSON(200, map[string]interface{}{
-					"message": "content is not in import mode",
-				})
-			}
-
-			// retry it.
-			processor := jobs.NewPieceCommpProcessor(node, content)
-			node.Dispatcher.AddJobAndDispatch(processor, 1)
-
-			importRetryResponse = append(importRetryResponse, ImportRetryResponse{
-				Message: "retrying deal",
-				Content: content,
+		if content.ConnectionMode != utils.CONNECTION_MODE_IMPORT {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content is not in import mode",
 			})
 		}
-		return c.JSON(200, importRetryResponse)
+
+		// retry it.
+		processor := jobs.NewPieceCommpProcessor(node, content)
+		node.Dispatcher.AddJobAndDispatch(processor, 1)
+
+		return c.JSON(200, map[string]interface{}{
+			"message": "retrying deal",
+			"content": content,
+		})
 	}
 }

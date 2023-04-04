@@ -88,6 +88,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			enableWebsocket := c.Bool("enable-websocket")
 			statsCollection := c.Bool("stats-collection")
 			commpMode := c.String("commp-mode")
+			keepCopies := c.Bool("keep-copies")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -106,6 +107,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			cfg.Common.EnableWebsocket = enableWebsocket
 			cfg.Common.StatsCollection = statsCollection
 			cfg.Common.CommpMode = commpMode
+			cfg.Node.KeepCopies = keepCopies
 
 			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)
 			fmt.Println("repo: ", utils.Purple+repo+utils.Reset)

@@ -19,6 +19,7 @@ type DeltaConfig struct {
 		Description  string `env:"NODE_DESCRIPTION"`
 		Type         string `env:"NODE_TYPE"`
 		InstanceUuid string `env:"INSTANCE_UUID"`
+		KeepCopies   bool   `env:"KEEP_COPIES" envDefault:"false"`
 	}
 
 	Dispatcher struct {
@@ -33,6 +34,13 @@ type DeltaConfig struct {
 		StatsCollection bool   `env:"STATS_COLLECTION" envDefault:"true"`
 		Commit          string `env:"COMMIT"`
 		Version         string `env:"VERSION"`
+	}
+
+	Plugin struct {
+		AuthPlugin        string `env:"AUTH_API" envDefault:""`
+		SPThrottlerPlugin string `env:"SP_THROTTLER_API" envDefault:""`
+		SPSelectionPlugin string `env:"SP_SELECTION_API" envDefault:""`
+		EdgeNodePlugin    string `env:"EDGE_NODE_API" envDefault:""`
 	}
 
 	Standalone struct {

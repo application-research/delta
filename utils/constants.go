@@ -13,6 +13,8 @@ var Cyan = "\033[36m"
 var Gray = "\033[37m"
 var White = "\033[97m"
 
+// GlobalDeltaDataReporter the global metrics tracer
+// helps us improve the product.
 var GlobalDeltaDataReporter = messaging.NewDeltaMetricsTracer()
 
 const (
