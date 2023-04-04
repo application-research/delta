@@ -327,7 +327,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		}
 		switch {
 		case strings.Contains(errProp.Error(), "failed to send request: stream reset"),
-			strings.Contains(errProp.Error(), "deal proposal rejected"),
 			strings.Contains(errProp.Error(), "proposal piece size is invalid"),
 			strings.Contains(errProp.Error(), "piece size less than minimum required size"),
 			strings.Contains(errProp.Error(), "storage price per epoch less than asking price"),
@@ -336,7 +335,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "miner is not considering online storage deals"),
 			strings.Contains(errProp.Error(), "send proposal rpc:"):
-			fmt.Println("failed to send proposal, re-assigning a miner")
+
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(&contentToUpdate)
 
@@ -371,6 +370,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "could not load link"),
 			strings.Contains(errProp.Error(), "failed validation: proposal end"),
 			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
+			strings.Contains(errProp.Error(), "deal proposal is identical to deal"),
 			strings.Contains(errProp.Error(), "proposal PieceCID had wrong prefix"):
 			fmt.Println("case 2", errProp.Error())
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
@@ -392,14 +392,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 				})
 		}
 		return errProp
-	}
-
-	// if we are here, we have a deal proposal but with errors.
-	if errProp == nil { // clean deal proposal.
-		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_SENT,
-			LastMessage: utils.CONTENT_DEAL_PROPOSAL_SENT,
-		})
 	}
 
 	// if this is e2e, then we need to start the data transfer.
@@ -443,16 +435,16 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	//	if this is import, then we need to mark the deal as deal_proposal_sent.
 	if errProp == nil && content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
-		//content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
+		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
 		deal.LastMessage = utils.CONTENT_DEAL_PROPOSAL_SENT
 
 		pieceComm.UpdatedAt = time.Now()
-		//content.UpdatedAt = time.Now()
+		content.UpdatedAt = time.Now()
 		deal.UpdatedAt = time.Now()
 
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 			tx.Model(&pieceComm).Where("id = ?", pieceComm.ID).Save(pieceComm)
-			//tx.Model(&content).Where("id = ?", content.ID).Save(content)
+			tx.Model(&content).Where("id = ?", content.ID).Save(content)
 			tx.Model(&deal).Where("id = ?", deal.ID).Save(deal)
 			return nil
 		})
@@ -483,7 +475,7 @@ func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Con
 // Getting the content deal proposal parameters for a given content.
 func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Content) (model.ContentDealProposalParameters, error) {
 	var contentDealProposalParameters model.ContentDealProposalParameters
-	err := i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Find(&contentDealProposalParameters).Error
+	err := i.LightNode.DB.Model(&model.ContentDealProposalParameters{}).Where("content = ?", content.ID).Order("created_at desc").First(&contentDealProposalParameters).Error
 	if err != nil {
 		return model.ContentDealProposalParameters{}, err
 	}
