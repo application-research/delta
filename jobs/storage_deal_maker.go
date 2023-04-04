@@ -341,6 +341,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "miner is not accepting unverified storage deals"),
 			strings.Contains(errProp.Error(), "Deal rejected | Under maintenance, retry later"),
 			strings.Contains(errProp.Error(), "Deal rejected | Price below acceptance for such deal"),
+			strings.Contains(errProp.Error(), "Deal rejected | Such deal is not accepted"),
 			strings.Contains(errProp.Error(), "send proposal rpc:"):
 
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
