@@ -103,7 +103,6 @@ This will generate collection of car files with split-size of 1024 bytes for eac
 ]
 ```
 
-
 ### Piece Commitment computation cli
 #### Running `delta commp` on a file
 
@@ -174,6 +173,7 @@ Get the piece commitment of all the files in a directory
     }
 ]
 ```
+
 ### Storage deal making cli
 The storage deal making cli needs a running Delta daemon to work. 
 

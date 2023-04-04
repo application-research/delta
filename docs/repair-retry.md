@@ -17,10 +17,18 @@ curl --location --request GET 'http://localhost:1414/api/v1/retry/deal/endo:cont
 ```
 
 ### To retry an e2e deal
-### To retry an import  deal
+```
+curl --location --request GET 'http://localhost:1414/api/v1/retry/deal/end-to-end/:contentId' \
+--header 'Authorization: Bearer [API_KEY]' \
+--header 'Content-Type: application/json' 
+```
 
-### To repair an e2e deal
-### To repair an import  deal
+### To retry an import deal
+```
+curl --location --request GET 'http://localhost:1414/api/v1/retry/deal/import/:contentId' \
+--header 'Authorization: Bearer [API_KEY]' \
+--header 'Content-Type: application/json' 
+```
 
 
 ## Auto Retry
