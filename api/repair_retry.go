@@ -26,8 +26,9 @@ type ImportRetryRequest struct {
 	ContentIds []string `json:"content_ids"`
 }
 type ImportRetryResponse struct {
-	Message string        `json:"message"`
-	Content model.Content `json:"content"`
+	Message     string        `json:"message"`
+	Content     model.Content `json:"content"`
+	DealRequest DealRequest   `json:"metadata"`
 }
 
 // ConfigureRepairRouter repair deals (re-create or re-try)
@@ -70,38 +71,6 @@ func handleEnableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
 		content.AutoRetry = true
 		node.DB.Model(&model.Content{}).Save(&content)
-		return nil
-	}
-}
-
-func handleRetryContent(node *core.DeltaNode) func(c echo.Context) error {
-	return func(c echo.Context) error {
-
-		var contentId = c.Param("contentId")
-
-		// look up the content
-		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ?", contentId).First(&content)
-
-		// re-create the same content
-		var newContent = new(model.Content)
-		newContent = &content
-		newContent.ID = 0
-		node.DB.Model(&model.Content{}).Create(&newContent) // create new
-
-		// re-queue the content
-		processor := jobs.NewPieceCommpProcessor(node, *newContent)
-		node.Dispatcher.AddJobAndDispatch(processor, 1)
-
-		err := c.JSON(200, RetryDealResponse{
-			Status:       "success",
-			Message:      "Deal request received. Please take note of the new_content_id. You can use the content_id to check the status of the deal.",
-			NewContentId: newContent.ID,
-		})
-		if err != nil {
-			return err
-		}
-
 		return nil
 	}
 }
@@ -159,6 +128,25 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 			return err
 		}
 
+		// validate the deal request
+		if (DealRequest{} != dealRequest && dealRequest.StartEpochInDays > 14) {
+			return c.JSON(200, map[string]interface{}{
+				"message": "start epoch cannot be more than 14 days",
+			})
+		}
+
+		if (DealRequest{} != dealRequest && dealRequest.DurationInDays > 540) {
+			return c.JSON(200, map[string]interface{}{
+				"message": "duration cannot be more than 540 days",
+			})
+		}
+
+		if dealRequest.StartEpochInDays > dealRequest.DurationInDays {
+			return c.JSON(200, map[string]interface{}{
+				"message": "start epoch cannot be more than duration",
+			})
+		}
+
 		// if the deal is not in the right state, throw an error.
 		var content model.Content
 		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
@@ -201,7 +189,7 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
 			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 		} else {
 			dealProposalParam.StartEpoch = 0
@@ -236,6 +224,25 @@ func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error
 		for _, request := range multipleImportRequest {
 			paramContentId := request.ContentID
 			dealRequest := request.DealRequest
+
+			// validate the deal request
+			if (DealRequest{} != dealRequest && dealRequest.StartEpochInDays > 14) {
+				importResponse = append(importResponse, ImportRetryResponse{
+					Message: "start epoch cannot be more than 14 days",
+				})
+			}
+
+			if (DealRequest{} != dealRequest && dealRequest.DurationInDays > 540) {
+				return c.JSON(200, map[string]interface{}{
+					"message": "duration cannot be more than 540 days",
+				})
+			}
+
+			if dealRequest.StartEpochInDays > dealRequest.DurationInDays {
+				return c.JSON(200, map[string]interface{}{
+					"message": "start epoch cannot be more than duration",
+				})
+			}
 
 			// if the deal is not in the right state, throw an error.
 			var content model.Content
@@ -281,7 +288,7 @@ func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error
 			if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
 				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 				dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
 				dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 			} else {
 				dealProposalParam.StartEpoch = 0
@@ -358,7 +365,7 @@ func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error 
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
 			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 		} else {
 			dealProposalParam.StartEpoch = 0
