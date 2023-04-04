@@ -241,6 +241,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	proto, err := filClient.DealProtocolForMiner(i.Context, minerAddress)
 	if err != nil {
 		switch {
+		// there are cases where error occurs before the deal is even sent to the miner.
 		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
 			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
@@ -326,14 +327,19 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			UpdatedAt:   time.Now(),
 		}
 		switch {
+		// we only retry if the error is one of these
 		case strings.Contains(errProp.Error(), "failed to send request: stream reset"),
 			strings.Contains(errProp.Error(), "proposal piece size is invalid"),
 			strings.Contains(errProp.Error(), "piece size less than minimum required size"),
 			strings.Contains(errProp.Error(), "storage price per epoch less than asking price"),
 			strings.Contains(errProp.Error(), "miner connection failed: failed to dial"),
 			strings.Contains(errProp.Error(), "failed to dial"),
+			strings.Contains(errProp.Error(), "provider has insufficient funds to accept deal"),
 			strings.Contains(errProp.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(errProp.Error(), "miner is not considering online storage deals"),
+			strings.Contains(errProp.Error(), "miner is not accepting unverified storage deals"),
+			strings.Contains(errProp.Error(), "Deal rejected | Under maintenance, retry later"),
+			strings.Contains(errProp.Error(), "Deal rejected | Price below acceptance for such deal"),
 			strings.Contains(errProp.Error(), "send proposal rpc:"):
 
 			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
@@ -364,22 +370,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 				// and dispatch the job again
 				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
 			}
-			return err
-		case strings.Contains(errProp.Error(), "deal duration out of bounds"),
-			strings.Contains(errProp.Error(), "invalid deal end epoch"),
-			strings.Contains(errProp.Error(), "could not load link"),
-			strings.Contains(errProp.Error(), "failed validation: proposal end"),
-			strings.Contains(errProp.Error(), "failed to open stream to peer: protocol not supported"),
-			strings.Contains(errProp.Error(), "deal proposal is identical to deal"),
-			strings.Contains(errProp.Error(), "proposal PieceCID had wrong prefix"):
-			fmt.Println("case 2", errProp.Error())
-			i.LightNode.DB.Model(&deal).Where("id = ?", deal.ID).Updates(&contentDealToUpdate)
-			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).
-				Updates(model.Content{
-					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
-					LastMessage: errProp.Error(),
-					UpdatedAt:   time.Now(),
-				})
 			return errProp
 		default:
 			fmt.Println("default", errProp.Error())
