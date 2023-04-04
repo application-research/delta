@@ -176,6 +176,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	)
 
 	if err != nil {
+		fmt.Println(err)
 		switch {
 		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
 			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
@@ -393,14 +394,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		return errProp
 	}
 
-	// if we are here, we have a deal proposal but with errors.
-	if errProp == nil { // clean deal proposal.
-		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_DEAL_PROPOSAL_SENT,
-			LastMessage: utils.CONTENT_DEAL_PROPOSAL_SENT,
-		})
-	}
-
 	// if this is e2e, then we need to start the data transfer.
 	if errProp == nil && content.ConnectionMode == utils.CONNECTION_MODE_E2E {
 		propCid, err := cid.Decode(deal.PropCid)
@@ -442,16 +435,16 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	//	if this is import, then we need to mark the deal as deal_proposal_sent.
 	if errProp == nil && content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
 		pieceComm.Status = utils.COMMP_STATUS_COMITTED //"committed"
-		//content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
+		content.Status = utils.CONTENT_DEAL_PROPOSAL_SENT
 		deal.LastMessage = utils.CONTENT_DEAL_PROPOSAL_SENT
 
 		pieceComm.UpdatedAt = time.Now()
-		//content.UpdatedAt = time.Now()
+		content.UpdatedAt = time.Now()
 		deal.UpdatedAt = time.Now()
 
 		i.LightNode.DB.Transaction(func(tx *gorm.DB) error {
 			tx.Model(&pieceComm).Where("id = ?", pieceComm.ID).Save(pieceComm)
-			//tx.Model(&content).Where("id = ?", content.ID).Save(content)
+			tx.Model(&content).Where("id = ?", content.ID).Save(content)
 			tx.Model(&deal).Where("id = ?", deal.ID).Save(deal)
 			return nil
 		})

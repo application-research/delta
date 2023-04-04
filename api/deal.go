@@ -579,10 +579,10 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		}()
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		// start epoch
@@ -788,16 +788,16 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			return content.Cid
 		}()
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
 			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 		} else {
 			dealProposalParam.StartEpoch = 0
@@ -1005,7 +1005,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
 			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
 			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 		} else {
 			dealProposalParam.StartEpoch = 0
@@ -1208,16 +1208,16 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			}()
 
 			dealProposalParam.VerifiedDeal = func() bool {
-				if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-					return true
+				if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+					return false
 				}
-				return false
+				return true
 			}()
 
 			if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
 				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
 				dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays))
+				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
 				dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
 			} else {
 				dealProposalParam.StartEpoch = 0
@@ -1338,6 +1338,10 @@ func ValidateMeta(dealRequest DealRequest) error {
 
 	if (DealRequest{} != dealRequest && dealRequest.DurationInDays > 540) {
 		return errors.New("duration_in_days can only be 540 days or less")
+	}
+
+	if dealRequest.StartEpochInDays > dealRequest.DurationInDays {
+		return errors.New("start_epoch_in_days cannot be greater than duration_in_days")
 	}
 
 	if (DealRequest{} != dealRequest && dealRequest.Replication > 6) {
