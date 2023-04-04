@@ -43,6 +43,7 @@ type MinerAddress struct {
 }
 
 // Genesis Miner
+// this will never be used I want to keep it here to honor `Jason Cihelka` for his work.
 var mainnetMinerStrs = []string{
 	"f01963614",
 }
