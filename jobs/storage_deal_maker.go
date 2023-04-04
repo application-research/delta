@@ -176,6 +176,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	)
 
 	if err != nil {
+		fmt.Println(err)
 		switch {
 		case strings.Contains(err.Error(), "miner connection failed: failed to dial"),
 			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
