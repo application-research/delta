@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"io"
+	"os"
 	"reflect"
 	"testing"
 
@@ -94,7 +95,7 @@ func TestCommpService_GenerateParallelCommp(t *testing.T) {
 		DeltaNode *DeltaNode
 	}
 	type args struct {
-		readerFromFile io.ReadSeekCloser
+		readerFromFile *os.File
 	}
 	tests := []struct {
 		name    string

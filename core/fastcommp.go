@@ -1,10 +1,12 @@
 package core
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/bits"
 	"runtime"
+	"time"
 
 	"github.com/filecoin-project/go-commp-utils/nonffi"
 	"github.com/filecoin-project/go-commp-utils/writer"
@@ -156,16 +158,26 @@ func (w *DataCidWriter) Sum() (writer.DataCIDSize, error) {
 
 // fastCommp calculates the commp of a CARv1 or CARv2 file
 func fastCommp(reader io.ReadSeekCloser) (writer.DataCIDSize, error) {
+	start := time.Now()
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return writer.DataCIDSize{}, err
 	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("Elapsed load time: %s\n", elapsed)
+
+	start = time.Now()
 	cc := new(DataCidWriter)
 	cc.Write(data)
 	sum, err := cc.Sum()
 	if err != nil {
 		panic(err)
 	}
+
+	elapsed = time.Since(start)
+	fmt.Printf("commP: %s\n", sum.PieceCID.String())
+	fmt.Printf("Elapsed commP time: %s\n", elapsed)
 
 	return sum, nil
 }

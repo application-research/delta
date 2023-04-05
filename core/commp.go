@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/application-research/filclient"
 	"github.com/filecoin-project/go-commp-utils/writer"
@@ -75,6 +76,10 @@ func (c CommpService) GenerateCommPCarV2(readerFromFile io.Reader) (*abi.PieceIn
 		Size:     pi.PieceSize,
 		PieceCID: pi.PieceCID,
 	}, nil
+}
+
+func (c CommpService) GenerateCommpFromFile(readerFromFile *os.File) (writer.DataCIDSize, error) {
+	return fastCommp(readerFromFile)
 }
 
 // Generate a commP from a reader
