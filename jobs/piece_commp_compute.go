@@ -44,18 +44,19 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcesso
 
 // Run The process of generating the commp.
 func (i PieceCommpProcessor) Run() error {
-	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
-		Status:    utils.CONTENT_PIECE_COMPUTING,
-		UpdatedAt: time.Now(),
-	})
+	var content model.Content
+
+	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Find(&content)
+	content.Status = utils.CONTENT_PIECE_COMPUTING
+	content.UpdatedAt = time.Now()
+	i.LightNode.DB.Save(&content)
 
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
-		i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_PIECE_COMPUTING_FAILED,
-			LastMessage: err.Error(),
-			UpdatedAt:   time.Now(),
-		})
+		content.Status = utils.CONTENT_PIECE_COMPUTING_FAILED
+		content.LastMessage = err.Error()
+		content.UpdatedAt = time.Now()
+		i.LightNode.DB.Save(&content)
 	}
 
 	// prepare the commp

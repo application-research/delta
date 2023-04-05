@@ -51,7 +51,7 @@ type DealRequest struct {
 	Size               int64                  `json:"size,omitempty"`
 	StartEpoch         int64                  `json:"start_epoch,omitempty"`
 	StartEpochInDays   int64                  `json:"start_epoch_in_days,omitempty"`
-	Replication        int64                  `json:"replication,omitempty"`
+	Replication        int                    `json:"replication,omitempty"`
 	RemoveUnsealedCopy bool                   `json:"remove_unsealed_copy"`
 	SkipIPNIAnnounce   bool                   `json:"skip_ipni_announce"`
 	AutoRetry          bool                   `json:"auto_retry"`
@@ -66,7 +66,11 @@ type DealResponse struct {
 	ContentId                    int64       `json:"content_id,omitempty"`
 	DealRequest                  interface{} `json:"deal_request_meta,omitempty"`
 	DealProposalParameterRequest interface{} `json:"deal_proposal_parameter_request_meta,omitempty"`
+	ReplicatedContents           interface{} `json:"replicated_contents,omitempty"`
 }
+
+var statsService *core.StatsService
+var replicationService *core.ReplicationService
 
 // ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
 // to the echo.Group
@@ -74,7 +78,8 @@ type DealResponse struct {
 // `DeltaNode`'s deal-making functionality
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
-	statsService := core.NewStatsStatsService(node)
+	statsService = core.NewStatsStatsService(node)
+	replicationService = core.NewReplicationService(node)
 	dealMake := e.Group("/deal")
 
 	// upload limiter middleware
@@ -635,7 +640,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
-	// lets record this.
+
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
 	file, err := c.FormFile("data") // file
@@ -809,23 +814,51 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 		// deal proposal parameters
 		tx.Create(&dealProposalParam)
+		if dealRequest.Replication == 0 {
+			var dispatchJobs core.IProcessor
+			if pieceCommp.ID != 0 {
+				dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			} else {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			}
 
-		var dispatchJobs core.IProcessor
-		if pieceCommp.ID != 0 {
-			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
+
+			err = c.JSON(200, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+			})
+
 		} else {
+			dealReplication := core.DealReplication{
+				Content:                      content,
+				ContentDealProposalParameter: dealProposalParam,
+			}
+
+			// TODO: Improve this, this is a hack to make sure the replication is done before the deal is made
+			contents := replicationService.ReplicateContent(dealReplication, dealRequest.Replication, tx)
+			var dispatchJobs core.IProcessor
+			for _, contentRep := range contents {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep) // straight to pieceCommp
+				node.Dispatcher.AddJob(dispatchJobs)
+			}
 			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			node.Dispatcher.AddJob(dispatchJobs)
+
+			node.Dispatcher.Start(len(contents) + 1)
+			err = c.JSON(200, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+				ReplicatedContents:           contents,
+			})
 		}
 
-		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
-
-		err = c.JSON(200, DealResponse{
-			Status:                       "success",
-			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
-			ContentId:                    content.ID,
-			DealRequest:                  dealRequest,
-			DealProposalParameterRequest: dealProposalParam,
-		})
 		if err != nil {
 			return err
 		}
@@ -1324,8 +1357,16 @@ func ValidateMeta(dealRequest DealRequest) error {
 	//	return errors.New("miner is required")
 	//}
 
+	if (DealRequest{} != dealRequest && dealRequest.Replication > 0 && dealRequest.ConnectionMode == utils.CONNECTION_MODE_IMPORT) {
+		return errors.New("replication factor is not supported for import mode")
+	}
+
 	if (DealRequest{} != dealRequest && dealRequest.DurationInDays > 0 && dealRequest.StartEpochInDays == 0) {
 		return errors.New("start_epoch_in_days is required when duration_in_days is set")
+	}
+
+	if (DealRequest{} != dealRequest && dealRequest.Replication > 6) {
+		return errors.New("replication factor can only be up to 6")
 	}
 
 	if (DealRequest{} != dealRequest && dealRequest.StartEpochInDays > 0 && dealRequest.DurationInDays == 0) {
