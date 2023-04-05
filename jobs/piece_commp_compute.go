@@ -44,18 +44,38 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcesso
 
 // Run The process of generating the commp.
 func (i PieceCommpProcessor) Run() error {
-	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
-		Status:    utils.CONTENT_PIECE_COMPUTING,
-		UpdatedAt: time.Now(),
-	})
+
+	// if you already have the piece entry for the CID, let's just create a new record with the same commp
+
+	var content model.Content
+	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Find(&content)
+
+	var existingCommp model.PieceCommitment
+	i.LightNode.DB.Model(&model.PieceCommitment{}).Where("cid = ?", i.Content.Cid).Find(&existingCommp)
+	if existingCommp.ID != 0 {
+
+		// just assign it if it's already there.
+		i.Content.Status = utils.CONTENT_PIECE_ASSIGNED
+		i.Content.PieceCommitmentId = existingCommp.ID
+		i.Content.UpdatedAt = time.Now()
+		i.LightNode.DB.Save(&i.Content)
+
+		// then launch the deal maker with the content and the existing commp
+		item := NewStorageDealMakerProcessor(i.LightNode, i.Content, existingCommp)
+		i.LightNode.Dispatcher.AddJobAndDispatch(item, 1)
+		return nil
+	}
+
+	content.Status = utils.CONTENT_PIECE_COMPUTING
+	content.UpdatedAt = time.Now()
+	i.LightNode.DB.Save(&content)
 
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
-		i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
-			Status:      utils.CONTENT_PIECE_COMPUTING_FAILED,
-			LastMessage: err.Error(),
-			UpdatedAt:   time.Now(),
-		})
+		content.Status = utils.CONTENT_PIECE_COMPUTING_FAILED
+		content.LastMessage = err.Error()
+		content.UpdatedAt = time.Now()
+		i.LightNode.DB.Save(&content)
 	}
 
 	// prepare the commp
@@ -135,11 +155,12 @@ func (i PieceCommpProcessor) Run() error {
 	}
 
 	i.LightNode.DB.Create(commpRec)
-	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
-		Status:            utils.CONTENT_PIECE_ASSIGNED,
-		PieceCommitmentId: commpRec.ID,
-		UpdatedAt:         time.Now(),
-	})
+
+	// update the content record
+	i.Content.Status = utils.CONTENT_PIECE_ASSIGNED
+	i.Content.PieceCommitmentId = commpRec.ID
+	i.Content.UpdatedAt = time.Now()
+	i.LightNode.DB.Save(&i.Content)
 
 	// add this to the job queue
 	item := NewStorageDealMakerProcessor(i.LightNode, i.Content, *commpRec)
