@@ -110,7 +110,7 @@ func TestCommpService_GenerateParallelCommp(t *testing.T) {
 			c := CommpService{
 				DeltaNode: tt.fields.DeltaNode,
 			}
-			got, err := c.GenerateCommp(tt.args.readerFromFile)
+			got, err := c.GenerateCommp2(tt.args.readerFromFile)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GenerateCommp() error = %v, wantErr %v", err, tt.wantErr)
 				return

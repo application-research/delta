@@ -147,7 +147,7 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 					UnpaddedPieceSize: unpaddedPieceSize,
 				}
 			} else {
-				dataCidPieceInfo, err = commpService.GenerateCommp(openFile)
+				dataCidPieceInfo, err = commpService.GenerateCommp(c.String("file"))
 				if err != nil {
 					fmt.Println(err)
 					return err
@@ -265,7 +265,7 @@ func CommpCmd(cfg *c.DeltaConfig) []*cli.Command {
 							requestInDir.FileName = fileOpen.Name()
 						}
 					} else {
-						dataCidPieceInfo, err = commpService.GenerateCommp(fileOpen)
+						dataCidPieceInfo, err = commpService.GenerateCommp(c.String("file"))
 						if err != nil {
 							fmt.Println(err)
 							return err

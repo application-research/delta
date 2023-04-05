@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 
 	"github.com/filecoin-project/go-commp-utils/writer"
-	commcid "github.com/filecoin-project/go-fil-commcid"
-	commp "github.com/filecoin-project/go-fil-commp-hashhash"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
+	carv2 "github.com/ipld/go-car/v2"
 )
 
 type CarHeader struct {
@@ -92,7 +92,7 @@ func checkCarV2(reader io.ReadSeekCloser) (bool, *CarV2Header) {
 }
 
 // extractCarV1 extracts the CARv1 data from a CARv2 file
-func extractCarV1(file io.ReadSeekCloser, offset, length int) (*bytes.Reader, error) {
+func extractCarV1_777(file io.ReadSeekCloser, offset, length int) (*bytes.Reader, error) {
 	// Slice out the portion of the file
 	_, err := file.Seek(int64(offset), 0)
 	if err != nil {
@@ -108,6 +108,28 @@ func extractCarV1(file io.ReadSeekCloser, offset, length int) (*bytes.Reader, er
 	sliceReader := bytes.NewReader(slice)
 
 	return sliceReader, nil
+}
+
+func extractCarV1(file io.ReadSeekCloser, offset, length int) (io.ReadSeekCloser, error) {
+	// Slice out the portion of the file
+
+	_, err := file.Seek(int64(offset), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	/*
+		slice := make([]byte, length)
+		_, err = file.Read(slice)
+		if err != nil {
+			return nil, err
+		}
+	*/
+
+	// Create a new io.Reader from the slice
+	//sliceReader := bytes.NewReader(slice)
+
+	return file, nil
 }
 
 // readCarHeader reads the CARv1 header from a CARv2 file
@@ -145,12 +167,18 @@ func readCarHeader(streamBuf *bufio.Reader, streamLen int64) (carHeader *CarHead
 }
 
 // process the carfile blocks
-func process(streamBuf *bufio.Reader, streamLen int64) (strLen int64, err error) {
+func process(streamBuf *bufio.Reader, streamLen int64, maxSize int64) (strLen int64, err error) {
 	for {
 		nextBlockBuffer, err := streamBuf.Peek(10)
 		if err == io.EOF {
 			break
 		}
+
+		if maxSize != 0 && streamLen+10 >= maxSize {
+			fmt.Println("max size reached, diff: ", maxSize, streamLen, maxSize-streamLen)
+			break
+		}
+
 		if err != nil && err != bufio.ErrBufferFull {
 			return streamLen, err
 		}
@@ -162,6 +190,7 @@ func process(streamBuf *bufio.Reader, streamLen int64) (strLen int64, err error)
 		if viLen <= 0 {
 			return streamLen, err
 		}
+
 		if blockLength > 2<<20 {
 			// anything over ~2MiB got to be a mistake
 			return streamLen, fmt.Errorf("large block length too large: %d bytes at offset %d", blockLength, streamLen)
@@ -174,72 +203,85 @@ func process(streamBuf *bufio.Reader, streamLen int64) (strLen int64, err error)
 			}
 			return streamLen, fmt.Errorf("aborting car stream parse: truncated block at offset %d: expected %d bytes but read %d: %s", streamLen-actualBlockLength, blockLength, actualBlockLength, err)
 		}
+
 	}
 	return streamLen, nil
 }
 
-// fastCommp calculates the commp of a CARv1 or CARv2 file
-func fastCommp(reader io.ReadSeekCloser) (writer.DataCIDSize, error) {
-	// Check if the file is a CARv2 file
-	isVarV2, headerInfo := checkCarV2(reader)
-	var streamBuf *bufio.Reader
-	cp := new(commp.Calc)
-	if isVarV2 {
-		// Extract the CARv1 data from the CARv2 file
-		sliced, err := extractCarV1(reader, int(headerInfo.DataOffset), int(headerInfo.DataSize))
-		if err != nil {
-			panic(err)
-		}
-		streamBuf = bufio.NewReaderSize(
-			io.TeeReader(sliced, cp),
-			BufSize,
-		)
-	} else {
-		// Read the file as a CARv1 file
-		streamBuf = bufio.NewReaderSize(
-			io.TeeReader(reader, cp),
-			BufSize,
-		)
+// GenerateCommP calculates commp locally
+func GenerateCommP(filepath string) (*abi.PieceInfo, error) {
+	rd, err := carv2.OpenReader(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get CARv2 reader: %w", err)
 	}
 
-	// The length of the stream
-	var streamLen int64
+	defer func() {
+		if err := rd.Close(); err != nil {
+			fmt.Printf("failed to close CARv2 reader for %s: %w", filepath, err)
+		}
+	}()
 
-	// Read the header
-	carHeader, streamLen, err := readCarHeader(streamBuf, streamLen)
+	// dump the CARv1 payload of the CARv2 file to the Commp Writer and get back the CommP.
+	w := &writer.Writer{}
+	r, err := rd.DataReader()
 	if err != nil {
+		return nil, fmt.Errorf("getting data reader for CAR v1 from CAR v2: %w", err)
+	}
+
+	written, err := io.Copy(w, r)
+	if err != nil {
+		return nil, fmt.Errorf("writing to commp writer: %w", err)
+	}
+
+	// get the size of the CAR file
+	size, err := getCarSize(filepath, rd)
+	if err != nil {
+		return nil, err
+	}
+
+	if written != size {
+		return nil, fmt.Errorf("number of bytes written to CommP writer %d not equal to the CARv1 payload size %d", written, rd.Header.DataSize)
+	}
+
+	pi, err := w.Sum()
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate CommP: %w", err)
+	}
+
+	return &abi.PieceInfo{
+		Size:     pi.PieceSize,
+		PieceCID: pi.PieceCID,
+	}, nil
+}
+
+func getCarSize(filepath string, rd *carv2.Reader) (int64, error) {
+	var size int64
+	switch rd.Version {
+	case 2:
+		size = int64(rd.Header.DataSize)
+	case 1:
+		st, err := os.Stat(filepath)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get CARv1 file size: %w", err)
+		}
+		size = st.Size()
+	}
+	return size, nil
+}
+
+// fastCommp calculates the commp of a CARv1 or CARv2 file
+func fastCommp(filename string) (writer.DataCIDSize, error) {
+	result, err := GenerateCommP(filename)
+
+	if err != nil {
+		fmt.Println("Error generating CommP:", err)
 		return writer.DataCIDSize{}, err
 	}
 
-	if carHeader.Version == 1 || carHeader.Version == 2 {
-		streamLen, err = process(streamBuf, streamLen)
-		if err != nil {
-			log.Fatal(err)
-			return writer.DataCIDSize{}, err
-		}
-	} else {
-		return writer.DataCIDSize{}, fmt.Errorf("invalid car version: %d", carHeader.Version)
-	}
-
-	n, err := io.Copy(io.Discard, streamBuf)
-	streamLen += n
-	if err != nil && err != io.EOF {
-		log.Fatalf("unexpected error at offset %d: %s", streamLen, err)
-	}
-
-	rawCommP, paddedSize, err := cp.Digest()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	commCid, err := commcid.DataCommitmentV1ToCID(rawCommP)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	fmt.Println("CommP:", result.PieceCID)
 	return writer.DataCIDSize{
-		PayloadSize: streamLen,
-		PieceSize:   abi.PaddedPieceSize(paddedSize),
-		PieceCID:    commCid,
+		PayloadSize: 0,
+		PieceSize:   abi.PaddedPieceSize(result.Size),
+		PieceCID:    result.PieceCID,
 	}, nil
 }

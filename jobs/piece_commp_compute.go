@@ -93,7 +93,7 @@ func (i PieceCommpProcessor) Run() error {
 
 	if i.LightNode.Config.Common.CommpMode == utils.COMMP_MODE_FAST {
 
-		pieceInfo, err := i.CommpService.GenerateCommp(node)
+		pieceInfo, err := i.CommpService.GenerateCommp2(node)
 		if err != nil {
 			i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
 				Status:      utils.CONTENT_FAILED_TO_PROCESS,
