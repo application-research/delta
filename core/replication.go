@@ -26,7 +26,6 @@ type DealReplication struct {
 
 func (r ReplicationService) ReplicateContent(contentSource DealReplication, numberOfReplication int, txn *gorm.DB) []model.Content {
 	var replicatedContents []model.Content
-	//txn.Transaction(func(tx *gorm.DB) error {
 	for i := 0; i < numberOfReplication; i++ {
 		var newContent model.Content
 		var newContentDealProposalParameter model.ContentDealProposalParameters
@@ -73,7 +72,5 @@ func (r ReplicationService) ReplicateContent(contentSource DealReplication, numb
 		replicatedContents = append(replicatedContents, newContent)
 
 	}
-	//return nil
-	//})
 	return replicatedContents
 }
