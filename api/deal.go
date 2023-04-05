@@ -61,16 +61,23 @@ type DealRequest struct {
 
 // DealResponse Creating a new struct called DealResponse and then returning it.
 type DealResponse struct {
-	Status                       string      `json:"status"`
-	Message                      string      `json:"message"`
-	ContentId                    int64       `json:"content_id,omitempty"`
-	DealRequest                  interface{} `json:"deal_request_meta,omitempty"`
-	DealProposalParameterRequest interface{} `json:"deal_proposal_parameter_request_meta,omitempty"`
-	ReplicatedContents           interface{} `json:"replicated_contents,omitempty"`
+	Status                       string         `json:"status"`
+	Message                      string         `json:"message"`
+	ContentId                    int64          `json:"content_id,omitempty"`
+	DealRequest                  interface{}    `json:"deal_request_meta,omitempty"`
+	DealProposalParameterRequest interface{}    `json:"deal_proposal_parameter_request_meta,omitempty"`
+	ReplicatedContents           []DealResponse `json:"replicated_contents,omitempty"`
+}
+
+type DealReplication struct {
+	Content                      model.Content                       `json:"content"`
+	ContentDealProposalParameter model.ContentDealProposalParameters `json:"deal_proposal_parameter"`
+	DealRequest                  DealRequest                         `json:"deal_request"`
 }
 
 var statsService *core.StatsService
-var replicationService *core.ReplicationService
+
+//var replicationService *core.ReplicationService
 
 // ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
 // to the echo.Group
@@ -79,7 +86,7 @@ var replicationService *core.ReplicationService
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	statsService = core.NewStatsStatsService(node)
-	replicationService = core.NewReplicationService(node)
+	//replicationService = core.NewReplicationService(node)
 	dealMake := e.Group("/deal")
 
 	// upload limiter middleware
@@ -833,16 +840,17 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			})
 
 		} else {
-			dealReplication := core.DealReplication{
+			dealReplication := DealReplication{
 				Content:                      content,
 				ContentDealProposalParameter: dealProposalParam,
+				DealRequest:                  dealRequest,
 			}
 
 			// TODO: Improve this, this is a hack to make sure the replication is done before the deal is made
-			contents := replicationService.ReplicateContent(dealReplication, dealRequest.Replication, tx)
+			contents := ReplicateContent(dealReplication, dealRequest, tx)
 			var dispatchJobs core.IProcessor
 			for _, contentRep := range contents {
-				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep) // straight to pieceCommp
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep.Content) // straight to pieceCommp
 				node.Dispatcher.AddJob(dispatchJobs)
 			}
 			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
@@ -855,7 +863,13 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 				ContentId:                    content.ID,
 				DealRequest:                  dealRequest,
 				DealProposalParameterRequest: dealProposalParam,
-				ReplicatedContents:           contents,
+				ReplicatedContents: func() []DealResponse {
+					var dealResponses []DealResponse
+					for _, contentRep := range contents {
+						dealResponses = append(dealResponses, contentRep.DealResponse)
+					}
+					return dealResponses
+				}(),
 			})
 		}
 
@@ -1435,6 +1449,74 @@ func ValidateMeta(dealRequest DealRequest) error {
 		}
 	}()
 	return nil
+}
+
+type ReplicatedContent struct {
+	Content      model.Content
+	DealRequest  DealRequest
+	DealResponse DealResponse
+}
+
+func ReplicateContent(contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
+	var replicatedContents []ReplicatedContent
+	for i := 0; i < dealRequest.Replication; i++ {
+		var replicatedContent ReplicatedContent
+		var dealResponse DealResponse
+		var newContent model.Content
+		var newContentDealProposalParameter model.ContentDealProposalParameters
+		newContent = contentSource.Content
+		newContentDealProposalParameter = contentSource.ContentDealProposalParameter
+		newContent.ID = 0
+
+		err := txn.Create(&newContent).Error
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		newContentDealProposalParameter.ID = 0
+		newContentDealProposalParameter.Content = newContent.ID
+		err = txn.Create(&newContentDealProposalParameter).Error
+		if err != nil {
+			//tx.Rollback()
+			fmt.Println(err)
+			return nil
+		}
+		//	assign a miner
+		minerAssignService := core.NewMinerAssignmentService()
+		provider, errOnPv := minerAssignService.GetSPWithGivenBytes(newContent.Size)
+		if errOnPv != nil {
+			fmt.Println(errOnPv)
+			return nil
+		}
+
+		contentMinerAssignment := model.ContentMiner{
+			Miner:     provider.Address,
+			Content:   newContent.ID,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		err = txn.Create(&contentMinerAssignment).Error
+		if err != nil {
+			//tx.Rollback()
+			fmt.Println(err)
+			return nil
+		}
+		dealRequest.Miner = provider.Address
+		dealResponse.DealRequest = dealRequest
+		dealResponse.ContentId = newContent.ID
+		dealResponse.DealProposalParameterRequest = newContentDealProposalParameter
+		dealResponse.Status = utils.CONTENT_PINNED
+		dealResponse.Message = "Content replication request successful"
+
+		replicatedContent.Content = newContent
+		replicatedContent.DealRequest = dealRequest
+		replicatedContent.DealResponse = dealResponse
+
+		replicatedContents = append(replicatedContents, replicatedContent)
+
+	}
+	return replicatedContents
 }
 
 // It takes a request, and returns a response
