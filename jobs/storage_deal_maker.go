@@ -252,6 +252,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(err.Error(), "Deal rejected | Under maintenance, retry later"),
 			strings.Contains(err.Error(), "Deal rejected | Price below acceptance for such deal"),
 			strings.Contains(err.Error(), "Deal rejected | Such deal is not accepted"),
+			strings.Contains(err.Error(), "Deal rejected | Error | like a spam"),
 			strings.Contains(err.Error(), "failed validation: server error: getting chain head"),
 			strings.Contains(err.Error(), "Error 2 (Worker balance too low)"),
 			strings.Contains(err.Error(), "send proposal rpc:"):
@@ -352,6 +353,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "Deal rejected | Under maintenance, retry later"),
 			strings.Contains(errProp.Error(), "Deal rejected | Price below acceptance for such deal"),
 			strings.Contains(errProp.Error(), "Deal rejected | Such deal is not accepted"),
+			strings.Contains(err.Error(), "Deal rejected | Error | like a spam"),
 			strings.Contains(errProp.Error(), "failed validation: server error: getting chain head"),
 			strings.Contains(errProp.Error(), "Error 2 (Worker balance too low)"),
 			strings.Contains(errProp.Error(), "send proposal rpc:"):
