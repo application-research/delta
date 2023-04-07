@@ -66,8 +66,8 @@ func (i PieceCommpProcessor) Run() error {
 		return nil
 	}
 
-	content.Status = utils.CONTENT_PIECE_COMPUTING
-	content.UpdatedAt = time.Now()
+	i.Content.Status = utils.CONTENT_PIECE_COMPUTING
+	i.Content.UpdatedAt = time.Now()
 	i.LightNode.DB.Save(&content)
 
 	payloadCid, err := cid.Decode(i.Content.Cid)
