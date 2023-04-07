@@ -402,6 +402,9 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	// if this is e2e, then we need to start the data transfer.
 	if errProp == nil && content.ConnectionMode == utils.CONNECTION_MODE_E2E {
+		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+			Status: utils.CONTENT_DEAL_PROPOSAL_SENT, //"sending-deal-proposal",
+		})
 		propCid, err := cid.Decode(deal.PropCid)
 		contentCid, err := cid.Decode(content.Cid)
 
