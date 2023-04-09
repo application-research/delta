@@ -46,14 +46,12 @@ func NewPieceCommpProcessor(ln *core.DeltaNode, content model.Content) IProcesso
 func (i PieceCommpProcessor) Run() error {
 
 	// if you already have the piece entry for the CID, let's just create a new record with the same commp
-
 	var content model.Content
-	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Find(&content)
-
 	var existingCommp model.PieceCommitment
+
+	i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Find(&content)
 	i.LightNode.DB.Model(&model.PieceCommitment{}).Where("cid = ?", i.Content.Cid).Find(&existingCommp)
 	if existingCommp.ID != 0 {
-
 		// just assign it if it's already there.
 		i.Content.Status = utils.CONTENT_PIECE_ASSIGNED
 		i.Content.PieceCommitmentId = existingCommp.ID
@@ -66,16 +64,16 @@ func (i PieceCommpProcessor) Run() error {
 		return nil
 	}
 
-	content.Status = utils.CONTENT_PIECE_COMPUTING
-	content.UpdatedAt = time.Now()
+	i.Content.Status = utils.CONTENT_PIECE_COMPUTING
+	i.Content.UpdatedAt = time.Now()
 	i.LightNode.DB.Save(&content)
 
 	payloadCid, err := cid.Decode(i.Content.Cid)
 	if err != nil {
-		content.Status = utils.CONTENT_PIECE_COMPUTING_FAILED
-		content.LastMessage = err.Error()
-		content.UpdatedAt = time.Now()
-		i.LightNode.DB.Save(&content)
+		i.Content.Status = utils.CONTENT_PIECE_COMPUTING_FAILED
+		i.Content.LastMessage = err.Error()
+		i.Content.UpdatedAt = time.Now()
+		i.LightNode.DB.Save(&i.Content)
 	}
 
 	// prepare the commp

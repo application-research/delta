@@ -59,4 +59,6 @@ const (
 	COMMP_MODE_FAST     = "fast"
 	COMMP_MODE_STREAM   = "stream"
 	COMPP_MODE_FILBOOST = "filboost"
+
+	MAX_DEAL_RETRY = 10
 )
