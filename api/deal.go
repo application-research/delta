@@ -27,11 +27,12 @@ type CidRequest struct {
 }
 
 type WalletRequest struct {
-	Id         uint64 `json:"id,omitempty"`
-	Address    string `json:"address,omitempty"`
-	Uuid       string `json:"uuid,omitempty"`
-	KeyType    string `json:"key_type,omitempty"`
-	PrivateKey string `json:"private_key,omitempty"`
+	Id                     uint64 `json:"id,omitempty"`
+	Address                string `json:"address,omitempty"`
+	Uuid                   string `json:"uuid,omitempty"`
+	KeyType                string `json:"key_type,omitempty"`
+	PrivateKey             string `json:"private_key,omitempty"`
+	UnverifiedDealMaxPrice int64  `json:"unverified_deal_max_price,omitempty"`
 }
 
 type PieceCommitmentRequest struct {
@@ -1370,6 +1371,12 @@ func ValidateMeta(dealRequest DealRequest) error {
 	//if (DealRequest{} != dealRequest && dealRequest.Miner == "") {
 	//	return errors.New("miner is required")
 	//}
+
+	if (DealRequest{} != dealRequest && dealRequest.Wallet.UnverifiedDealMaxPrice > 0) {
+		if dealRequest.DealVerifyState != utils.DEAL_UNVERIFIED {
+			return errors.New("unverified_deal_max_price is only valid for unverified deals")
+		}
+	}
 
 	if (DealRequest{} != dealRequest && dealRequest.Replication > 0 && dealRequest.ConnectionMode == utils.CONNECTION_MODE_IMPORT) {
 		return errors.New("replication factor is not supported for import mode")

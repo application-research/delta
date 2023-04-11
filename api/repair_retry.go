@@ -70,6 +70,7 @@ func handleDisableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
+// The function handles enabling auto-retry for a specific content ID in a Go application.
 func handleEnableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
@@ -87,6 +88,7 @@ func handleEnableAutoRetry(node *core.DeltaNode) func(c echo.Context) error {
 }
 
 // > This function handles the retry of a deal content
+// This function handles retrying a content deal and returns a JSON response.
 func handleRetryDealContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
@@ -137,6 +139,23 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 		paramContentId := c.Param("contentId")
 		meta := c.FormValue("metadata") // only allow miner and durations
 
+		// if the deal is not in the right state, throw an error.
+		var content model.Content
+		node.DB.Model(&model.Content{}).Where("id = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&content)
+		content.RequestingApiKey = ""
+
+		if content.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content not found",
+			})
+		}
+
+		if content.ConnectionMode != utils.CONNECTION_MODE_E2E {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content is not in end-to-end mode",
+			})
+		}
+
 		var dealRequest DealRequest
 		err := json.Unmarshal([]byte(meta), &dealRequest)
 		if err != nil {
@@ -159,17 +178,6 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 		if dealRequest.StartEpochInDays > dealRequest.DurationInDays {
 			return c.JSON(200, map[string]interface{}{
 				"message": "start epoch cannot be more than duration",
-			})
-		}
-
-		// if the deal is not in the right state, throw an error.
-		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ? and requesting_api_key = ?", paramContentId, authParts[1]).First(&content)
-		content.RequestingApiKey = ""
-
-		if content.ConnectionMode != utils.CONNECTION_MODE_E2E {
-			return c.JSON(200, map[string]interface{}{
-				"message": "content is not in end-to-end mode",
 			})
 		}
 
@@ -225,6 +233,7 @@ func handleRepairDealContent(node *core.DeltaNode) func(c echo.Context) error {
 	}
 }
 
+// This function handles a request to retry multiple failed import deals and returns a JSON response.
 func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -327,6 +336,8 @@ func handleRepairMultipleImport(node *core.DeltaNode) func(c echo.Context) error
 	}
 }
 
+// This function handles the repair of import content by updating the miner and duration of a content deal and retrying the
+// deal.
 func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -404,6 +415,7 @@ func handleRepairImportContent(node *core.DeltaNode) func(c echo.Context) error 
 }
 
 // It takes a content ID, finds the content deal entry for that content, and then retries the deal
+// This function handles retrying multiple content deals for import.
 func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
@@ -454,6 +466,7 @@ func handleRetryMultipleImport(node *core.DeltaNode) func(c echo.Context) error 
 	}
 }
 
+// This function handles retrying a content deal import and returns a JSON response.
 func handleRetryDealImport(node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		authorizationString := c.Request().Header.Get("Authorization")
