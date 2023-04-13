@@ -125,7 +125,29 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		return errOnDealPrep
 	}
 
-	priceBigInt, err := types.BigFromString("0")
+	var priceBigInt types.BigInt
+	if !dealProposal.VerifiedDeal {
+		unverifiedDealPrice, errPrice := types.BigFromString(string(dealProposal.UnverifiedDealMaxPrice))
+		if errPrice != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errPrice.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+			return errPrice
+		}
+		priceBigInt = unverifiedDealPrice
+	} else {
+		verifiedPrice, errVerPrice := types.BigFromString("0")
+		if errVerPrice != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errVerPrice.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+			return errVerPrice
+		}
+		priceBigInt = verifiedPrice
+	}
+
 	var dealDuration = utils.DEFAULT_DURATION
 	if dealProposal.ID != 0 {
 		dealDuration = int(dealProposal.Duration)

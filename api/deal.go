@@ -27,12 +27,11 @@ type CidRequest struct {
 }
 
 type WalletRequest struct {
-	Id                     uint64 `json:"id,omitempty"`
-	Address                string `json:"address,omitempty"`
-	Uuid                   string `json:"uuid,omitempty"`
-	KeyType                string `json:"key_type,omitempty"`
-	PrivateKey             string `json:"private_key,omitempty"`
-	UnverifiedDealMaxPrice int64  `json:"unverified_deal_max_price,omitempty"`
+	Id         uint64 `json:"id,omitempty"`
+	Address    string `json:"address,omitempty"`
+	Uuid       string `json:"uuid,omitempty"`
+	KeyType    string `json:"key_type,omitempty"`
+	PrivateKey string `json:"private_key,omitempty"`
 }
 
 type PieceCommitmentRequest struct {
@@ -42,22 +41,24 @@ type PieceCommitmentRequest struct {
 }
 
 type DealRequest struct {
-	Cid                string                 `json:"cid,omitempty"`
-	Miner              string                 `json:"miner,omitempty"`
-	Duration           int64                  `json:"duration,omitempty"`
-	DurationInDays     int64                  `json:"duration_in_days,omitempty"`
-	Wallet             WalletRequest          `json:"wallet,omitempty"`
-	PieceCommitment    PieceCommitmentRequest `json:"piece_commitment,omitempty"`
-	ConnectionMode     string                 `json:"connection_mode,omitempty"`
-	Size               int64                  `json:"size,omitempty"`
-	StartEpoch         int64                  `json:"start_epoch,omitempty"`
-	StartEpochInDays   int64                  `json:"start_epoch_in_days,omitempty"`
-	Replication        int                    `json:"replication,omitempty"`
-	RemoveUnsealedCopy bool                   `json:"remove_unsealed_copy"`
-	SkipIPNIAnnounce   bool                   `json:"skip_ipni_announce"`
-	AutoRetry          bool                   `json:"auto_retry"`
-	Label              string                 `json:"label,omitempty"`
-	DealVerifyState    string                 `json:"deal_verify_state,omitempty"`
+	Cid                    string                 `json:"cid,omitempty"`
+	Source                 string                 `json:"source,omitempty"`
+	Miner                  string                 `json:"miner,omitempty"`
+	Duration               int64                  `json:"duration,omitempty"`
+	DurationInDays         int64                  `json:"duration_in_days,omitempty"`
+	Wallet                 WalletRequest          `json:"wallet,omitempty"`
+	PieceCommitment        PieceCommitmentRequest `json:"piece_commitment,omitempty"`
+	ConnectionMode         string                 `json:"connection_mode,omitempty"`
+	Size                   int64                  `json:"size,omitempty"`
+	StartEpoch             int64                  `json:"start_epoch,omitempty"`
+	StartEpochInDays       int64                  `json:"start_epoch_in_days,omitempty"`
+	Replication            int                    `json:"replication,omitempty"`
+	RemoveUnsealedCopy     bool                   `json:"remove_unsealed_copy"`
+	SkipIPNIAnnounce       bool                   `json:"skip_ipni_announce"`
+	AutoRetry              bool                   `json:"auto_retry"`
+	Label                  string                 `json:"label,omitempty"`
+	DealVerifyState        string                 `json:"deal_verify_state,omitempty"`
+	UnverifiedDealMaxPrice int64                  `json:"unverified_deal_max_price,omitempty"`
 }
 
 // DealResponse Creating a new struct called DealResponse and then returning it.
@@ -386,6 +387,18 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.CreatedAt = time.Now()
 			dealProposalParam.UpdatedAt = time.Now()
 			dealProposalParam.Content = content.ID
+			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+				if dealRequest.UnverifiedDealMaxPrice != 0 {
+					return dealRequest.UnverifiedDealMaxPrice
+				}
+				return 0
+			}()
+			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+				if dealRequest.UnverifiedDealMaxPrice != 0 {
+					return dealRequest.UnverifiedDealMaxPrice
+				}
+				return 0
+			}()
 
 			dealProposalParam.Label = func() string {
 				if dealRequest.Label != "" {
@@ -451,6 +464,8 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 // @Accept  json
 // @Produce  json
 func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
+
+	// TODO: this needs a source
 	var dealRequest DealRequest
 
 	// lets record this.
@@ -584,6 +599,18 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
+		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+			if dealRequest.UnverifiedDealMaxPrice != 0 {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return 0
+		}()
+		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+			if dealRequest.UnverifiedDealMaxPrice != 0 {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return 0
+		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
 				return dealRequest.Label
@@ -794,6 +821,18 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
+		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+			if dealRequest.UnverifiedDealMaxPrice != 0 {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return 0
+		}()
+		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+			if dealRequest.UnverifiedDealMaxPrice != 0 {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return 0
+		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
 				return dealRequest.Label
@@ -1035,6 +1074,18 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
+		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+			if dealRequest.UnverifiedDealMaxPrice != 0 {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return 0
+		}()
+		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+			if dealRequest.UnverifiedDealMaxPrice != 0 {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return 0
+		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
 				return dealRequest.Label
@@ -1248,6 +1299,18 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.CreatedAt = time.Now()
 			dealProposalParam.UpdatedAt = time.Now()
 			dealProposalParam.Content = content.ID
+			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+				if dealRequest.UnverifiedDealMaxPrice != 0 {
+					return dealRequest.UnverifiedDealMaxPrice
+				}
+				return 0
+			}()
+			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
+				if dealRequest.UnverifiedDealMaxPrice != 0 {
+					return dealRequest.UnverifiedDealMaxPrice
+				}
+				return 0
+			}()
 			dealProposalParam.Label = func() string {
 				if dealRequest.Label != "" {
 					return dealRequest.Label
@@ -1372,7 +1435,7 @@ func ValidateMeta(dealRequest DealRequest) error {
 	//	return errors.New("miner is required")
 	//}
 
-	if (DealRequest{} != dealRequest && dealRequest.Wallet.UnverifiedDealMaxPrice > 0) {
+	if (DealRequest{} != dealRequest && dealRequest.UnverifiedDealMaxPrice > 0) {
 		if dealRequest.DealVerifyState != utils.DEAL_UNVERIFIED {
 			return errors.New("unverified_deal_max_price is only valid for unverified deals")
 		}
