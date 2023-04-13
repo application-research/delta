@@ -125,7 +125,46 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		return errOnDealPrep
 	}
 
-	priceBigInt, err := types.BigFromString("0")
+	var priceBigInt types.BigInt
+	if !dealProposal.VerifiedDeal {
+		unverifiedDealPrice, errPrice := types.BigFromString(string(dealProposal.UnverifiedDealMaxPrice))
+		if errPrice != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errPrice.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+			return errPrice
+		}
+		bigIntBalance, errBalance := i.LightNode.LotusApi.WalletBalance(context.Background(), filClient.ClientAddr)
+		if errBalance != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errBalance.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+			return errBalance
+		}
+		// check if the balance is enough
+		if unverifiedDealPrice.GreaterThan(bigIntBalance) {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = "insufficient funds"
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			contentToUpdate.AutoRetry = false                           // stop retrying if the balance is not enough. it won't work.
+			i.LightNode.DB.Save(&contentToUpdate)
+			return xerrors.New("insufficient funds")
+		}
+		priceBigInt = unverifiedDealPrice
+	} else {
+		verifiedPrice, errVerPrice := types.BigFromString("0")
+		if errVerPrice != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errVerPrice.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+			return errVerPrice
+		}
+		priceBigInt = verifiedPrice
+	}
+
 	var dealDuration = utils.DEFAULT_DURATION
 	if dealProposal.ID != 0 {
 		dealDuration = int(dealProposal.Duration)

@@ -34,7 +34,6 @@ func (i RetryProcessor) Run() error {
 
 	// Checking the status of the content and requeue the job if needed.
 	for _, content := range contents {
-
 		// get the piece
 		// This is the retry logic.
 		if content.Status == utils.CONTENT_PINNED || content.Status == utils.CONTENT_PIECE_COMPUTING {
@@ -46,9 +45,7 @@ func (i RetryProcessor) Run() error {
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			})
-
 			i.LightNode.Dispatcher.AddJobAndDispatch(NewPieceCommpProcessor(i.LightNode, content), 1)
-
 		} else if content.Status == utils.CONTENT_PIECE_COMPUTED || content.Status == utils.CONTENT_DEAL_SENDING_PROPOSAL || content.Status == utils.CONTENT_DEAL_MAKING_PROPOSAL {
 			var pieceCommp model.PieceCommitment
 			i.LightNode.DB.Model(&model.PieceCommitment{}).Where("id = (select piece_commitment_id from contents c where c.id = ?)", content.ID).Find(&pieceCommp)
