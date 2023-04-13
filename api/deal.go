@@ -393,12 +393,6 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 				}
 				return 0
 			}()
-			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-				if dealRequest.UnverifiedDealMaxPrice != 0 {
-					return dealRequest.UnverifiedDealMaxPrice
-				}
-				return 0
-			}()
 
 			dealProposalParam.Label = func() string {
 				if dealRequest.Label != "" {
@@ -599,12 +593,6 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
-		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-			if dealRequest.UnverifiedDealMaxPrice != 0 {
-				return dealRequest.UnverifiedDealMaxPrice
-			}
-			return 0
-		}()
 		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
 			if dealRequest.UnverifiedDealMaxPrice != 0 {
 				return dealRequest.UnverifiedDealMaxPrice
@@ -821,12 +809,6 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
-		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-			if dealRequest.UnverifiedDealMaxPrice != 0 {
-				return dealRequest.UnverifiedDealMaxPrice
-			}
-			return 0
-		}()
 		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
 			if dealRequest.UnverifiedDealMaxPrice != 0 {
 				return dealRequest.UnverifiedDealMaxPrice
@@ -1080,12 +1062,6 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 			return 0
 		}()
-		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-			if dealRequest.UnverifiedDealMaxPrice != 0 {
-				return dealRequest.UnverifiedDealMaxPrice
-			}
-			return 0
-		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
 				return dealRequest.Label
@@ -1299,12 +1275,6 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.CreatedAt = time.Now()
 			dealProposalParam.UpdatedAt = time.Now()
 			dealProposalParam.Content = content.ID
-			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-				if dealRequest.UnverifiedDealMaxPrice != 0 {
-					return dealRequest.UnverifiedDealMaxPrice
-				}
-				return 0
-			}()
 			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
 				if dealRequest.UnverifiedDealMaxPrice != 0 {
 					return dealRequest.UnverifiedDealMaxPrice
