@@ -7,6 +7,10 @@ The metadata request is used to create a deal. It contains the information requi
 The `cid` field is the cid of the content to be stored. This is only required if the `connection_mode` is `import`. If the `connection_mode` is `e2e`, then the `cid` field is not required.
 # miner
 The `miner` field is the miner to store the content. This is required.
+# source
+This is the source mulitaddress on where to retrieve the given cid. This is only required when the "cid" field is given.
+# unverified_deal_max_price
+The `unverified_deal_max_price` field is the maximum price to pay for an unverified deal. This is required only if the `deal_verify_state` is "unverified". If no `unverified_deal_max_price` is specified, Delta will use the default value of 0.000000000000000000 FIL.
 # wallet
 The `wallet` field is the wallet to use to make the deal. This is optional. If no wallet is specified, Delta will use the default wallet that it generated when it was started.
 ## address
