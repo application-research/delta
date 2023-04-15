@@ -939,12 +939,6 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		return err
 	}
 
-	// specify the connection mode
-	var connMode = dealRequest.ConnectionMode
-	if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
-		connMode = "e2e"
-	}
-
 	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
 	if err != nil {
 		return err
@@ -985,7 +979,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			PieceCommitmentId: pieceCommp.ID,
 			AutoRetry:         dealRequest.AutoRetry,
 			Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
-			ConnectionMode:    connMode,
+			ConnectionMode:    dealRequest.ConnectionMode,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -1069,12 +1063,11 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			return content.Cid
 		}()
 
-		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
@@ -1155,12 +1148,6 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				return err
 			}
 
-			// specify the connection mode
-			var connMode = dealRequest.ConnectionMode
-			if connMode == "" || (connMode != utils.CONNECTION_MODE_E2E && connMode != utils.CONNECTION_MODE_IMPORT) {
-				connMode = "e2e"
-			}
-
 			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
 			if err != nil {
 				tx.Rollback()
@@ -1201,7 +1188,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				PieceCommitmentId: pieceCommp.ID,
 				AutoRetry:         dealRequest.AutoRetry,
 				Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
-				ConnectionMode:    connMode,
+				ConnectionMode:    dealRequest.ConnectionMode,
 				CreatedAt:         time.Now(),
 				UpdatedAt:         time.Now(),
 			}
@@ -1475,7 +1462,11 @@ func ValidateMeta(dealRequest DealRequest) error {
 		(dealRequest.PieceCommitment.PaddedPieceSize == 0 && dealRequest.PieceCommitment.UnPaddedPieceSize == 0) &&
 		(dealRequest.Size == 0) {
 		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
+	}
 
+	// size is required
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.Size == 0) {
+		return errors.New("piece commitment is invalid, make sure you have the cid, piece_cid, size and padded_piece_size or unpadded_piece_size")
 	}
 
 	if (WalletRequest{} != dealRequest.Wallet && dealRequest.Wallet.Address == "") {
