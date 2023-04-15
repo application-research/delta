@@ -979,7 +979,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			PieceCommitmentId: pieceCommp.ID,
 			AutoRetry:         dealRequest.AutoRetry,
 			Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
-			ConnectionMode:    connMode,
+			ConnectionMode:    dealRequest.ConnectionMode,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
 		}
@@ -1188,7 +1188,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				PieceCommitmentId: pieceCommp.ID,
 				AutoRetry:         dealRequest.AutoRetry,
 				Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
-				ConnectionMode:    connMode,
+				ConnectionMode:    dealRequest.ConnectionMode,
 				CreatedAt:         time.Now(),
 				UpdatedAt:         time.Now(),
 			}
