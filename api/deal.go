@@ -1069,12 +1069,11 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 			return content.Cid
 		}()
 
-		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 		dealProposalParam.VerifiedDeal = func() bool {
-			if dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
-				return true
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
 			}
-			return false
+			return true
 		}()
 
 		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {

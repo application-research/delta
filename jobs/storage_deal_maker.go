@@ -152,6 +152,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			i.LightNode.DB.Save(&contentToUpdate)
 			return xerrors.New("insufficient funds")
 		}
+
 		priceBigInt = unverifiedDealPrice
 	} else {
 		verifiedPrice, errVerPrice := types.BigFromString("0")
