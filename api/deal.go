@@ -58,7 +58,7 @@ type DealRequest struct {
 	AutoRetry              bool                   `json:"auto_retry"`
 	Label                  string                 `json:"label,omitempty"`
 	DealVerifyState        string                 `json:"deal_verify_state,omitempty"`
-	UnverifiedDealMaxPrice int64                  `json:"unverified_deal_max_price,omitempty"`
+	UnverifiedDealMaxPrice string                 `json:"unverified_deal_max_price,omitempty"`
 }
 
 // DealResponse Creating a new struct called DealResponse and then returning it.
@@ -387,11 +387,11 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.CreatedAt = time.Now()
 			dealProposalParam.UpdatedAt = time.Now()
 			dealProposalParam.Content = content.ID
-			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-				if dealRequest.UnverifiedDealMaxPrice != 0 {
+			dealProposalParam.UnverifiedDealMaxPrice = func() string {
+				if dealRequest.UnverifiedDealMaxPrice != "" {
 					return dealRequest.UnverifiedDealMaxPrice
 				}
-				return 0
+				return "0"
 			}()
 
 			dealProposalParam.Label = func() string {
@@ -593,11 +593,11 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
-		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-			if dealRequest.UnverifiedDealMaxPrice != 0 {
+		dealProposalParam.UnverifiedDealMaxPrice = func() string {
+			if dealRequest.UnverifiedDealMaxPrice != "" {
 				return dealRequest.UnverifiedDealMaxPrice
 			}
-			return 0
+			return "0"
 		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
@@ -809,11 +809,11 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
-		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-			if dealRequest.UnverifiedDealMaxPrice != 0 {
+		dealProposalParam.UnverifiedDealMaxPrice = func() string {
+			if dealRequest.UnverifiedDealMaxPrice != "" {
 				return dealRequest.UnverifiedDealMaxPrice
 			}
-			return 0
+			return "0"
 		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
@@ -1050,11 +1050,11 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.CreatedAt = time.Now()
 		dealProposalParam.UpdatedAt = time.Now()
 		dealProposalParam.Content = content.ID
-		dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-			if dealRequest.UnverifiedDealMaxPrice != 0 {
+		dealProposalParam.UnverifiedDealMaxPrice = func() string {
+			if dealRequest.UnverifiedDealMaxPrice != "" {
 				return dealRequest.UnverifiedDealMaxPrice
 			}
-			return 0
+			return "0"
 		}()
 		dealProposalParam.Label = func() string {
 			if dealRequest.Label != "" {
@@ -1262,11 +1262,11 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			dealProposalParam.CreatedAt = time.Now()
 			dealProposalParam.UpdatedAt = time.Now()
 			dealProposalParam.Content = content.ID
-			dealProposalParam.UnverifiedDealMaxPrice = func() int64 {
-				if dealRequest.UnverifiedDealMaxPrice != 0 {
+			dealProposalParam.UnverifiedDealMaxPrice = func() string {
+				if dealRequest.UnverifiedDealMaxPrice != "" {
 					return dealRequest.UnverifiedDealMaxPrice
 				}
-				return 0
+				return "0"
 			}()
 			dealProposalParam.Label = func() string {
 				if dealRequest.Label != "" {
@@ -1372,7 +1372,7 @@ type ValidateMetaResult struct {
 	Message string
 }
 
-// `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
+// ValidatePieceCommitmentMeta `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
 func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest) error {
 	if (PieceCommitmentRequest{} == pieceCommitmentRequest) {
 		return errors.New("invalid piece_commitment request. piece_commitment is required")
@@ -1392,9 +1392,23 @@ func ValidateMeta(dealRequest DealRequest) error {
 	//	return errors.New("miner is required")
 	//}
 
-	if (DealRequest{} != dealRequest && dealRequest.UnverifiedDealMaxPrice > 0) {
+	if (DealRequest{} != dealRequest && dealRequest.UnverifiedDealMaxPrice != "") {
 		if dealRequest.DealVerifyState != utils.DEAL_UNVERIFIED {
-			return errors.New("unverified_deal_max_price is only valid for unverified deals")
+			return errors.New("unverified_deal_max_price is only valid for unverified deals, make sure to pass deal_verify_state as unverified")
+		}
+	}
+
+	if (DealRequest{} != dealRequest && dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED) {
+		if dealRequest.UnverifiedDealMaxPrice == "" {
+			return errors.New("unverified_deal_max_price is required for unverified deals")
+		}
+	}
+
+	// check if dealRequest.UnverifiedDealMaxPrice is a valid number
+	if (DealRequest{} != dealRequest && dealRequest.UnverifiedDealMaxPrice != "") {
+		_, err := strconv.ParseFloat(dealRequest.UnverifiedDealMaxPrice, 64)
+		if err != nil {
+			return errors.New("unverified_deal_max_price is not a valid number")
 		}
 	}
 

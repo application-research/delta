@@ -127,7 +127,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	var priceBigInt types.BigInt
 	if !dealProposal.VerifiedDeal {
-		unverifiedDealPrice, errPrice := types.BigFromString(string(dealProposal.UnverifiedDealMaxPrice))
+		unverifiedDealPrice, errPrice := types.BigFromString(dealProposal.UnverifiedDealMaxPrice)
 		if errPrice != nil {
 			contentToUpdate.UpdatedAt = time.Now()
 			contentToUpdate.LastMessage = errPrice.Error()

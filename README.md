@@ -52,9 +52,10 @@ DB_DSN=delta.db
 MAX_CLEANUP_WORKERS=1500
 ```
 
+## Install and run `Delta` using `docker`
+
 Running this the first time will generate a wallet. Make sure to get FIL/DataCap from the [faucet](https://verify.glif.io/) and fund the wallet
 
-## Install and run `Delta` using `docker`
 Make sure you have docker installed on your machine.
 
 ### Run the current delta clone using docker-compose
