@@ -20,10 +20,15 @@ In order to create a successful deal, Delta requires the following information `
     - run the SP miner selection api `curl --location --request GET 'https://simple-sp-selection.onrender.com/api/providers?size_bytes=34359738368'`, get the `address` field from the response.
     - check out `https://data.storage.market/api/providers` to get a list of miners.
     - you can also omit this field and let the daemon select a miner for you.
-- The `connection_mode` to use to make the deal. The default value for an import deal is `import`.
-  - `e2e` mode (online deal) is used to make deals with miners that support the `e2e` connection mode.
-  - `import` mode (offline) is used to make deals with miners that support the `import` connection mode.
-
+- The `auto_retry` flag. This is a boolean flag that indicates whether the deal should be retried if it fails. The default value is `false`.
+- The `deal_verify_state` to use to make the deal. The default value for an import deal is `verified`.
+  - `verified` state is used to make deals with miners that support the `Verified` deal state.
+  - `unverified` state is used to make deals with miners that support the `Unverified` deal state.
+- The `unverified_max_price` to use to make the deal. The default value for an import deal is `0`.
+  - `unverified_max_price` is used to make deals with miners that support the `unverified` deal state. This is the maximum price that the miner can charge for the deal.
+  - If the `deal_verify_state` is `verified`, this field is ignored.
+  - If the `deal_verify_state` is `unverified`, this field is used to make the deal.
+  
 Here's the complete structure of the `metadata` request.
 ```
 {
@@ -36,7 +41,6 @@ Here's the complete structure of the `metadata` request.
         "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
     },
-    "connection_mode": "import",
     "size": 2500366291,
     "remove_unsealed_copy":true, 
     "skip_ipni_announce": true
@@ -57,23 +61,12 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/imports' \
         "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
     },
-    "connection_mode": "import",
     "size": 2500366291,
     "remove_unsealed_copy":true, 
     "auto_retry": false,
     "skip_ipni_announce": true
 }]'
 ```
-A few things to note here:
-- The `metadata` request is the information required to make the deal. This is a JSON array. Each element in the array is a JSON object. At minimum, it should contain the `miner`, `piece_commitment.piece_cid`,`piece_commitment.padded_piece_size`, `size` and `connection_mode` fields.
-- The `miner` field is the miner that will store the content.
-  - If you don't have a miner, you can use the following:
-    - run the SP miner selection cli tool `./delta sp selection --size-in-bytes=34359738368`. Get the `address` field from the response.
-    - run the SP miner selection api `curl --location --request GET 'https://simple-sp-selection.onrender.com/api/providers?size_bytes=34359738368'`, get the `address` field from the response.
-    - check out `https://data.storage.market/api/providers` to get a list of miners.
-- The `piece_commitment` field is the piece-commitment of the content.
-    - This is the pre-computed piece cid, piece size (padded and unpadded) and file size.
-- The `connection_mode` field is the connection mode to use to make the deal. This is an `import`.
 
 ## Response
 The response will look like this:
@@ -144,7 +137,6 @@ Once a wallet is registered, we can add a `wallet` field to the `metadata` reque
         "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",
         "padded_piece_size": 4294967296
     },
-    "connection_mode": "import",
     "size": 2500366291,
     "remove_unsealed_copy":true, 
     "skip_ipni_announce": true
