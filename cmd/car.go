@@ -8,7 +8,7 @@ import (
 	"delta/utils"
 	"fmt"
 	commcid "github.com/filecoin-project/go-fil-commcid"
-	"github.com/filecoin-project/go-fil-commp-hashhash"
+	commp "github.com/filecoin-project/go-fil-commp-hashhash"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -26,7 +26,6 @@ type CommpResult struct {
 }
 
 type Result struct {
-	//Ipld       *utils.FsNode                `json:"ipld"`
 	PayloadCid string                       `json:"payload_cid"`
 	Commp      string                       `json:"commp"`
 	PaddedSize uint64                       `json:"padded_size"`
@@ -49,7 +48,6 @@ const BufSize = (4 << 20) / 128 * 127
 
 func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 	ctx := context.TODO()
-	// add a command to run API node
 	var carCommands []*cli.Command
 	carCmd := &cli.Command{
 		Name:  "car",
@@ -81,7 +79,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 			outDir := c.String("output-dir")
 			includeCommp := c.Bool("include-commp")
 
-			// make sure outDir exist
 			if _, err := os.Stat(outDir); os.IsNotExist(err) {
 				return err
 			}
@@ -102,16 +99,12 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						return nil
 					}
 
-					// Calculate the number of chunks based on the split size.
 					chunks := (info.Size() + splitSize - 1) / splitSize
-
-					// Open the source file for reading.
 					sourceFile, err := os.Open(sourcePath)
 					if err != nil {
 						return err
 					}
 
-					// Create a new directory for the file chunks.
 					fileName := info.Name()
 					chunkDir := filepath.Join(outDir, fileName)
 					err = os.MkdirAll(chunkDir, 0755)
@@ -119,18 +112,14 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						return err
 					}
 
-					// Split the file into chunks.
 					for i := int64(0); i < chunks; i++ {
-						// Open a new file for writing the chunk.
 						chunkFileName := fmt.Sprintf("%s_%04d", fileName, i)
 						chunkFilePath := filepath.Join(chunkDir, chunkFileName)
 						chunkFile, err := os.Create(chunkFilePath)
 						if err != nil {
 							return err
 						}
-						//defer chunkFile.Close()
 
-						// Copy the chunk data from the source file to the chunk file.
 						start := i * splitSize
 						end := (i + 1) * splitSize
 						if end > info.Size() {
@@ -167,7 +156,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							return err
 						}
 						output := Result{
-							//Ipld:       ipld,
 							PayloadCid: cid,
 							CidMap:     cidMap,
 						}
@@ -189,7 +177,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							output.Size = uint64(written)
 						}
 						outputs = append(outputs, output)
-
 					}
 					return nil
 				})
@@ -211,8 +198,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 				}
 				if stat.IsDir() {
 					err := filepath.Walk(sourceInput, func(sourcePath string, info os.FileInfo, err error) error {
-
-						//if splitSize == 0 {
 						if err != nil {
 							return err
 						}
@@ -243,7 +228,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						}
 
 						output := Result{
-							//Ipld:       ipld,
 							PayloadCid: cid,
 							CidMap:     cidMap,
 						}
@@ -302,7 +286,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						return err
 					}
 					output := Result{
-						//Ipld:       ipld,
 						PayloadCid: cid,
 						CidMap:     cidMap,
 					}
