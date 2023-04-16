@@ -47,26 +47,8 @@ type CidMapValue struct {
 	Cid   string `json:"cid"`
 }
 
-func getDirKey(dirList []string, i int) (key string) {
-	for j := 0; j <= i; j++ {
-		key += dirList[j]
-		if j < i {
-			key += "."
-		}
-	}
-	return
-}
 func NewFSBuilder(root *dag.ProtoNode, ds ipld.DAGService) *FSBuilder {
 	return &FSBuilder{root, ds}
-}
-
-func isLinked(node *dag.ProtoNode, name string) bool {
-	for _, lk := range node.Links() {
-		if lk.Name == name {
-			return true
-		}
-	}
-	return false
 }
 
 type Finfo struct {

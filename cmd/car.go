@@ -26,11 +26,17 @@ type CommpResult struct {
 }
 
 type Result struct {
-	PayloadCid string                       `json:"payload_cid"`
-	Commp      string                       `json:"commp"`
-	PaddedSize uint64                       `json:"padded_size"`
-	Size       uint64                       `json:"size"`
-	CidMap     map[string]utils.CidMapValue `json:"cid_map"`
+	PayloadCid      string                       `json:"cid"`
+	PieceCommitment PieceCommitment              `json:"piece_commitment"`
+	Size            uint64                       `json:"size"`
+	Miner           string                       `json:"miner"`
+	CidMap          map[string]utils.CidMapValue `json:"cid_map"`
+}
+
+type PieceCommitment struct {
+	PieceCID          string `json:"piece_cid"`
+	PaddedPieceSize   uint64 `json:"padded_piece_size"`
+	UnpaddedPieceSize uint64 `json:"unpadded_piece_size"`
 }
 
 type Input []utils.Finfo
@@ -72,25 +78,31 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "Include commp in the output",
 				Value: false,
 			},
+			&cli.StringFlag{
+				Name:  "miner",
+				Usage: "Miner address to assign to the output",
+				Value: "",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			sourceInput := c.String("source")
 			splitSizeInput := c.String("split-size")
 			outDir := c.String("output-dir")
 			includeCommp := c.Bool("include-commp")
+			minerAssignment := c.String("miner")
 
 			if _, err := os.Stat(outDir); os.IsNotExist(err) {
 				return err
 			}
-
+			var input Input
+			var outputs []Result
 			if splitSizeInput != "" {
 				splitSizeA, err := strconv.Atoi(splitSizeInput)
 				if err != nil {
 					return err
 				}
 				splitSize := int64(splitSizeA)
-				var input Input
-				var outputs []Result
+
 				err = filepath.Walk(sourceInput, func(sourcePath string, info os.FileInfo, err error) error {
 					if err != nil {
 						return err
@@ -140,6 +152,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							End:   written,
 						})
 						outFilename := uuid.New().String() + ".car"
+						//outFilename := cid + ".car"
 						outPath := path.Join(outDir, outFilename)
 						carF, err := os.Create(outPath)
 						if err != nil {
@@ -159,6 +172,11 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							PayloadCid: cid,
 							CidMap:     cidMap,
 						}
+
+						if minerAssignment != "" {
+							output.Miner = minerAssignment
+						}
+
 						if includeCommp {
 							rawCommP, pieceSize, err := cp.Digest()
 							if err != nil {
@@ -172,8 +190,8 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							if err != nil {
 								return err
 							}
-							output.Commp = commCid.String()
-							output.PaddedSize = pieceSize
+							output.PieceCommitment.PieceCID = commCid.String()
+							output.PieceCommitment.PaddedPieceSize = pieceSize
 							output.Size = uint64(written)
 						}
 						outputs = append(outputs, output)
@@ -190,8 +208,6 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 					panic(err)
 				}
 			} else {
-				var input Input
-				var outputs []Result
 				stat, err := os.Stat(sourceInput)
 				if err != nil {
 					return err
@@ -231,6 +247,11 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							PayloadCid: cid,
 							CidMap:     cidMap,
 						}
+
+						if minerAssignment != "" {
+							output.Miner = minerAssignment
+						}
+
 						if includeCommp {
 							rawCommP, pieceSize, err := cp.Digest()
 							if err != nil {
@@ -244,8 +265,8 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 							if err != nil {
 								return err
 							}
-							output.Commp = commCid.String()
-							output.PaddedSize = pieceSize
+							output.PieceCommitment.PieceCID = commCid.String()
+							output.PieceCommitment.PaddedPieceSize = pieceSize
 							output.Size = uint64(info.Size())
 						}
 						outputs = append(outputs, output)
@@ -289,6 +310,11 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						PayloadCid: cid,
 						CidMap:     cidMap,
 					}
+
+					if minerAssignment != "" {
+						output.Miner = minerAssignment
+					}
+					
 					if includeCommp {
 						rawCommP, pieceSize, err := cp.Digest()
 						if err != nil {
@@ -302,8 +328,8 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 						if err != nil {
 							return err
 						}
-						output.Commp = commCid.String()
-						output.PaddedSize = pieceSize
+						output.PieceCommitment.PieceCID = commCid.String()
+						output.PieceCommitment.PaddedPieceSize = pieceSize
 						output.Size = uint64(stat.Size())
 					}
 					if err != nil {
@@ -318,6 +344,7 @@ func CarCmd(cfg *c.DeltaConfig) []*cli.Command {
 				}
 				return nil
 			}
+
 			return nil
 		},
 	}
