@@ -89,7 +89,7 @@ Note: no tag means it'll just get the latest image.
 
 ## Install, build from source and run `Delta`
 ### Install the following pre-req
-- go 1.18
+- go 1.19
 - [jq](https://stedolan.github.io/jq/)
 - [hwloc](https://www.open-mpi.org/projects/hwloc/)
 - opencl
