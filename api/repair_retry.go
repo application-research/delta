@@ -97,25 +97,25 @@ func handleRetryDealContent(node *core.DeltaNode) func(c echo.Context) error {
 
 		paramContentId := c.Param("contentId")
 
-		// get the content deal entry
-		var contentDeal model.ContentDeal
-		node.DB.Model(&model.ContentDeal{}).Where("content = ? AND requesting_api_key = ?", paramContentId, authParts[1]).First(&contentDeal)
-
-		// if not content deal entry, throw an error.
-		if contentDeal.ID == 0 {
-			return c.JSON(200, map[string]interface{}{
-				"message": "content deal not found",
-			})
-		}
-
 		// if the deal is not in the right state, throw an error.
 		var content model.Content
-		node.DB.Model(&model.Content{}).Where("id = ?", paramContentId).First(&content)
+		node.DB.Model(&model.Content{}).Where("id = ? AND requesting_api_key = ?", paramContentId).First(&content)
 		content.RequestingApiKey = ""
 
 		if content.ConnectionMode != utils.CONNECTION_MODE_E2E {
 			return c.JSON(200, map[string]interface{}{
 				"message": "content is not in end-to-end mode",
+			})
+		}
+
+		// get the content deal entry
+		var contentDeal model.ContentDeal
+		node.DB.Model(&model.ContentDeal{}).Where("content = ?", paramContentId, authParts[1]).First(&contentDeal)
+
+		// if not content deal entry, throw an error.
+		if contentDeal.ID == 0 {
+			return c.JSON(200, map[string]interface{}{
+				"message": "content deal not found",
 			})
 		}
 
