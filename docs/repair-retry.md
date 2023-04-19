@@ -11,7 +11,7 @@ Users can also manually repair and retry deals via HTTP API.
 
 ### Retry a deal for an e2e content
 ```
-curl --location --request GET 'http://localhost:1414/api/v1/retry/deal/endo:contentId' \
+curl --location --request GET 'http://localhost:1414/api/v1/retry/deal/end-to-end/:contentId' \
 --header 'Authorization: Bearer [API_KEY]' \
 --header 'Content-Type: application/json' 
 ```
