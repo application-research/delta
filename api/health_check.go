@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// > ConfigureHealthCheckRouter is a function that takes a pointer to an echo.Group and a pointer to a DeltaNode and
+// ConfigureHealthCheckRouter > ConfigureHealthCheckRouter is a function that takes a pointer to an echo.Group and a pointer to a DeltaNode and
 // returns nothing
 func ConfigureHealthCheckRouter(healthCheckApiGroup *echo.Group, node *core.DeltaNode) {
 
