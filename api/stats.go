@@ -180,11 +180,15 @@ func handleGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 		var contentDealProposal []model.ContentDealProposal
 		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId, authParts[1]).Scan(&contentDealProposal)
 
+		var contentDealProposalParams []model.ContentDealProposalParameters
+		node.DB.Raw("select cdpp.* from content_deal_proposal_parameters cdpp, contents c where cdpp.content = c.id and c.id = ? and c.requesting_api_key = ?", contentId, authParts[1]).Scan(&contentDealProposalParams)
+
 		contentResponse = append(contentResponse, map[string]interface{}{
-			"content":           content,
-			"deals":             contentDeal,
-			"piece_commitments": pieceCommitments,
-			"deal_proposals":    contentDealProposal,
+			"content":                  content,
+			"deals":                    contentDeal,
+			"piece_commitments":        pieceCommitments,
+			"deal_proposals":           contentDealProposal,
+			"deal_proposal_parameters": contentDealProposalParams,
 		})
 	}
 	return c.JSON(200, contentResponse)
