@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	log = logging.Logger("api")
+	log = logging.Logger("delta")
 )
 
 var Commit string
