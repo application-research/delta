@@ -210,7 +210,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			PayloadSize: uint64(pieceComm.Size),
 		}),
 	)
-
+	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
 	if err != nil {
 		fmt.Println(err)
 		switch {
@@ -264,6 +264,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	propnd, err := cborutil.AsIpld(dealProp)
+
 	if err != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
@@ -348,10 +349,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		return xerrors.Errorf("failed to create database entry for deal: %w", err)
 	}
 
-	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-		Status: utils.CONTENT_DEAL_SENDING_PROPOSAL, //"sending-deal-proposal",
-	})
-
 	propString := propnd.String()
 
 	// 	log and send the proposal over
@@ -363,12 +360,16 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		UpdatedAt: time.Now(),
 	})
 
+	i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+		Status: utils.CONTENT_DEAL_SENDING_PROPOSAL, //"sending-deal-proposal",
+	})
+
 	// send the proposal.
 	_, errProp := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce)
 
 	// check all errors
 	if errProp != nil {
-		contentToUpdate := model.Content{
+		contentToUpdate = model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED,
 			LastMessage: errProp.Error(),
 			UpdatedAt:   time.Now(),
