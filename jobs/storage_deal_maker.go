@@ -210,7 +210,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			PayloadSize: uint64(pieceComm.Size),
 		}),
 	)
-
+	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
 	if err != nil {
 		fmt.Println(err)
 		switch {
@@ -264,6 +264,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	propnd, err := cborutil.AsIpld(dealProp)
+
 	if err != nil {
 		i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
 			Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
