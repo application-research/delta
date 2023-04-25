@@ -210,6 +210,13 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			PayloadSize: uint64(pieceComm.Size),
 		}),
 	)
+	if err != nil {
+		contentToUpdate.UpdatedAt = time.Now()
+		contentToUpdate.LastMessage = err.Error()
+		contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+		i.LightNode.DB.Save(&contentToUpdate)
+		return err
+	}
 	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
 	if err != nil {
 		fmt.Println(err)
