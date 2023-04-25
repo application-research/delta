@@ -4,7 +4,6 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
-	"delta/jobs"
 	"delta/utils"
 	"fmt"
 	"github.com/application-research/delta-db/db_models"
@@ -212,7 +211,7 @@ func RunScheduledCleanupAndRetryCron(ln *core.DeltaNode) {
 	s.Every(24).Hour().Do(func() { // let's clean and retry every 30 minutes. It'll only get the old data.
 		dispatcher := core.CreateNewDispatcher()
 		//dispatcher.AddJob(jobs.NewItemContentCleanUpProcessor(ln))
-		dispatcher.AddJob(jobs.NewRetryProcessor(ln))
+		//dispatcher.AddJob(jobs.NewRetryProcessor(ln))
 		dispatcher.Start(maxCleanUpJobs)
 
 		core.CleanUpContentAndPieceComm(ln)
