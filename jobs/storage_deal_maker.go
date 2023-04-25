@@ -542,11 +542,7 @@ func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Cont
 
 // Creating a new filclient for the content.
 func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model.Content) (*fc.FilClient, error) {
-	api, _, err := core.LotusConnection(utils.LOTUS_API)
-	if err != nil {
-		return nil, err
-	}
-
+	api := i.LightNode.LotusApi
 	var storageWalletAssignment model.ContentWallet
 	i.LightNode.DB.Model(&model.ContentWallet{}).Where("content = ?", content.ID).Find(&storageWalletAssignment)
 
@@ -585,7 +581,7 @@ func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model
 		return filclient, err
 	}
 
-	return i.LightNode.FilClient, err
+	return i.LightNode.FilClient, nil
 }
 
 // GetStorageProviders Getting the storage providers.
