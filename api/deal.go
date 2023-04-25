@@ -1314,7 +1314,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			})
 
 		}
-		node.Dispatcher.Start(len(dealRequests))
+		go node.Dispatcher.Start(len(dealRequests))
 		err = c.JSON(http.StatusOK, dealResponses)
 		if err != nil {
 			tx.Rollback()
