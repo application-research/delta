@@ -217,7 +217,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		i.LightNode.DB.Save(&contentToUpdate)
 		return err
 	}
-	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
+
 	if err != nil {
 		fmt.Println(err)
 		switch {
@@ -262,6 +262,8 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	}
 
 	dealProp := prop.DealProposal
+	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
+	fmt.Println("fast retrieval", prop.FastRetrieval)
 	if dealProposal.StartEpoch != 0 {
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
 	}
@@ -269,7 +271,6 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	if dealProposal.EndEpoch != 0 {
 		dealProp.Proposal.EndEpoch = abi.ChainEpoch(dealProposal.EndEpoch)
 	}
-
 	propnd, err := cborutil.AsIpld(dealProp)
 
 	if err != nil {
@@ -372,7 +373,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	})
 
 	// send the proposal.
-	_, errProp := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce)
+	_, errProp := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce, dealProposal.RemoveUnsealedCopy)
 
 	// check all errors
 	if errProp != nil {
@@ -599,7 +600,7 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 }
 
 // Sending a proposal to the peer.
-func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool) (bool, error) {
+func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool, removeUnsealedCopies bool) (bool, error) {
 
 	// Create an auth token to be used in the request
 	authToken, err := httptransport.GenerateAuthToken()
@@ -607,6 +608,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 		return false, xerrors.Errorf("generating auth token for deal: %w", err)
 	}
 
+	netprop.FastRetrieval = !removeUnsealedCopies
 	rootCid := netprop.Piece.Root
 	size := netprop.Piece.RawBlockSize
 	var announceAddr multiaddr.Multiaddr

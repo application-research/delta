@@ -39,7 +39,7 @@ func (i ContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
+		err = i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue
@@ -55,7 +55,7 @@ func (i ContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
+		err = i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue
@@ -74,7 +74,7 @@ func (i ContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
+		err = i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue
@@ -92,7 +92,7 @@ func (i ContentCleanUpProcessor) Run() error {
 			fmt.Println("error in decoding cid", err)
 			continue
 		}
-		err = i.LightNode.Node.DAGService.Remove(i.Context, cidD)
+		err = i.LightNode.Node.Blockservice.DeleteBlock(context.Background(), cidD)
 		if err != nil {
 			fmt.Println("error in deleting block", err)
 			continue
