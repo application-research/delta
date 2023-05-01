@@ -4,6 +4,8 @@ import (
 	"context"
 	c "delta/config"
 	"delta/utils"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/delta-db/messaging"
@@ -183,6 +185,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		Datastore: whypfs.NewInMemoryDatastore(),
 		Repo:      repo.Repo,
 	}
+
 	// node
 	params.Config = params.ConfigurationBuilder(newConfig)
 	whypfsPeer, err := whypfs.NewNode(params)
@@ -191,12 +194,53 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		panic(err)
 	}
 
+	// bootstrap peers
 	whypfsPeer.BootstrapPeers(c.BootstrapEstuaryPeers())
 
-	//	FilClient
+	//	filclient
 	api, _, err := LotusConnection(utils.LOTUS_API)
+
+	// set up wallet
 	wallet, err := SetupWallet(repo.DefaultWalletDir)
 	walletAddr, err := wallet.GetDefault()
+
+	var walletFromDb model.Wallet
+	db.Raw("SELECT * FROM wallets WHERE addr = ?", walletAddr.String()).Scan(&walletFromDb)
+
+	if walletFromDb.ID == 0 {
+		ki, errExport := wallet.WalletExport(context.Background(), walletAddr)
+		if errExport != nil {
+			panic(errExport)
+		}
+
+		b, err := json.Marshal(ki)
+		if err != nil {
+			panic(err)
+		}
+
+		// convert to struct
+		var walletFromKi struct {
+			Type       string `json:"Type"`
+			PrivateKey string `json:"PrivateKey"`
+		}
+		err = json.Unmarshal(b, &walletFromKi)
+		if err != nil {
+			panic(err)
+		}
+		pkey := base64.StdEncoding.EncodeToString(ki.PrivateKey)
+		uuid := uuid.New()
+		walletToDb := &model.Wallet{
+			UuId:       uuid.String(),
+			Addr:       walletAddr.String(),
+			Owner:      "genesis",
+			KeyType:    walletFromKi.Type,
+			PrivateKey: pkey,
+			CreatedAt:  time.Time{},
+			UpdatedAt:  time.Time{},
+		}
+		db.Create(&walletToDb)
+	}
+
 	if err != nil {
 		panic(err)
 	}
