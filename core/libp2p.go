@@ -20,9 +20,41 @@ import (
 func SetDataTransferEventsSubscribe(i *DeltaNode) {
 	fmt.Println(utils.Purple + "Subscribing to transfer channel events..." + utils.Reset)
 	i.FilClient.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {
+		fmt.Println("Data Transfer event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
+		fmt.Println("message" + event.Message)
+		fmt.Println(event.Code)
+		fmt.Println(event.Message)
+		fmt.Println(channelState.Message())
+
 		switch event.Code {
+		case datatransfer.DataQueued:
+			fmt.Println("Data Transfer Queued event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
+		case datatransfer.Complete:
+			fmt.Println("Data Transfer Complete event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
 		case datatransfer.Error, datatransfer.Disconnected, datatransfer.ReceiveDataError, datatransfer.Cancel, datatransfer.RequestTimedOut, datatransfer.SendDataError:
 			fmt.Println("Data Transfer Error event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
+			fmt.Println("message" + event.Message)
+			fmt.Println(event.Code)
+			fmt.Println(event.Message)
+			//// get the content id from the channelid
+			//channelId := channelState.ChannelID()
+			//fmt.Println("channel id: ", channelId.ID)
+			//fmt.Println("channel id: ", channelId.String())
+			//var contentDeal model.ContentDeal
+			//i.DB.Model(&model.ContentDeal{}).Where("dt_chan = ?", channelId.String()).First(&contentDeal)
+			//
+			//contentDeal.LastMessage = event.Message
+			//contentDeal.UpdatedAt = time.Now()
+			//contentDeal.FailedAt = time.Now()
+			//i.DB.Save(&contentDeal)
+			//
+			//var content model.Content
+			//i.DB.Model(&model.Content{}).Where("id in (select cd.content from content_deals cd where cd.id = ?)", contentDeal.ID).First(&content)
+			//content.Status = utils.DEAL_STATUS_TRANSFER_FAILED
+			//content.LastMessage = event.Message
+			//content.UpdatedAt = time.Now()
+			//i.DB.Save(&content)
+
 		}
 	})
 }
