@@ -648,7 +648,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context,
 	// Send the deal proposal to the storage provider
 	var propPhase bool
 	//var err error
-	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
+	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT && transferParamsBoost.URL == "" {
 		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),

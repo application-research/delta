@@ -121,14 +121,6 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleMultipleImportDeals(c, node)
 	})
 
-	dealMake.POST("/online/import", func(c echo.Context) error {
-		return handleOnlineImportDeal(c, node)
-	})
-
-	dealMake.POST("/online/imports", func(c echo.Context) error {
-		return handleMultipleOnlineImportDeals(c, node)
-	})
-
 	dealMake.POST("/end-to-end/remote-source", func(c echo.Context) error {
 		return handleExistingContentAdd(c, node)
 	})
@@ -856,26 +848,11 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 				}
 				return "libp2p://" + announceAddr.String()
 			}()
-
-			//transferParamsHeaders := func() map[string]string {
-			//	if dealRequest.TransferParameters.Headers != nil {
-			//		dataMap := dealRequest.TransferParameters.Headers.(map[string]interface{})
-			//		stringMap := make(map[string]string)
-			//		for key, value := range dataMap {
-			//			stringMap[key] = fmt.Sprintf("%v", value)
-			//		}
-			//
-			//		return stringMap
-			//	}
-			//	return map[string]string{
-			//		"Authorization": httptransport.BasicAuthHeader("", authToken),
-			//	}
-			//}()
-
 			transferParams := TransferParameters{
 				URL: transferParamsUrl,
 				//Headers: transferParamsHeaders,
 			}
+
 			stringTP, err := json.Marshal(transferParams)
 			if err != nil {
 				return ""
@@ -1341,17 +1318,14 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 		dealProposalParam.TransferParams = func() string {
 			//authToken, err := httptransport.GenerateAuthToken()
-			addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
-			announceAddr, err := multiaddr.NewMultiaddr(addrstr)
+			//addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
+			//announceAddr, err := multiaddr.NewMultiaddr(addrstr)
 			if err != nil {
 				return ""
 			}
 
 			transferParamsUrl := func() string {
-				if dealRequest.TransferParameters.URL != "" {
-					return dealRequest.TransferParameters.URL
-				}
-				return "libp2p://" + announceAddr.String()
+				return dealRequest.TransferParameters.URL
 			}()
 
 			//transferParamsHeaders := func() map[string]string {
@@ -1826,17 +1800,14 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			}()
 			dealProposalParam.TransferParams = func() string {
 				//authToken, err := httptransport.GenerateAuthToken()
-				addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
-				announceAddr, err := multiaddr.NewMultiaddr(addrstr)
+				//addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
+				//announceAddr, err := multiaddr.NewMultiaddr(addrstr)
 				if err != nil {
 					return ""
 				}
 
 				transferParamsUrl := func() string {
-					if dealRequest.TransferParameters.URL != "" {
-						return dealRequest.TransferParameters.URL
-					}
-					return "libp2p://" + announceAddr.String()
+					return dealRequest.TransferParameters.URL
 				}()
 
 				//transferParamsHeaders := func() map[string]string {
@@ -2044,6 +2015,10 @@ func ValidateMeta(dealRequest DealRequest) error {
 		default:
 			return errors.New("connection mode can only be e2e or import")
 		}
+	}
+
+	if dealRequest.ConnectionMode == utils.CONNECTION_MODE_E2E && dealRequest.TransferParameters.URL != "" {
+		return errors.New("transfer_parameters is not supported for e2e mode.")
 	}
 
 	// piece commitment is required
