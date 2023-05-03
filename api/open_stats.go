@@ -25,6 +25,9 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 	e.GET("/stats/miner/:minerId/deals", func(c echo.Context) error {
 		return handleOpenGetDealsByMiner(c, node)
 	})
+	e.GET("/stats/batch/imports/:batchId", func(c echo.Context) error {
+		return handleOpenGetStatsByAllContentsFromBatch(c, node)
+	})
 
 	e.GET("/stats/content/:contentId", func(c echo.Context) error {
 		return handleOpenGetStatsByContent(c, node)
@@ -279,6 +282,43 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 		"total_import_deals_in_bytes": totalImportDealsInBytes,
 	})
 	return nil
+}
+
+func handleOpenGetStatsByAllContentsFromBatch(c echo.Context, node *core.DeltaNode) error {
+
+	batchImportId := c.Param("batchId")
+	var contentIds []int64
+	node.DB.Raw("select content_id from batch_contents where batch_import_id = ?", batchImportId).Scan(&contentIds)
+
+	var contentResponse []map[string]interface{}
+	for _, contentId := range contentIds {
+
+		var content model.Content
+		node.DB.Raw("select c.* from contents c where c.id = ?", contentId).Scan(&content)
+		content.RequestingApiKey = ""
+
+		var contentDeal []model.ContentDeal
+		node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and c.id = ?", contentId).Scan(&contentDeal)
+
+		var pieceCommitments []model.PieceCommitment
+		node.DB.Raw("select pc.* from piece_commitments pc, contents c where c.piece_commitment_id = pc.id and c.id = ?", contentId).Scan(&pieceCommitments)
+
+		var contentDealProposal []model.ContentDealProposal
+		node.DB.Raw("select cdp.* from content_deal_proposals cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposal)
+
+		var contentDealProposalParameters []model.ContentDealProposalParameters
+		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposalParameters)
+
+		contentResponse = append(contentResponse, map[string]interface{}{
+			"content":                  content,
+			"deals":                    contentDeal,
+			"piece_commitments":        pieceCommitments,
+			"deal_proposals":           contentDealProposal,
+			"deal_proposal_parameters": contentDealProposalParameters,
+		})
+	}
+	return c.JSON(200, contentResponse)
+
 }
 
 func handleOpenGetStatsByAllContents(c echo.Context, node *core.DeltaNode) error {

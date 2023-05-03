@@ -263,7 +263,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	dealProp := prop.DealProposal
 	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
-	fmt.Println("fast retrieval", prop.FastRetrieval)
+
 	if dealProposal.StartEpoch != 0 {
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
 	}

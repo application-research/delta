@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	model "github.com/application-research/delta-db/db_models"
+	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
@@ -121,16 +122,8 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleMultipleImportDeals(c, node)
 	})
 
-	dealMake.POST("/end-to-end/remote-source", func(c echo.Context) error {
-		return handleExistingContentAdd(c, node)
-	})
-
-	dealMake.POST("/existing/contents", func(c echo.Context) error {
-		return handleExistingContentsAdd(c, node)
-	})
-
-	dealMake.POST("/existing/piece-commitment", func(c echo.Context) error {
-		return handleImportDeal(c, node)
+	dealMake.POST("/batch/imports", func(c echo.Context) error {
+		return handleMultipleBatchImportDeals(c, node)
 	})
 
 	dealPrepare.POST("/content", func(c echo.Context) error {
@@ -1631,6 +1624,286 @@ func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error
 		return errors.New("Error in making a deal proposal " + errTxn.Error())
 	}
 	return nil
+}
+
+func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error {
+	var dealRequests []DealRequest
+
+	// lets record this.
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+
+	//	validate the meta
+	err := c.Bind(&dealRequests)
+	if err != nil {
+		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
+	}
+
+	// create a batch import object
+	batchImportUuid := uuid.New().String()
+	batchImport := model.BatchImport{
+		Uuid:      batchImportUuid,
+		Status:    "started",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	err = node.DB.Create(&batchImport).Error
+	if err != nil {
+		return errors.New("Error creating a batch import object")
+	}
+
+	//batchContentIdChan := make(chan int64, len(dealRequests))
+
+	// process the batch import async.
+
+	go func() error {
+		tx := node.DB
+		//errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
+		var dealResponses []DealResponse
+		for _, dealRequest := range dealRequests {
+			if dealRequest.ConnectionMode == "e2e" {
+				return errors.New("Connection mode e2e is not supported on this import endpoint")
+			}
+			dealRequest.ConnectionMode = "import"
+			err = ValidateMeta(dealRequest)
+			if err != nil {
+				fmt.Println("Error validating the meta", err)
+				//tx.Rollback()
+				return err
+			}
+
+			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+			if err != nil {
+				fmt.Println("Error validating the piece commitment meta", err)
+				//tx.Rollback()
+				return err
+			}
+
+			// let's create a commp but only if we have
+			// a cid, a piece_cid, a padded_piece_size, size
+			var pieceCommp model.PieceCommitment
+			if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+				(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+				(dealRequest.Size != 0) {
+
+				// if commp is there, make sure the piece and size are there. Use default duration.
+				pieceCommp.Cid = dealRequest.Cid
+				pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+				pieceCommp.Size = dealRequest.Size
+				pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+				pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+				pieceCommp.CreatedAt = time.Now()
+				pieceCommp.UpdatedAt = time.Now()
+				pieceCommp.Status = utils.COMMP_STATUS_COMITTED
+				tx.Create(&pieceCommp)
+
+				dealRequest.PieceCommitment = PieceCommitmentRequest{
+					Piece:             pieceCommp.Piece,
+					PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+					UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+				}
+			}
+
+			// save the content to the DB with the piece_commitment_id
+			content := model.Content{
+				Name:              dealRequest.Cid,
+				Size:              dealRequest.Size,
+				Cid:               dealRequest.Cid,
+				RequestingApiKey:  authParts[1],
+				PieceCommitmentId: pieceCommp.ID,
+				AutoRetry:         dealRequest.AutoRetry,
+				Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
+				ConnectionMode:    dealRequest.ConnectionMode,
+				CreatedAt:         time.Now(),
+				UpdatedAt:         time.Now(),
+			}
+			tx.Create(&content)
+			dealRequest.Cid = content.Cid
+
+			//batchContentIdChan <- content.ID
+
+			batchContent := model.BatchContent{
+				BatchImportID: batchImport.ID,
+				ContentID:     content.ID,
+				CreatedAt:     time.Now(),
+				UpdatedAt:     time.Now(),
+			}
+			tx.Create(&batchContent)
+
+			//	assign a miner
+			if dealRequest.Miner == "" {
+				minerAssignService := core.NewMinerAssignmentService()
+				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
+				if errOnPv != nil {
+					return errOnPv
+				}
+				dealRequest.Miner = provider.Address
+			}
+			if dealRequest.Miner != "" {
+				contentMinerAssignment := model.ContentMiner{
+					Miner:     dealRequest.Miner,
+					Content:   content.ID,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}
+				tx.Create(&contentMinerAssignment)
+				dealRequest.Miner = contentMinerAssignment.Miner
+			}
+
+			// 	assign a wallet_estuary
+			if (WalletRequest{} != dealRequest.Wallet) {
+
+				// get wallet from wallets database
+				var wallet model.Wallet
+				if dealRequest.Wallet.Address != "" {
+					tx.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+				} else if dealRequest.Wallet.Uuid != "" {
+					tx.Where("uu_id = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+				} else {
+					tx.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+				}
+
+				if wallet.ID == 0 {
+					//tx.Rollback()
+					return errors.New("Wallet not found, please make sure the wallet is registered with the API key " + dealRequest.Wallet.Address)
+				}
+
+				// create the wallet request object
+				var hexedWallet WalletRequest
+				hexedWallet.KeyType = wallet.KeyType
+				hexedWallet.PrivateKey = wallet.PrivateKey
+
+				if err != nil {
+					//tx.Rollback()
+					return errors.New("Error encoding the wallet")
+				}
+
+				// assign the wallet to the content
+				contentWalletAssignment := model.ContentWallet{
+					WalletId:  wallet.ID,
+					Content:   content.ID,
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				}
+				tx.Create(&contentWalletAssignment)
+
+				dealRequest.Wallet = WalletRequest{
+					Id:      dealRequest.Wallet.Id,
+					Address: wallet.Addr,
+				}
+			}
+
+			var dealProposalParam model.ContentDealProposalParameters
+			dealProposalParam.CreatedAt = time.Now()
+			dealProposalParam.UpdatedAt = time.Now()
+			dealProposalParam.Content = content.ID
+			dealProposalParam.UnverifiedDealMaxPrice = func() string {
+				if dealRequest.UnverifiedDealMaxPrice != "" {
+					return dealRequest.UnverifiedDealMaxPrice
+				}
+				return "0"
+			}()
+			dealProposalParam.Label = func() string {
+				if dealRequest.Label != "" {
+					return dealRequest.Label
+				}
+				return content.Cid
+			}()
+
+			dealProposalParam.VerifiedDeal = func() bool {
+				if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+					return false
+				}
+				return true
+			}()
+			dealProposalParam.TransferParams = func() string {
+				//authToken, err := httptransport.GenerateAuthToken()
+				//addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
+				//announceAddr, err := multiaddr.NewMultiaddr(addrstr)
+				if err != nil {
+					return ""
+				}
+
+				transferParamsUrl := func() string {
+					return dealRequest.TransferParameters.URL
+				}()
+
+				//transferParamsHeaders := func() map[string]string {
+				//	if dealRequest.TransferParameters.Headers != nil {
+				//		dataMap := dealRequest.TransferParameters.Headers.(map[string]interface{})
+				//		stringMap := make(map[string]string)
+				//		for key, value := range dataMap {
+				//			stringMap[key] = fmt.Sprintf("%v", value)
+				//		}
+				//
+				//		return stringMap
+				//	}
+				//	return map[string]string{
+				//		"Authorization": httptransport.BasicAuthHeader("", authToken),
+				//	}
+				//}()
+
+				transferParams := TransferParameters{
+					URL: transferParamsUrl,
+					//Headers: transferParamsHeaders,
+				}
+				stringTP, err := json.Marshal(transferParams)
+				if err != nil {
+					return ""
+				}
+				return string(stringTP)
+
+			}()
+			if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
+				startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+				dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
+				dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
+				dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+			} else {
+				dealProposalParam.StartEpoch = 0
+				dealProposalParam.Duration = utils.DEFAULT_DURATION
+			}
+
+			dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
+			dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+
+			// deal proposal parameters
+			tx.Create(&dealProposalParam)
+
+			var dispatchJobs core.IProcessor
+			if pieceCommp.ID != 0 {
+				dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			}
+
+			node.Dispatcher.AddJob(dispatchJobs)
+
+			dealResponses = append(dealResponses, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+			})
+
+		}
+		go node.Dispatcher.Start(len(dealRequests))
+		err = c.JSON(http.StatusOK, dealResponses)
+		if err != nil {
+			//tx.Rollback()
+			return errors.New("Error sending the response" + err.Error())
+		}
+		return nil
+	}()
+
+	return c.JSON(http.StatusOK, struct {
+		Status        string `json:"status"`
+		Message       string `json:"message"`
+		BatchImportID int64  `json:"batch_import_id"`
+	}{
+		Status:        "success",
+		Message:       "Batch import request received. Please take note of the batch_import_id. You can use the batch_import_id to check the status of the deal.",
+		BatchImportID: batchImport.ID,
+	})
 }
 
 // handleMultipleImportDeals handles the request to add a commp record.
