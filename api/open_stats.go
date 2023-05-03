@@ -194,8 +194,6 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 		"deal_proposals":    contentDealProposal,
 		"deal_parameters":   contentDealProposalParameters,
 	})
-
-	return nil
 }
 
 // function to get all deals of a given miner
@@ -204,11 +202,10 @@ func handleOpenGetDealsByMiner(c echo.Context, node *core.DeltaNode) error {
 	var contentDeal []model.ContentDeal
 	node.DB.Raw("select cd.* from content_deals cd, contents c where cd.content = c.id and cd.miner = ?", c.Param("minerId")).Scan(&contentDeal)
 
-	c.JSON(200, map[string]interface{}{
+	return c.JSON(200, map[string]interface{}{
 		"deals": contentDeal,
 	})
 
-	return nil
 }
 
 // function to get all totals info
