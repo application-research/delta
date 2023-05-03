@@ -1643,7 +1643,7 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 	batchImportUuid := uuid.New().String()
 	batchImport := model.BatchImport{
 		Uuid:      batchImportUuid,
-		Status:    "started",
+		Status:    utils.BATCH_IMPORT_STATUS_STARTED,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -1668,14 +1668,12 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 			err = ValidateMeta(dealRequest)
 			if err != nil {
 				fmt.Println("Error validating the meta", err)
-				//tx.Rollback()
 				return err
 			}
 
 			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
 			if err != nil {
 				fmt.Println("Error validating the piece commitment meta", err)
-				//tx.Rollback()
 				return err
 			}
 
@@ -1828,21 +1826,6 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 					return dealRequest.TransferParameters.URL
 				}()
 
-				//transferParamsHeaders := func() map[string]string {
-				//	if dealRequest.TransferParameters.Headers != nil {
-				//		dataMap := dealRequest.TransferParameters.Headers.(map[string]interface{})
-				//		stringMap := make(map[string]string)
-				//		for key, value := range dataMap {
-				//			stringMap[key] = fmt.Sprintf("%v", value)
-				//		}
-				//
-				//		return stringMap
-				//	}
-				//	return map[string]string{
-				//		"Authorization": httptransport.BasicAuthHeader("", authToken),
-				//	}
-				//}()
-
 				transferParams := TransferParameters{
 					URL: transferParamsUrl,
 					//Headers: transferParamsHeaders,
@@ -1892,6 +1875,11 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 			//tx.Rollback()
 			return errors.New("Error sending the response" + err.Error())
 		}
+
+		// update the batch import status
+		batchImport.Status = utils.BATCH_IMPORT_STATUS_COMPLETED
+		batchImport.UpdatedAt = time.Now()
+		tx.Save(&batchImport)
 		return nil
 	}()
 
