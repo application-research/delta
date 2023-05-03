@@ -23,6 +23,10 @@ The `piece_cid` field is the piece cid of the content to be stored. This is only
 The `padded_piece_size` field is the padded piece size of the content to be stored. This is only required if the `connection_mode` is `import`. If the `connection_mode` is `e2e`, then the `padded_piece_size` field is not required.
 ## unpadded_piece_size 
 The `unpadded_piece_size` field is the unpadded piece size of the content to be stored. This is only required if the `connection_mode` is `import`. If the `connection_mode` is `e2e`, then the `unpadded_piece_size` field is not required.
+# transfer_parameters
+The `transfer_parameters` field is the transfer parameters set when preparing a deal. It allows deal clients to pull data using the transfer parameter specified. This is only required if the `connection_mode` is `import`. If the `connection_mode` is `e2e`, then the `transfer_parameters` field is not required.
+## url 
+The `url` field is the url of the content to be stored. This will allow deal clients to pull data from a remote url source. This is only required if the `connection_mode` is `import`. If the `connection_mode` is `e2e`, then the `url` field is not required.
 # connection_mode
 The `connection_mode` field is the connection mode to use to make the deal. This is either `e2e` or `import`. This is required.
 # size
