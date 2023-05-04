@@ -1720,7 +1720,7 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 
 			//batchContentIdChan <- content.ID
 
-			batchContent := model.BatchContent{
+			batchContent := model.BatchImportContent{
 				BatchImportID: batchImport.ID,
 				ContentID:     content.ID,
 				CreatedAt:     time.Now(),
@@ -1877,9 +1877,12 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 		}
 
 		// update the batch import status
-		batchImport.Status = utils.BATCH_IMPORT_STATUS_COMPLETED
-		batchImport.UpdatedAt = time.Now()
-		tx.Save(&batchImport)
+		var batchImportToBeUpdate model.BatchImport
+		node.DB.Raw("SELECT * FROM batch_imports WHERE id = ?", batchImport.ID).Scan(&batchImportToBeUpdate)
+		batchImportToBeUpdate.Status = utils.BATCH_IMPORT_STATUS_COMPLETED
+		batchImportToBeUpdate.UpdatedAt = time.Now()
+		node.DB.Save(&batchImportToBeUpdate)
+
 		return nil
 	}()
 
