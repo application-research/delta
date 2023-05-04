@@ -263,7 +263,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 	dealProp := prop.DealProposal
 	prop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
-	fmt.Println("fast retrieval", prop.FastRetrieval)
+
 	if dealProposal.StartEpoch != 0 {
 		dealProp.Proposal.StartEpoch = abi.ChainEpoch(dealProposal.StartEpoch)
 	}
@@ -373,7 +373,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	})
 
 	// send the proposal.
-	_, errProp := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal.SkipIPNIAnnounce, dealProposal.RemoveUnsealedCopy)
+	_, errProp := i.sendProposalV120(i.Context, *prop, propnd.Cid(), dealUUID, uint(deal.ID), dealProposal)
 
 	// check all errors
 	if errProp != nil {
@@ -600,15 +600,21 @@ func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 }
 
 // Sending a proposal to the peer.
-func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netprop network.Proposal, propCid cid.Cid, dealUUID uuid.UUID, dbid uint, skipIpniAnnounce bool, removeUnsealedCopies bool) (bool, error) {
+func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context,
+	netprop network.Proposal,
+	propCid cid.Cid,
+	dealUUID uuid.UUID,
+	dbid uint,
+	dealProposal model.ContentDealProposalParameters) (bool, error) {
 
 	// Create an auth token to be used in the request
 	authToken, err := httptransport.GenerateAuthToken()
+
 	if err != nil {
 		return false, xerrors.Errorf("generating auth token for deal: %w", err)
 	}
 
-	netprop.FastRetrieval = !removeUnsealedCopies
+	netprop.FastRetrieval = !dealProposal.RemoveUnsealedCopy
 	rootCid := netprop.Piece.Root
 	size := netprop.Piece.RawBlockSize
 	var announceAddr multiaddr.Multiaddr
@@ -623,6 +629,16 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 		return false, xerrors.Errorf("cannot parse announce address '%s': %w", addrstr, err)
 	}
 
+	var transferParamsBoost boosttypes.HttpRequest
+	json.Unmarshal([]byte(dealProposal.TransferParams), &transferParamsBoost)
+
+	transferParams, err := json.Marshal(boosttypes.HttpRequest{
+		URL: transferParamsBoost.URL,
+		Headers: map[string]string{
+			"Authorization": httptransport.BasicAuthHeader("", authToken),
+		},
+	})
+
 	// Add an auth token for the data to the auth DB
 	err = i.LightNode.FilClient.Libp2pTransferMgr.PrepareForDataRequest(ctx, dbid, authToken, propCid, rootCid, size)
 	if err != nil {
@@ -630,25 +646,32 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 	}
 
 	// Send the deal proposal to the storage provider
-	transferParams, err := json.Marshal(boosttypes.HttpRequest{
-		URL: "libp2p://" + announceAddr.String(),
-		Headers: map[string]string{
-			"Authorization": httptransport.BasicAuthHeader("", authToken),
-		},
-	})
-
-	// Send the deal proposal to the storage provider
 	var propPhase bool
 	//var err error
-	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT {
+	if i.Content.ConnectionMode == utils.CONNECTION_MODE_IMPORT && transferParamsBoost.URL == "" {
 		propPhase, err = i.LightNode.FilClient.SendProposalV120WithOptions(
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),
 			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
 			fc.ProposalV120WithOffline(true),
-			fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
+			fc.ProposalV120WithSkipIPNIAnnounce(dealProposal.SkipIPNIAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
-				Type:     "libp2p",
+				Type: func() string {
+					// starts with http
+					if strings.Contains(dealProposal.TransferParams, "http") {
+						return "http"
+					}
+					if strings.Contains(dealProposal.TransferParams, "https") {
+						return "https"
+					}
+					if strings.Contains(dealProposal.TransferParams, "ftp") {
+						return "ftp"
+					}
+					if strings.Contains(dealProposal.TransferParams, "ftps") {
+						return "ftps"
+					}
+					return "libp2p"
+				}(),
 				ClientID: fmt.Sprintf("%d", dbid),
 				Params:   transferParams,
 				Size:     netprop.Piece.RawBlockSize,
@@ -659,9 +682,24 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context, netpro
 			ctx, netprop,
 			fc.ProposalV120WithDealUUID(dealUUID),
 			fc.ProposalV120WithLibp2pTransfer(announceAddr, authToken, dbid),
-			fc.ProposalV120WithSkipIPNIAnnounce(skipIpniAnnounce),
+			fc.ProposalV120WithSkipIPNIAnnounce(dealProposal.SkipIPNIAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
-				Type:     "libp2p",
+				Type: func() string {
+					// starts with http
+					if strings.Contains(dealProposal.TransferParams, "http") {
+						return "http"
+					}
+					if strings.Contains(dealProposal.TransferParams, "https") {
+						return "https"
+					}
+					if strings.Contains(dealProposal.TransferParams, "ftp") {
+						return "ftp"
+					}
+					if strings.Contains(dealProposal.TransferParams, "ftps") {
+						return "ftps"
+					}
+					return "libp2p"
+				}(),
 				ClientID: fmt.Sprintf("%d", dbid),
 				Params:   transferParams,
 				Size:     netprop.Piece.RawBlockSize,

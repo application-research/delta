@@ -37,6 +37,10 @@ const (
 	DEAL_STATUS_TRANSFER_FINISHED = "transfer-finished"
 	DEAL_STATUS_TRANSFER_FAILED   = "transfer-failed"
 
+	BATCH_IMPORT_STATUS_COMPLETED = "completed"
+	BATCH_IMPORT_STATUS_FAILED    = "failed"
+	BATCH_IMPORT_STATUS_STARTED   = "started"
+
 	COMMP_STATUS_OPEN     = "open"
 	COMMP_STATUS_COMITTED = "committed"
 

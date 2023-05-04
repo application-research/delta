@@ -1,6 +1,16 @@
 # Getting Started
 Delta is a deal-making service that enables users to make deals with Storage Providers. It is an application that allows users to upload files to the Filecoin network and get them stored by Storage Providers.
 
+# Minimum hardware requirements
+
+- Processor: Any multi-core processor with a clock speed of at least 1.5 GHz. AMD based processors recommended (for commp).
+- RAM: RAM requirement will vary based on usage but At least 1 GB of RAM to run and process small datasets.
+- Hard Drive: Storage requirement will vary based on the dataset that Delta will process. At least 50 GB of storage space.
+- Operating System: Tested on MacOS, Linux. Reportedly works as expected on Windows.
+- Networking: A standard network interface card (NIC) with a speed of at least 100 Mbps. May vary depending on how large the data will be since online/e2e deals can use considerable amount of egress.
+
+**Note that these requirements may vary depending on the specific needs of your application.**
+
 # Running a delta node.
 A delta node is a light ipfs node that can run on set of machines and architectures. It's written in go and can be run on any machine that can run go.
 

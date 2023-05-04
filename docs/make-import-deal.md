@@ -28,7 +28,9 @@ In order to create a successful deal, Delta requires the following information `
   - `unverified_max_price` is used to make deals with miners that support the `unverified` deal state. This is the maximum price that the miner can charge for the deal.
   - If the `deal_verify_state` is `verified`, this field is ignored.
   - If the `deal_verify_state` is `unverified`, this field is used to make the deal.
-  
+- The `transfer_parameters` is an optional field that can be used to pull the data from remote URL source. 
+  - `url`: The url of the content to be stored. This is the information required to transfer the content to the miner. This is an optional field. If this field is not provided, the content is assumed to be available external manual import process.
+
 Here's the complete structure of the `metadata` request.
 ```
 {
@@ -36,6 +38,9 @@ Here's the complete structure of the `metadata` request.
     "miner":"f01963614",
     "wallet": {
         "address":"f1mmb3lx7lnzkwsvhridvpugnuzo4mq2xjmawvnfi"
+    },
+    "transfer_parameters": {
+        "url":"https://ipfs.io/ipfs/bafybeicgdjdvwes3e5aaicqljrlv6hpdfsducknrjvsq66d4gsvepolk6y"
     },
     "piece_commitment": {
         "piece_cid": "baga6ea4seaqhfvwbdypebhffobtxjyp4gunwgwy2ydanlvbe6uizm5hlccxqmeq",

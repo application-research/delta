@@ -21,6 +21,10 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 	fmt.Println(utils.Purple + "Subscribing to transfer channel events..." + utils.Reset)
 	i.FilClient.SubscribeToDataTransferEvents(func(event datatransfer.Event, channelState datatransfer.ChannelState) {
 		switch event.Code {
+		case datatransfer.DataQueued:
+			fmt.Println("Data Transfer Queued event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
+		case datatransfer.Complete:
+			fmt.Println("Data Transfer Complete event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
 		case datatransfer.Error, datatransfer.Disconnected, datatransfer.ReceiveDataError, datatransfer.Cancel, datatransfer.RequestTimedOut, datatransfer.SendDataError:
 			fmt.Println("Data Transfer Error event: ", event, " for transfer id: ", channelState.TransferID(), " for db id: ", channelState.BaseCID())
 		}
@@ -29,6 +33,7 @@ func SetDataTransferEventsSubscribe(i *DeltaNode) {
 
 // SetLibp2pManagerSubscribe It subscribes to the libp2p transfer manager and updates the database with the status of the transfer
 func SetLibp2pManagerSubscribe(i *DeltaNode) {
+
 	fmt.Println(utils.Purple + "Subscribing to transfer channel states..." + utils.Reset)
 	i.FilClient.Libp2pTransferMgr.Subscribe(func(dbid uint, fst fc.ChannelState) {
 		//fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)

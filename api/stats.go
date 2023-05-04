@@ -62,6 +62,10 @@ func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleGetStatsByContents(c, node)
 	})
 
+	e.GET("/stats/batch/imports/:batchId", func(c echo.Context) error {
+		return handleOpenGetStatsByAllContentsFromBatch(c, node)
+	})
+
 	e.GET("/stats/piece-commitment/:commitmentPieceId", func(c echo.Context) error {
 		return handleGetCommitmentPiece(c, node)
 	})

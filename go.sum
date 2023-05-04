@@ -88,6 +88,12 @@ github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
 github.com/application-research/delta-db v0.0.2-0.20230416042304-c1aecd417eae h1:9Ky8CpmByiU/ShDJtc+a3Bz7GwX1JXottI95DZ4eJHc=
 github.com/application-research/delta-db v0.0.2-0.20230416042304-c1aecd417eae/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
+github.com/application-research/delta-db v0.0.2-0.20230502142109-0d7cc107f7a5 h1:hA5omg7NRO+A1txR57Yr93svJoHL3kxncN2/epfdixo=
+github.com/application-research/delta-db v0.0.2-0.20230502142109-0d7cc107f7a5/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
+github.com/application-research/delta-db v0.0.2-0.20230503022747-f976c3a96a41 h1:fXybz4kbr5pppEdTGgLdHLb6ry8hq3DsdJ1chY+dMR8=
+github.com/application-research/delta-db v0.0.2-0.20230503022747-f976c3a96a41/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
+github.com/application-research/delta-db v0.0.2-0.20230504034024-a5e4190148d6 h1:LGMPeFvr8n+gRorQ1mX/PuvdXG4e0wfCLUVebPkyDcI=
+github.com/application-research/delta-db v0.0.2-0.20230504034024-a5e4190148d6/go.mod h1:LkFnhccvtKmSNHCatQNlKNjEAV/30w/e50n+A9hzCaU=
 github.com/application-research/filclient v0.5.0-rc1.0.20230331195738-9826f79f0648 h1:58+odb1yvlrhuWbmpcAu7IKN4/0+LOP8XjKP3JxOPGo=
 github.com/application-research/filclient v0.5.0-rc1.0.20230331195738-9826f79f0648/go.mod h1:HSCZh+v53XTGMwHGyoKpedQH+PlwcmKkMFCYx/Q3hMk=
 github.com/application-research/whypfs-core v0.1.1 h1:BY40N15Ge9BlyAT3f4T4B/CAlaL7A1RYaRrNS3HIyEk=
