@@ -285,7 +285,7 @@ func handleOpenGetStatsByAllContentsFromBatch(c echo.Context, node *core.DeltaNo
 
 	batchImportId := c.Param("batchId")
 	var contentIds []int64
-	node.DB.Raw("select content_id from batch_contents where batch_import_id = ?", batchImportId).Scan(&contentIds)
+	node.DB.Raw("select content_id from batch_import_contents where batch_import_id = ?", batchImportId).Scan(&contentIds)
 
 	var contentResponse []map[string]interface{}
 	for _, contentId := range contentIds {
