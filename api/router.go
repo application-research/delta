@@ -146,10 +146,12 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			return next(c)
 		}
 	})
+
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 	}))
+	
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.HTTPErrorHandler = ErrorHandler
 	apiGroup := e.Group("/api/v1")
