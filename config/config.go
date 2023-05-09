@@ -36,11 +36,11 @@ type DeltaConfig struct {
 		Version         string `env:"VERSION"`
 	}
 
-	Plugin struct {
-		AuthPlugin        string `env:"AUTH_API" envDefault:""`
-		SPThrottlerPlugin string `env:"SP_THROTTLER_API" envDefault:""`
-		SPSelectionPlugin string `env:"SP_SELECTION_API" envDefault:""`
-		EdgeNodePlugin    string `env:"EDGE_NODE_API" envDefault:""`
+	ExternalApis struct {
+		LotusApi       string `env:"LOTUS_API" envDefault:"http://api.chain.love"`
+		AuthSvcApi     string `env:"AUTH_SVC_API" envDefault:"https://auth.estuary.tech"`
+		SpThrottlerApi string `env:"SP_THROTTLER_SVC_API" envDefault:""`
+		SpSelectionApi string `env:"SP_SELECTION_SVC_API" envDefault:"https://sp-select.delta.store/api/providers"`
 	}
 
 	Standalone struct {

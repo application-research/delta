@@ -151,7 +151,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 	}))
-	
+
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.HTTPErrorHandler = ErrorHandler
 	apiGroup := e.Group("/api/v1")
@@ -247,7 +247,7 @@ func Authenticate(config config.DeltaConfig) func(next echo.HandlerFunc) echo.Ha
 			}
 			// if everything is good. we can check the token against estuary-auth.
 			response, err := http.Post(
-				utils.API_AUTH,
+				config.ExternalApis.AuthSvcApi+"/check-api-key",
 				"application/json",
 				strings.NewReader(fmt.Sprintf(`{"token": "%s"}`, authParts[1])),
 			)

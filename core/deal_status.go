@@ -28,7 +28,7 @@ func (d DealStatusService) GetDealStatus(param DealStatusParam) (DealStatusResul
 
 //func (d DealStatusService) GetDealID(param DealStatusParam) (DealStatusResult, error) {
 //	ctx := context.Background()
-//	d.DeltaNode.LotusApi.StateSearchMsg(ctx, types.EmptyTSK, pubcid, 1000, false)
+//	d.DeltaNode.LotusApiNode.StateSearchMsg(ctx, types.EmptyTSK, pubcid, 1000, false)
 //	return DealStatusResult{}, nil
 //}
 

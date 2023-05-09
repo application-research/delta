@@ -135,7 +135,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			i.LightNode.DB.Save(&contentToUpdate)
 			return errPrice
 		}
-		bigIntBalance, errBalance := i.LightNode.LotusApi.WalletBalance(context.Background(), filClient.ClientAddr)
+		bigIntBalance, errBalance := i.LightNode.LotusApiNode.WalletBalance(context.Background(), filClient.ClientAddr)
 		if errBalance != nil {
 			contentToUpdate.UpdatedAt = time.Now()
 			contentToUpdate.LastMessage = errBalance.Error()
@@ -225,7 +225,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
 			if content.AutoRetry {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
 				if errOnPv != nil {
 					// just fail it then
@@ -307,7 +307,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(err.Error(), "Error 2 (Worker balance too low)"),
 			strings.Contains(err.Error(), "send proposal rpc:"):
 			if content.AutoRetry {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
 				if errOnPv != nil {
 					// just fail it then
@@ -413,7 +413,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 			// re-assign a miner
 			if content.AutoRetry {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
 				if errOnPv != nil {
 					// just fail it then
@@ -543,7 +543,7 @@ func (i *StorageDealMakerProcessor) GetDealProposalForContent(content model.Cont
 
 // Creating a new filclient for the content.
 func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model.Content) (*fc.FilClient, error) {
-	api := i.LightNode.LotusApi
+	api := i.LightNode.LotusApiNode
 	var storageWalletAssignment model.ContentWallet
 	i.LightNode.DB.Model(&model.ContentWallet{}).Where("content = ?", content.ID).Find(&storageWalletAssignment)
 
