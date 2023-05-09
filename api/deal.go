@@ -732,7 +732,7 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 		//	assign a miner
 		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
+			minerAssignService := core.NewMinerAssignmentService(*node)
 			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(file.Size)
 			if errOnPv != nil {
 				return errOnPv
@@ -882,7 +882,7 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 
 			// TODO: Improve this, this is a hack to make sure the replication is done before the deal is made
-			contents := ReplicateContent(dealReplication, dealRequest, tx)
+			contents := ReplicateContent(node, dealReplication, dealRequest, tx)
 			var dispatchJobs core.IProcessor
 			for _, contentRep := range contents {
 				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep.Content) // straight to pieceCommp
@@ -995,7 +995,7 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 		//	assign a miner
 		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
+			minerAssignService := core.NewMinerAssignmentService(*node)
 			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 			if errOnPv != nil {
 				return errOnPv
@@ -1227,7 +1227,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 		//	assign a miner
 		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
+			minerAssignService := core.NewMinerAssignmentService(*node)
 			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 			if errOnPv != nil {
 				return errOnPv
@@ -1469,7 +1469,7 @@ func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error
 
 			//	assign a miner
 			if dealRequest.Miner == "" {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*node)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 				if errOnPv != nil {
 					return errOnPv
@@ -1730,7 +1730,7 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 
 			//	assign a miner
 			if dealRequest.Miner == "" {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*node)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 				if errOnPv != nil {
 					return errOnPv
@@ -1978,7 +1978,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 
 			//	assign a miner
 			if dealRequest.Miner == "" {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*node)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 				if errOnPv != nil {
 					return errOnPv
@@ -2320,7 +2320,7 @@ type ReplicatedContent struct {
 	DealResponse DealResponse
 }
 
-func ReplicateContent(contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
+func ReplicateContent(node *core.DeltaNode, contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
 	var replicatedContents []ReplicatedContent
 	for i := 0; i < dealRequest.Replication; i++ {
 		var replicatedContent ReplicatedContent
@@ -2346,7 +2346,7 @@ func ReplicateContent(contentSource DealReplication, dealRequest DealRequest, tx
 			return nil
 		}
 		//	assign a miner
-		minerAssignService := core.NewMinerAssignmentService()
+		minerAssignService := core.NewMinerAssignmentService(*node)
 		provider, errOnPv := minerAssignService.GetSPWithGivenBytes(newContent.Size)
 		if errOnPv != nil {
 			fmt.Println(errOnPv)

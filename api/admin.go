@@ -80,28 +80,28 @@ func handleAdminGetBalance(node *core.DeltaNode) func(c echo.Context) error {
 				"message": "invalid address",
 			})
 		}
-		bigIntBalance, err := node.LotusApi.WalletBalance(context.Background(), address)
+		bigIntBalance, err := node.LotusApiNode.WalletBalance(context.Background(), address)
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{
 				"message": "failed to get balance",
 			})
 		}
 
-		act, err := node.LotusApi.StateGetActor(context.Background(), address, types.EmptyTSK)
+		act, err := node.LotusApiNode.StateGetActor(context.Background(), address, types.EmptyTSK)
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{
 				"message": "failed to get actor",
 			})
 		}
 
-		market, err := node.LotusApi.StateMarketBalance(context.Background(), address, types.EmptyTSK)
+		market, err := node.LotusApiNode.StateMarketBalance(context.Background(), address, types.EmptyTSK)
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{
 				"message": "failed to get market balance",
 			})
 		}
 
-		vcstatus, err := node.LotusApi.StateVerifiedClientStatus(context.Background(), address, types.EmptyTSK)
+		vcstatus, err := node.LotusApiNode.StateVerifiedClientStatus(context.Background(), address, types.EmptyTSK)
 
 		if err != nil {
 			return c.JSON(500, map[string]interface{}{
