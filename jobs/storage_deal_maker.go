@@ -395,6 +395,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(errProp.Error(), "storage price per epoch less than asking price"),
 			strings.Contains(errProp.Error(), "miner connection failed: failed to dial"),
 			strings.Contains(errProp.Error(), "failed to dial"),
+			strings.Contains(errProp.Error(), "connection limited. rate: Wait(n=3) would exceed context deadline"),
 			strings.Contains(errProp.Error(), "deal proposal is identical to deal"),
 			strings.Contains(errProp.Error(), "provider has insufficient funds to accept deal"),
 			strings.Contains(errProp.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
