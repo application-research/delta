@@ -43,11 +43,9 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/labstack/gommon v0.4.0
 	github.com/libp2p/go-libp2p v0.23.4
-	github.com/machinebox/graphql v0.2.2
 	github.com/multiformats/go-multiaddr v0.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
-	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli/v2 v2.24.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/otel v1.14.0
@@ -164,16 +162,15 @@ require (
 	github.com/ipfs/go-ipfs-exchange-interface v0.2.0 // indirect
 	github.com/ipfs/go-ipfs-http-client v0.4.0 // indirect
 	github.com/ipfs/go-ipfs-posinfo v0.0.1 // indirect
-	github.com/ipfs/go-ipfs-pq v0.0.2 // indirect
+	github.com/ipfs/go-ipfs-pq v0.0.3 // indirect
 	github.com/ipfs/go-ipfs-provider v0.7.1 // indirect
-	github.com/ipfs/go-ipfs-routing v0.3.0 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.1 // indirect
 	github.com/ipfs/go-ipns v0.3.0 // indirect
-	github.com/ipfs/go-libipfs v0.4.0 // indirect
+	github.com/ipfs/go-libipfs v0.4.1 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
-	github.com/ipfs/go-peertaskqueue v0.8.0 // indirect
+	github.com/ipfs/go-peertaskqueue v0.8.1 // indirect
 	github.com/ipfs/go-unixfsnode v1.5.1 // indirect
 	github.com/ipfs/go-verifcid v0.0.2 // indirect
 	github.com/ipfs/interface-go-ipfs-core v0.7.0 // indirect
@@ -205,12 +202,9 @@ require (
 	github.com/libp2p/go-libp2p-http v0.4.0 // indirect
 	github.com/libp2p/go-libp2p-kad-dht v0.20.0 // indirect
 	github.com/libp2p/go-libp2p-kbucket v0.5.0 // indirect
-	github.com/libp2p/go-libp2p-peerstore v0.8.0 // indirect
 	github.com/libp2p/go-libp2p-pubsub v0.8.3 // indirect
 	github.com/libp2p/go-libp2p-record v0.2.0 // indirect
-	github.com/libp2p/go-libp2p-routing-helpers v0.6.0 // indirect
 	github.com/libp2p/go-libp2p-xor v0.1.0 // indirect
-	github.com/libp2p/go-maddr-filter v0.1.0 // indirect
 	github.com/libp2p/go-msgio v0.3.0 // indirect
 	github.com/libp2p/go-nat v0.1.0 // indirect
 	github.com/libp2p/go-netroute v0.2.1 // indirect
@@ -223,7 +217,6 @@ require (
 	github.com/marten-seemann/qtls-go1-18 v0.1.4 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.2 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
-	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-pointer v0.0.1 // indirect
@@ -264,6 +257,7 @@ require (
 	github.com/rs/cors v1.7.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
@@ -278,7 +272,6 @@ require (
 	github.com/whyrusleeping/go-bs-measure v0.0.0-20220728174732-077cd42cf89d // indirect
 	github.com/whyrusleeping/go-keyspace v0.0.0-20160322163242-5b898ac5add1 // indirect
 	github.com/whyrusleeping/ledger-filecoin-go v0.9.1-0.20201010031517-c3dcc1bddce4 // indirect
-	github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zondax/hid v0.9.1 // indirect
 	github.com/zondax/ledger-go v0.12.1 // indirect
