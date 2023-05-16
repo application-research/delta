@@ -65,18 +65,17 @@ func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
 	// get page number
 	page, err := strconv.Atoi(c.QueryParam("page"))
-	if err != nil {
+	if err != nil || page < 1 {
 		page = 1
 	}
 
 	// total
 	var total int64
-
 	node.DB.Model(&model.ContentDeal{}).Count(&total)
 
 	// get page size
 	pageSize, err := strconv.Atoi(c.QueryParam("page_size"))
-	if err != nil {
+	if err != nil || pageSize < 1 {
 		pageSize = 10
 	}
 
