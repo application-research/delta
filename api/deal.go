@@ -655,11 +655,6 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	file, err := c.FormFile("data") // file
 	meta := c.FormValue("metadata")
 
-	// validate the file if it's more than 1mb
-	if file.Size < 1000000 {
-		return errors.New("File size is too small")
-	}
-
 	//	validate the meta
 	err = json.Unmarshal([]byte(meta), &dealRequest)
 	if err != nil {
@@ -674,6 +669,11 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	dealRequest.ConnectionMode = "e2e"
 
 	err = ValidateMeta(dealRequest, node)
+
+	// validate the file if it's more than 1mb
+	if file.Size < 1000000 && dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+		return errors.New("File size is too small")
+	}
 
 	if err != nil {
 		// return the error from the validation
