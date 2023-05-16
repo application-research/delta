@@ -1,7 +1,6 @@
 package core
 
 import (
-	"delta/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -47,18 +46,22 @@ type Provider struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type MinerAssignmentService struct{}
+type MinerAssignmentService struct {
+	DeltaNode DeltaNode
+}
 
 // GetSPInfo
-func NewMinerAssignmentService() MinerAssignmentService {
-	return MinerAssignmentService{}
+func NewMinerAssignmentService(node DeltaNode) *MinerAssignmentService {
+	return &MinerAssignmentService{
+		DeltaNode: node,
+	}
 }
 
 // A function that takes in a parameter, byteSize, and returns a Provider and an error.
 func (m MinerAssignmentService) GetSPWithGivenBytes(byteSize int64) (Provider, error) {
 	bytSizeStr := fmt.Sprintf("%d", byteSize)
-	fmt.Println("Getting SP with given bytes: ", utils.SP_SELECTION_API+"?size_bytes="+bytSizeStr)
-	resp, err := http.Get(utils.SP_SELECTION_API + "?size_bytes=" + bytSizeStr)
+	fmt.Println("Getting SP with given bytes: ", m.DeltaNode.Config.ExternalApis.SpSelectionApi+"?size_bytes="+bytSizeStr)
+	resp, err := http.Get(m.DeltaNode.Config.ExternalApis.SpSelectionApi + "?size_bytes=" + bytSizeStr)
 	if err != nil {
 		// handle error
 		fmt.Println("Error making HTTP request:", err)
@@ -79,7 +82,7 @@ func (m MinerAssignmentService) GetSPWithGivenBytes(byteSize int64) (Provider, e
 
 // A function that takes in two parameters, byteSize and sourceIp, and returns a Provider and an error.
 func (m MinerAssignmentService) GetSPWithGivenBytesAndIp(byteSize string, sourceIp string) (Provider, error) {
-	resp, err := http.Get(utils.SP_SELECTION_API + "?size_bytes=" + byteSize + "&source_ip=" + sourceIp)
+	resp, err := http.Get(m.DeltaNode.Config.ExternalApis.SpSelectionApi + "?size_bytes=" + byteSize + "&source_ip=" + sourceIp)
 	if err != nil {
 		// handle error
 		fmt.Println("Error making HTTP request:", err)

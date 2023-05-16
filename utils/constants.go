@@ -50,10 +50,6 @@ const (
 	DEAL_VERIFIED   = "verified"
 	DEAL_UNVERIFIED = "unverified"
 
-	LOTUS_API        = "http://api.chain.love"
-	API_AUTH         = "https://auth.estuary.tech/check-api-key"
-	SP_SELECTION_API = "https://sp-select.delta.store/api/providers"
-
 	EPOCH_540_DAYS              = 1555200
 	EPOCH_PER_DAY               = 2880
 	EPOCH_PER_HOUR              = 60 * 2

@@ -62,15 +62,15 @@ import (
 // client.
 // websocket clients.
 type DeltaNode struct {
-	Context    context.Context
-	Node       *whypfs.Node
-	Api        url.URL
-	DB         *gorm.DB
-	FilClient  *fc.FilClient
-	LotusApi   v1api.FullNode
-	Config     *c.DeltaConfig
-	Dispatcher *Dispatcher
-	MetaInfo   *model.InstanceMeta
+	Context      context.Context
+	Node         *whypfs.Node
+	Api          url.URL
+	DB           *gorm.DB
+	FilClient    *fc.FilClient
+	LotusApiNode v1api.FullNode
+	Config       *c.DeltaConfig
+	Dispatcher   *Dispatcher
+	MetaInfo     *model.InstanceMeta
 
 	DeltaEventEmitter  *DeltaEventEmitter
 	DeltaMetricsTracer *DeltaMetricsTracer
@@ -169,6 +169,15 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 
 	//	database
 	db, err := model.OpenDatabase(repo.Config.Common.DBDSN)
+	sqldb, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqldb.SetMaxIdleConns(250)
+	sqldb.SetMaxOpenConns(250)
+	sqldb.SetConnMaxIdleTime(time.Hour)
+	sqldb.SetConnMaxLifetime(time.Hour)
+
 	publicIp, err := GetPublicIP()
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{
@@ -198,7 +207,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	whypfsPeer.BootstrapPeers(c.BootstrapEstuaryPeers())
 
 	//	filclient
-	api, _, err := LotusConnection(utils.LOTUS_API)
+	api, _, err := LotusConnection(repo.Config.ExternalApis.LotusApi)
 
 	// set up wallet
 	wallet, err := SetupWallet(repo.DefaultWalletDir)
@@ -267,12 +276,12 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	//tracer := otel.Tracer("example")
 	// create the global light node.
 	return &DeltaNode{
-		Node:       whypfsPeer,
-		DB:         db,
-		FilClient:  filclient,
-		Dispatcher: dispatcher,
-		LotusApi:   api,
-		Config:     repo.Config,
+		Node:         whypfsPeer,
+		DB:           db,
+		FilClient:    filclient,
+		Dispatcher:   dispatcher,
+		LotusApiNode: api,
+		Config:       repo.Config,
 		DeltaMetricsTracer: &DeltaMetricsTracer{
 			DeltaDataReporter: dataTracer,
 		},
@@ -385,7 +394,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	fmt.Printf("Total number of CPUs: %d\n", numCPU)
 	fmt.Printf("Number of CPUs that this Delta will use: %d\n", numCPU/(1200/1000))
 	fmt.Println(utils.Purple + "Note: Delta instance proactively recalculate resources to use based on the current load." + utils.Reset)
-	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
+	runtime.GOMAXPROCS(numCPU)
 
 	// delete all data from the instance meta table
 	//ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)

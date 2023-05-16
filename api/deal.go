@@ -249,7 +249,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 		var dealResponses []DealResponse
 		for _, dealRequest := range dealRequests {
-			err = ValidateMeta(dealRequest)
+			err = ValidateMeta(dealRequest, node)
 			if err != nil {
 				// return the error from the validation
 				return err
@@ -452,7 +452,7 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
 	err := c.Bind(&dealRequest)
-	err = ValidateMeta(dealRequest)
+	err = ValidateMeta(dealRequest, node)
 	if err != nil {
 		// return the error from the validation
 		return err
@@ -668,7 +668,12 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	// fail safe
 	dealRequest.ConnectionMode = "e2e"
 
-	err = ValidateMeta(dealRequest)
+	err = ValidateMeta(dealRequest, node)
+
+	// validate the file if it's more than 1mb
+	if file.Size < 1000000 && dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+		return errors.New("File size is too small")
+	}
 
 	if err != nil {
 		// return the error from the validation
@@ -732,7 +737,7 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 		//	assign a miner
 		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
+			minerAssignService := core.NewMinerAssignmentService(*node)
 			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(file.Size)
 			if errOnPv != nil {
 				return errOnPv
@@ -882,7 +887,7 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 
 			// TODO: Improve this, this is a hack to make sure the replication is done before the deal is made
-			contents := ReplicateContent(dealReplication, dealRequest, tx)
+			contents := ReplicateContent(node, dealReplication, dealRequest, tx)
 			var dispatchJobs core.IProcessor
 			for _, contentRep := range contents {
 				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep.Content) // straight to pieceCommp
@@ -940,13 +945,13 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	dealRequest.ConnectionMode = "e2e"
-	err = ValidateMeta(dealRequest)
+	err = ValidateMeta(dealRequest, node)
 
 	if err != nil {
 		return err
 	}
 
-	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment, node)
 	if err != nil {
 		return err
 	}
@@ -995,7 +1000,7 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 		//	assign a miner
 		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
+			minerAssignService := core.NewMinerAssignmentService(*node)
 			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 			if errOnPv != nil {
 				return errOnPv
@@ -1172,13 +1177,13 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 	}
 
 	dealRequest.ConnectionMode = "import"
-	err = ValidateMeta(dealRequest)
+	err = ValidateMeta(dealRequest, node)
 
 	if err != nil {
 		return err
 	}
 
-	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment, node)
 	if err != nil {
 		return err
 	}
@@ -1227,7 +1232,7 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 		//	assign a miner
 		if dealRequest.Miner == "" {
-			minerAssignService := core.NewMinerAssignmentService()
+			minerAssignService := core.NewMinerAssignmentService(*node)
 			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 			if errOnPv != nil {
 				return errOnPv
@@ -1414,13 +1419,13 @@ func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error
 				return errors.New("Connection mode import is not supported on this online endpoint")
 			}
 			dealRequest.ConnectionMode = "e2e"
-			err = ValidateMeta(dealRequest)
+			err = ValidateMeta(dealRequest, node)
 			if err != nil {
 				tx.Rollback()
 				return err
 			}
 
-			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment, node)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -1469,7 +1474,7 @@ func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error
 
 			//	assign a miner
 			if dealRequest.Miner == "" {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*node)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 				if errOnPv != nil {
 					return errOnPv
@@ -1665,13 +1670,13 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 				return errors.New("Connection mode e2e is not supported on this import endpoint")
 			}
 			dealRequest.ConnectionMode = "import"
-			err = ValidateMeta(dealRequest)
+			err = ValidateMeta(dealRequest, node)
 			if err != nil {
 				fmt.Println("Error validating the meta", err)
 				return err
 			}
 
-			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment, node)
 			if err != nil {
 				fmt.Println("Error validating the piece commitment meta", err)
 				return err
@@ -1730,7 +1735,7 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 
 			//	assign a miner
 			if dealRequest.Miner == "" {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*node)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 				if errOnPv != nil {
 					return errOnPv
@@ -1923,13 +1928,13 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				return errors.New("Connection mode e2e is not supported on this import endpoint")
 			}
 			dealRequest.ConnectionMode = "import"
-			err = ValidateMeta(dealRequest)
+			err = ValidateMeta(dealRequest, node)
 			if err != nil {
 				tx.Rollback()
 				return err
 			}
 
-			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment)
+			err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment, node)
 			if err != nil {
 				tx.Rollback()
 				return err
@@ -1978,7 +1983,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 
 			//	assign a miner
 			if dealRequest.Miner == "" {
-				minerAssignService := core.NewMinerAssignmentService()
+				minerAssignService := core.NewMinerAssignmentService(*node)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
 				if errOnPv != nil {
 					return errOnPv
@@ -2191,7 +2196,7 @@ type ValidateMetaResult struct {
 }
 
 // ValidatePieceCommitmentMeta `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
-func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest) error {
+func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest, node *core.DeltaNode) error {
 	if (PieceCommitmentRequest{} == pieceCommitmentRequest) {
 		return errors.New("invalid piece_commitment request. piece_commitment is required")
 	}
@@ -2200,7 +2205,7 @@ func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest) 
 }
 
 // It validates the deal request and returns an error if the request is invalid
-func ValidateMeta(dealRequest DealRequest) error {
+func ValidateMeta(dealRequest DealRequest, node *core.DeltaNode) error {
 
 	if (DealRequest{} == dealRequest) {
 		return errors.New("invalid deal request")
@@ -2234,8 +2239,8 @@ func ValidateMeta(dealRequest DealRequest) error {
 		return errors.New("start_epoch_in_days is required when duration_in_days is set")
 	}
 
-	if (DealRequest{} != dealRequest && dealRequest.Replication > 6) {
-		return errors.New("replication factor can only be up to 6")
+	if (DealRequest{} != dealRequest && dealRequest.Replication > node.Config.Common.MaxReplicationFactor) {
+		return errors.New("replication factor can only be up to " + strconv.Itoa(node.Config.Common.MaxReplicationFactor))
 	}
 
 	if (DealRequest{} != dealRequest && dealRequest.StartEpochInDays > 0 && dealRequest.DurationInDays == 0) {
@@ -2320,7 +2325,7 @@ type ReplicatedContent struct {
 	DealResponse DealResponse
 }
 
-func ReplicateContent(contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
+func ReplicateContent(node *core.DeltaNode, contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
 	var replicatedContents []ReplicatedContent
 	for i := 0; i < dealRequest.Replication; i++ {
 		var replicatedContent ReplicatedContent
@@ -2346,7 +2351,7 @@ func ReplicateContent(contentSource DealReplication, dealRequest DealRequest, tx
 			return nil
 		}
 		//	assign a miner
-		minerAssignService := core.NewMinerAssignmentService()
+		minerAssignService := core.NewMinerAssignmentService(*node)
 		provider, errOnPv := minerAssignService.GetSPWithGivenBytes(newContent.Size)
 		if errOnPv != nil {
 			fmt.Println(errOnPv)

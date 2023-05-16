@@ -16,8 +16,8 @@ var (
 type DeltaConfig struct {
 	Node struct {
 		Name         string `env:"NODE_NAME" envDefault:"delta-deal-maker"`
-		Description  string `env:"NODE_DESCRIPTION"`
-		Type         string `env:"NODE_TYPE"`
+		Description  string `env:"NODE_DESCRIPTION" envDefault:"delta-deal-maker"`
+		Type         string `env:"NODE_TYPE" envDefault:"delta-deal-maker"`
 		InstanceUuid string `env:"INSTANCE_UUID"`
 		KeepCopies   bool   `env:"KEEP_COPIES" envDefault:"false"`
 	}
@@ -27,20 +27,24 @@ type DeltaConfig struct {
 	}
 
 	Common struct {
-		Mode            string `env:"MODE" envDefault:"standalone"`
-		DBDSN           string `env:"DB_DSN" envDefault:"delta.db"`
-		EnableWebsocket bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
-		CommpMode       string `env:"COMMP_MODE" envDefault:"fast"` // option "filboost"
-		StatsCollection bool   `env:"STATS_COLLECTION" envDefault:"true"`
-		Commit          string `env:"COMMIT"`
-		Version         string `env:"VERSION"`
+		Mode                 string `env:"MODE" envDefault:"standalone"`
+		DBDSN                string `env:"DB_DSN" envDefault:"delta.db"`
+		EnableWebsocket      bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
+		CommpMode            string `env:"COMMP_MODE" envDefault:"fast"` // option "filboost"
+		StatsCollection      bool   `env:"STATS_COLLECTION" envDefault:"true"`
+		Commit               string `env:"COMMIT"`
+		Version              string `env:"VERSION"`
+		MaxReplicationFactor int    `env:"MAX_REPLICATION_FACTOR" envDefault:"6"`
+		MaxAutoRetry         int    `env:"MAX_AUTO_RETRY" envDefault:"10"`
 	}
 
-	Plugin struct {
-		AuthPlugin        string `env:"AUTH_API" envDefault:""`
-		SPThrottlerPlugin string `env:"SP_THROTTLER_API" envDefault:""`
-		SPSelectionPlugin string `env:"SP_SELECTION_API" envDefault:""`
-		EdgeNodePlugin    string `env:"EDGE_NODE_API" envDefault:""`
+	// configurable via env vars
+	ExternalApis struct {
+		LotusApi       string `env:"LOTUS_API" envDefault:"http://api.chain.love"`
+		AuthSvcApi     string `env:"AUTH_SVC_API" envDefault:"https://auth.estuary.tech"`
+		SpThrottlerApi string `env:"SP_THROTTLER_SVC_API" envDefault:"https://sp-throttler.delta.store"`
+		SpSelectionApi string `env:"SP_SELECTION_SVC_API" envDefault:"https://sp-select.delta.store/api/providers"`
+		DealStatusApi  string `env:"DEAL_STATUS_API" envDefault:"https://deal-status.estuary.tech"`
 	}
 
 	Standalone struct {

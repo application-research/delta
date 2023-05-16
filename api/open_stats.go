@@ -65,30 +65,46 @@ func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
 	// get page number
 	page, err := strconv.Atoi(c.QueryParam("page"))
-	if err != nil {
+	if err != nil || page < 1 {
 		page = 1
 	}
 
 	// total
 	var total int64
-
 	node.DB.Model(&model.ContentDeal{}).Count(&total)
 
 	// get page size
 	pageSize, err := strconv.Atoi(c.QueryParam("page_size"))
-	if err != nil {
+	if err != nil || pageSize < 1 {
 		pageSize = 10
 	}
 
-	// get deals
 	var deals []model.ContentDeal
-	node.DB.Raw("SELECT c1.* FROM content_deals c1 JOIN ( SELECT MAX(id) AS max_id, content FROM content_deals GROUP BY content ) c2 ON c1.id = c2.max_id ORDER BY c1.id DESC").Limit(pageSize).Offset((page - 1) * pageSize).Find(&deals)
+
+	// Subquery to find the latest deal for each content
+	subQuery := node.DB.Table("content_deals").
+		Select("MAX(id) AS max_id, content").
+		Group("content")
+
+	// Execute main query with LIMIT and OFFSET clauses for paging
+	err = node.DB.Table("content_deals c1").
+		Select("c1.*").
+		Joins("JOIN (?) c2 ON c1.id = c2.max_id", subQuery).
+		Order("c1.id DESC").
+		Limit(pageSize).
+		Offset((page - 1) * pageSize).
+		Find(&deals).Error
+
+	if err != nil {
+		return err
+	}
 
 	return c.JSON(200, map[string]interface{}{
-		"total":         total,
-		"page":          page,
-		"content_deals": deals,
+		"page":  page,
+		"total": total,
+		"deals": deals,
 	})
+
 }
 
 // It gets the content deal, content, content deal proposal, and piece commitment from the database and returns them as
