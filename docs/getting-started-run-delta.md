@@ -2,12 +2,14 @@
 Delta is a deal-making service that enables users to make deals with Storage Providers. It is an application that allows users to upload files to the Filecoin network and get them stored by Storage Providers.
 
 # Minimum hardware requirements
-
 - Processor: Any multi-core processor with a clock speed of at least 1.5 GHz. AMD based processors recommended (for commp).
-- RAM: RAM requirement will vary based on usage but At least 1 GB of RAM to run and process small datasets.
+- RAM: RAM requirement will vary based on usage but At least 2 GB of RAM to run and process small datasets.
 - Hard Drive: Storage requirement will vary based on the dataset that Delta will process. At least 50 GB of storage space.
-- Operating System: Tested on MacOS, Linux. Reportedly works as expected on Windows.
+- Operating System: Tested on MacOS, Linux. Reportedly works as expected on Windows. Most of the Production Deltas are running on Ubuntu latest version.
 - Networking: A standard network interface card (NIC) with a speed of at least 100 Mbps. May vary depending on how large the data will be since online/e2e deals can use considerable amount of egress.
+  - Ingress: Expose port 1414 (this is the port for the REST API endpoints).
+  - Ingress/Egress: Expose port 6745. This is the announce address port to allow the Delta peer to connect to different IPFS peer nodes.
+
 
 **Note that these requirements may vary depending on the specific needs of your application.**
 
