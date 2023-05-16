@@ -169,6 +169,15 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 
 	//	database
 	db, err := model.OpenDatabase(repo.Config.Common.DBDSN)
+	sqldb, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqldb.SetMaxIdleConns(250)
+	sqldb.SetMaxOpenConns(250)
+	sqldb.SetConnMaxIdleTime(time.Hour)
+	sqldb.SetConnMaxLifetime(time.Hour)
+
 	publicIp, err := GetPublicIP()
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{
@@ -385,7 +394,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	fmt.Printf("Total number of CPUs: %d\n", numCPU)
 	fmt.Printf("Number of CPUs that this Delta will use: %d\n", numCPU/(1200/1000))
 	fmt.Println(utils.Purple + "Note: Delta instance proactively recalculate resources to use based on the current load." + utils.Reset)
-	runtime.GOMAXPROCS(numCPU / (1200 / 1000))
+	runtime.GOMAXPROCS(numCPU)
 
 	// delete all data from the instance meta table
 	//ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)

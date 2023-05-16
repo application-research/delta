@@ -35,6 +35,7 @@ type DeltaConfig struct {
 		Commit               string `env:"COMMIT"`
 		Version              string `env:"VERSION"`
 		MaxReplicationFactor int    `env:"MAX_REPLICATION_FACTOR" envDefault:"6"`
+		MaxAutoRetry         int    `env:"MAX_AUTO_RETRY" envDefault:"10"`
 	}
 
 	// configurable via env vars

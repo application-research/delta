@@ -225,6 +225,19 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(err.Error(), "opening stream to miner: failed to open stream to peer: protocol not supported"),
 			strings.Contains(err.Error(), "error getting deal protocol for miner connecting"):
 			if content.AutoRetry {
+				// check the auto retry limit if it's reached then stop retrying
+				var dealCount int64
+				i.LightNode.DB.Model(&model.ContentDeal{}).Where("content = ?", content.ID).Count(&dealCount)
+				if int(dealCount) >= i.LightNode.Config.Common.MaxAutoRetry {
+					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+						LastMessage: "Retry limit reached",
+						AutoRetry:   false,
+						UpdatedAt:   time.Now(),
+					})
+					return nil
+				}
+
 				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
 				if errOnPv != nil {
@@ -307,6 +320,17 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			strings.Contains(err.Error(), "Error 2 (Worker balance too low)"),
 			strings.Contains(err.Error(), "send proposal rpc:"):
 			if content.AutoRetry {
+				var dealCount int64
+				i.LightNode.DB.Model(&model.ContentDeal{}).Where("content = ?", content.ID).Count(&dealCount)
+				if int(dealCount) >= i.LightNode.Config.Common.MaxAutoRetry {
+					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+						LastMessage: "Retry limit reached",
+						AutoRetry:   false,
+						UpdatedAt:   time.Now(),
+					})
+					return nil
+				}
 				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
 				if errOnPv != nil {
@@ -414,6 +438,18 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 			// re-assign a miner
 			if content.AutoRetry {
+				// check the auto retry limit if it's reached then stop retrying
+				var dealCount int64
+				i.LightNode.DB.Model(&model.ContentDeal{}).Where("content = ?", content.ID).Count(&dealCount)
+				if int(dealCount) >= i.LightNode.Config.Common.MaxAutoRetry {
+					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+						LastMessage: "Retry limit reached",
+						AutoRetry:   false,
+						UpdatedAt:   time.Now(),
+					})
+					return nil
+				}
 				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
 				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
 				if errOnPv != nil {
