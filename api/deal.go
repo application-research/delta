@@ -95,15 +95,11 @@ var statsService *core.StatsService
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	statsService = core.NewStatsStatsService(node)
-	//replicationService = core.NewReplicationService(node)
 	dealMake := e.Group("/deal")
 
 	// upload limiter middleware
 	dealMake.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return checkMetaFlags(next, node)
-	})
-	dealMake.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return checkResourceLimits(next, node)
 	})
 
 	dealPrepare := dealMake.Group("/prepare")
