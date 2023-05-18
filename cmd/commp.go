@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"delta/api"
+	"delta/api/models"
 	c "delta/config"
 	"delta/core"
 	"delta/utils"
@@ -23,10 +23,10 @@ import (
 )
 
 type PieceCommitmentResult struct {
-	FileName        string                     `json:"file_name,omitempty"`
-	Size            int64                      `json:"size,omitempty"`
-	Cid             string                     `json:"cid,omitempty"`
-	PieceCommitment api.PieceCommitmentRequest `json:"piece_commitment,omitempty"`
+	FileName        string                        `json:"file_name,omitempty"`
+	Size            int64                         `json:"size,omitempty"`
+	Cid             string                        `json:"cid,omitempty"`
+	PieceCommitment models.PieceCommitmentRequest `json:"piece_commitment,omitempty"`
 }
 
 type FilclientCommp struct {

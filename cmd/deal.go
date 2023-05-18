@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"bytes"
-	"delta/api"
+	"delta/api/models"
 	c "delta/config"
 	"delta/utils"
 	"encoding/json"
@@ -15,8 +15,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type DealMetadata api.DealRequest
-type DealResponse api.DealResponse
+type DealMetadata models.DealRequest
+type DealResponse models.DealResponse
 
 func DealCmd(cfg *c.DeltaConfig) []*cli.Command {
 	// add a command to run API node

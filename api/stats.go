@@ -8,16 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type StatsCheckResponse struct {
-	Content struct {
-		ID      int64  `json:"id"`
-		Name    string `json:"name"`
-		Cid     string `json:"cid,omitempty"`
-		Status  string `json:"status"`
-		Message string `json:"message,omitempty"`
-	} `json:"content"`
-}
-
 // ConfigureStatsCheckRouter Creating a new router and adding a route to it.
 // It configures the router for the stats check API
 func ConfigureStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {

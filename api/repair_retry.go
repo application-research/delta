@@ -1,6 +1,7 @@
 package api
 
 import (
+	. "delta/api/models"
 	"delta/core"
 	"delta/jobs"
 	"delta/utils"
@@ -10,27 +11,6 @@ import (
 	"strings"
 	"time"
 )
-
-type RetryDealResponse struct {
-	Status       string      `json:"status"`
-	Message      string      `json:"message"`
-	NewContentId int64       `json:"new_content_id,omitempty"`
-	OldContentId interface{} `json:"old_content_id,omitempty"`
-}
-
-type MultipleImportRequest struct {
-	ContentID   string      `json:"content_id"`
-	DealRequest DealRequest `json:"metadata"`
-}
-
-type ImportRetryRequest struct {
-	ContentIds []string `json:"content_ids"`
-}
-type ImportRetryResponse struct {
-	Message     string        `json:"message"`
-	Content     model.Content `json:"content"`
-	DealRequest DealRequest   `json:"metadata"`
-}
 
 // ConfigureRepairRouter repair deals (re-create or re-try)
 // It's a function that configures the repair router
