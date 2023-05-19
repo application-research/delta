@@ -4,6 +4,7 @@ import (
 	"context"
 	"delta/core"
 	"delta/utils"
+	"fmt"
 	"io"
 	"time"
 
@@ -138,6 +139,27 @@ func (i PieceCommpProcessor) Run() error {
 		// put this back to the queue
 		i.LightNode.Dispatcher.AddJobAndDispatch(NewPieceCommpProcessor(i.LightNode, i.Content), 1)
 		return err
+	}
+
+	// inclusion proofs
+	if i.LightNode.Config.Common.EnableInclusionProofs {
+		// generate inclusion proof
+		svc := core.NewInclusionProofService(*i.LightNode)
+		proof, errProof := svc.GenerateInclusionProof(abi.PieceInfo{
+			Size:     paddedPieceSize,
+			PieceCID: pieceCid,
+		}, paddedPieceSize)
+		if errProof != nil {
+			i.LightNode.DB.Model(&i.Content).Where("id = ?", i.Content.ID).Updates(model.Content{
+				Status:      utils.CONTENT_FAILED_TO_PROCESS,
+				LastMessage: errProof.Error(),
+				UpdatedAt:   time.Now(),
+			})
+			return err
+		}
+
+		// save this proof to the database
+		fmt.Println(proof)
 	}
 
 	// save the commp to the database

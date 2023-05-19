@@ -27,15 +27,16 @@ type DeltaConfig struct {
 	}
 
 	Common struct {
-		Mode                 string `env:"MODE" envDefault:"standalone"`
-		DBDSN                string `env:"DB_DSN" envDefault:"delta.db"`
-		EnableWebsocket      bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
-		CommpMode            string `env:"COMMP_MODE" envDefault:"fast"` // option "filboost"
-		StatsCollection      bool   `env:"STATS_COLLECTION" envDefault:"true"`
-		Commit               string `env:"COMMIT"`
-		Version              string `env:"VERSION"`
-		MaxReplicationFactor int    `env:"MAX_REPLICATION_FACTOR" envDefault:"6"`
-		MaxAutoRetry         int    `env:"MAX_AUTO_RETRY" envDefault:"3"`
+		Mode                  string `env:"MODE" envDefault:"standalone"`
+		DBDSN                 string `env:"DB_DSN" envDefault:"delta.db"`
+		EnableWebsocket       bool   `env:"ENABLE_WEBSOCKET" envDefault:"false"`
+		CommpMode             string `env:"COMMP_MODE" envDefault:"fast"` // option "filboost"
+		StatsCollection       bool   `env:"STATS_COLLECTION" envDefault:"true"`
+		Commit                string `env:"COMMIT"`
+		Version               string `env:"VERSION"`
+		MaxReplicationFactor  int    `env:"MAX_REPLICATION_FACTOR" envDefault:"6"`
+		MaxAutoRetry          int    `env:"MAX_AUTO_RETRY" envDefault:"3"`
+		EnableInclusionProofs bool   `env:"ENABLE_INCLUSION_PROOFS" envDefault:"false"`
 	}
 
 	// configurable via env vars

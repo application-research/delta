@@ -93,6 +93,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			statsCollection := c.Bool("stats-collection")
 			commpMode := c.String("commp-mode")
 			keepCopies := c.Bool("keep-copies")
+			enableInclusionProofs := c.Bool("enable-inclusion-proofs")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -106,6 +107,10 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.Mode = "cluster"
 			} else {
 				cfg.Common.Mode = mode
+			}
+
+			if enableInclusionProofs {
+				cfg.Common.EnableInclusionProofs = true
 			}
 
 			cfg.Common.EnableWebsocket = enableWebsocket
