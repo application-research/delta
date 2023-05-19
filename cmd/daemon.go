@@ -67,6 +67,11 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "enable miner throttle or not",
 				Value: false,
 			},
+			&cli.BoolFlag{
+				Name:  "enable-inclusion-proofs",
+				Usage: "enable inclusion proofs or not",
+				Value: false,
+			},
 		},
 
 		Action: func(c *cli.Context) error {

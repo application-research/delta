@@ -27,10 +27,8 @@ import (
 
 var statsService *core.StatsService
 
-// ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
-// to the echo.Group
-// `ConfigureDealRouter` is a function that takes a `Group` and a `DeltaNode` and configures the `Group` to handle the
-// `DeltaNode`'s deal-making functionality
+// ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer
+// to a DeltaNode, and then it adds a bunch of routes to the echo.Group
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	statsService = core.NewStatsStatsService(node)
@@ -98,10 +96,9 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 	})
 }
 
-// > check if the sum(size) transfer-started and created_at within instance_start time
-//
-// The above function is a middleware that checks if the sum of the size of all the files that have been transferred and
-// created_at within instance_start time
+// checkMetaFlags checks if the request is disabled or if the node is in maintenance mode
+// This function takes in a handler function and a DeltaNode object and returns a function that checks for meta flags in
+// the context before calling the handler.
 func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
@@ -128,6 +125,7 @@ func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Con
 	}
 }
 
+// checkResourceLimits checks if the sum of the size of all the files that are currently being transferred is greater
 // It checks if the sum of the size of all the files that are currently being transferred is greater than the number of
 // CPUs multiplied by the number of bytes per CPU. If it is, then it returns an error
 func checkResourceLimits(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
@@ -375,7 +373,7 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 // handleExistingContentAdd handles the request to add content to the network
 // @Summary Add content to the network
 // @Description Add content to the network
-// @Tags Content
+// @Tags deal
 // @Accept  json
 // @Produce  json
 func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
@@ -582,6 +580,11 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
+// handleEndToEndDeal This function handles the end-to-end deal process for a given
+// @Summary End-to-end deal
+// @Description This endpoint allows you to make a deal request with a single request
+// @Tags deal
+// file and metadata in a Go application.
 func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -863,6 +866,10 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
+// handleOnlineImportDeal handles the online import deal request
+// This function handles an online import deal request by validating the request,
+// creating a piece commitment record, assigning a miner, creating a wallet request object,
+// creating a content deal proposal, and dispatching a storage deal making job.
 func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -1092,7 +1099,7 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 // handleImportDeal handles the request to add a commp record.
 // @Summary Add a commp record
 // @Description Add a commp record
-// @Tags deals
+// @Tags deal
 // @Accept  json
 // @Produce  json
 func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
@@ -1334,6 +1341,10 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
+// handleMultipleOnlineImportDeals handles multiple online import deals.
+// This function handles multiple online import deals by validating the request,
+// creating a piece commitment, assigning a miner and wallet, creating a content deal proposal,
+// and dispatching a storage deal making job.
 func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -1566,6 +1577,8 @@ func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error
 	return nil
 }
 
+// handleMultipleBatchImportDeals handles multiple deals in a single request
+// This function handles the import of multiple deals in batches.
 func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -2086,7 +2099,10 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
-// It takes a contentId as a parameter, looks up the status of the content, and returns the status as JSON
+// handleContentStats is a function or method in the Go programming language.
+// The above code is not complete and does not provide enough information to determine what it is doing.
+// It appears to be a function or method named "handleContentStats" in the Go programming language, but without the rest of the code or
+// context, it is impossible to determine its purpose or functionality.
 func handleContentStats(c echo.Context, statsService core.StatsService) error {
 	contentIdParam := c.Param("contentId")
 	contentId, err := strconv.Atoi(contentIdParam)
@@ -2106,7 +2122,8 @@ func handleContentStats(c echo.Context, statsService core.StatsService) error {
 	return c.JSON(200, status)
 }
 
-// It takes a piece commitment ID, looks up the status of the piece commitment, and returns the status
+// handleCommitmentPieceStats is a function or method in the Go programming language.
+// This function handles commitment piece statistics in a Go web application using a StatsService.
 func handleCommitmentPieceStats(c echo.Context, statsService core.StatsService) error {
 	pieceCommitmentIdParam := c.Param("piece-commitmentId")
 	pieceCommitmentId, err := strconv.Atoi(pieceCommitmentIdParam)
@@ -2131,15 +2148,16 @@ type ValidateMetaResult struct {
 }
 
 // ValidatePieceCommitmentMeta `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
+// This function validates a piece commitment request against a DeltaNode in Go.
 func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest, node *core.DeltaNode) error {
 	if (PieceCommitmentRequest{} == pieceCommitmentRequest) {
 		return errors.New("invalid piece_commitment request. piece_commitment is required")
 	}
-
 	return nil
 }
 
-// It validates the deal request and returns an error if the request is invalid
+// ValidateMeta `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
+// The function validates metadata for a deal request in Go programming language.
 func ValidateMeta(dealRequest DealRequest, node *core.DeltaNode) error {
 
 	if (DealRequest{} == dealRequest) {
@@ -2260,6 +2278,8 @@ type ReplicatedContent struct {
 	DealResponse DealResponse
 }
 
+// ReplicateContent replicates content from a source to a node and returns a list of replicated content.
+// This function replicates content from a source to a node and returns a list of replicated content.
 func ReplicateContent(node *core.DeltaNode, contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
 	var replicatedContents []ReplicatedContent
 	for i := 0; i < dealRequest.Replication; i++ {
@@ -2322,30 +2342,35 @@ func ReplicateContent(node *core.DeltaNode, contentSource DealReplication, dealR
 	return replicatedContents
 }
 
-// It takes a request, and returns a response
+// handlePrepareContent It takes a request, and returns a response
+// This function handles preparing content for a given DeltaNode and updates statistics using a StatsService.
 func handlePrepareContent(c echo.Context, node *core.DeltaNode, statsService core.StatsService) {
 	// > This function is called when a node receives a `PrepareCommitmentPiece` message
 }
+
+// handlePrepareCommitmentPiece It takes a request, and returns a response
+// This function handles preparing commitment pieces for a given DeltaNode and updates statistics using a StatsService.
 func handlePrepareCommitmentPiece() {
 	// > This function is called when the user clicks the "Prepare Commitment Pieces" button. It takes the user's input and
 	// prepares the commitment pieces
 }
+
+// handlePrepareCommitmentPieces It takes a request, and returns a response
+// This function handles preparing commitment pieces for a given DeltaNode and updates statistics using a StatsService.
 func handlePrepareCommitmentPieces() {
 	// This function handles the announcement of content.
 }
 
-// This function is called when the user clicks the "Announce Content" button. It takes the user's input and...
+// handleAnnounceContent It takes a request, and returns a response
+// This function handles the announcement of content.
 func handleAnnounceContent() {
 	//	> This function is called when the user clicks the "Announce Content" button. It takes the user's input and
 }
 
-// > The function `handleAnnounceCommitmentPiece` is called when a `AnnounceCommitmentPiece` message is received
-func handleAnnounceCommitmentPiece() {
+// handleAnnounceCommitmentPiece It takes a request, and returns a response
+// This function handles the announcement of commitment pieces.
+func handleAnnounceCommitmentPiece() {}
 
-}
-
-// > This function is called when a commitment piece is received from a peer
-
-func handleAnnounceCommitmentPieces() {
-
-}
+// handleAnnounceCommitmentPieces It takes a request, and returns a response
+// This function handles the announcement of commitment pieces.
+func handleAnnounceCommitmentPieces() {}
