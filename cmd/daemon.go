@@ -70,7 +70,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
-
 			fmt.Println("OS:", runtime.GOOS)
 			fmt.Println("Architecture:", runtime.GOARCH)
 			fmt.Println("Hostname:", core.GetHostname())

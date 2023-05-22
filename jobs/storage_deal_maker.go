@@ -229,24 +229,22 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 				var dealCount int64
 				i.LightNode.DB.Model(&model.ContentDeal{}).Where("content = ?", content.ID).Count(&dealCount)
 				if int(dealCount) >= i.LightNode.Config.Common.MaxAutoRetry {
-					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-						LastMessage: "Retry limit reached",
-						AutoRetry:   false,
-						UpdatedAt:   time.Now(),
-					})
+					content.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED
+					content.LastMessage = "Retry limit reached"
+					content.AutoRetry = false
+					content.UpdatedAt = time.Now()
+					i.LightNode.DB.Save(&content)
 					return nil
 				}
 
 				minerAssignService := core.NewMinerAssignmentService(*i.LightNode)
-				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(content.Size)
+				provider, errOnPv := minerAssignService.GetSPWithGivenBytes(i.Content.Size)
+
 				if errOnPv != nil {
-					// just fail it then
-					i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
-						Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
-						LastMessage: err.Error(),
-						UpdatedAt:   time.Now(),
-					})
+					content.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED
+					content.LastMessage = err.Error()
+					content.UpdatedAt = time.Now()
+					i.LightNode.DB.Save(&content)
 					return errOnPv
 				}
 
