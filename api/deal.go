@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,6 +24,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+
+var deltaNode *core.DeltaNode
 
 type CidRequest struct {
 	Cids []string `json:"cids"`
@@ -94,6 +97,7 @@ var statsService *core.StatsService
 // `DeltaNode`'s deal-making functionality
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
+	deltaNode = node
 	statsService = core.NewStatsStatsService(node)
 	dealMake := e.Group("/deal")
 
@@ -191,7 +195,7 @@ func checkMetaFlags(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Con
 
 // It checks if the sum of the size of all the files that are currently being transferred is greater than the number of
 // CPUs multiplied by the number of bytes per CPU. If it is, then it returns an error
-func checkResourceLimits(next echo.HandlerFunc, node *core.DeltaNode) func(c echo.Context) error {
+func checkResourceLimits(next echo.HandlerFunc) func(c echo.Context) error {
 	return func(c echo.Context) error {
 
 		_, span := otel.Tracer("handleNodePeers").Start(context.Background(), "handleNodeHostApiKey")
@@ -207,11 +211,11 @@ func checkResourceLimits(next echo.HandlerFunc, node *core.DeltaNode) func(c ech
 		span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
 
 		var size sql.NullInt64
-		node.DB.Raw("select sum(size) from contents where status = 'transfer-started' and created_at > ?", node.MetaInfo.InstanceStart).Scan(&size)
+		deltaNode.DB.Raw("select sum(size) from contents where status = 'transfer-started' and created_at > ?", deltaNode.MetaInfo.InstanceStart).Scan(&size)
 
 		// memory limit (10GB per CPU)
 		if size != (sql.NullInt64{}) {
-			if uint64(size.Int64) > (node.MetaInfo.NumberOfCpus * node.MetaInfo.BytesPerCpu) {
+			if uint64(size.Int64) > (deltaNode.MetaInfo.NumberOfCpus * deltaNode.MetaInfo.BytesPerCpu) {
 				return c.JSON(http.StatusForbidden, DealResponse{
 					Status:  "error",
 					Message: "Too much data is being transferred, please try again once all other transfers are complete",
@@ -649,7 +653,15 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
 	file, err := c.FormFile("data") // file
+	if err != nil {
+		return err
+	}
+
 	meta := c.FormValue("metadata")
+	err = ValidateFileLimit(file)
+	if err != nil {
+		return err
+	}
 
 	//	validate the meta
 	err = json.Unmarshal([]byte(meta), &dealRequest)
@@ -2197,6 +2209,14 @@ func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest, 
 		return errors.New("invalid piece_commitment request. piece_commitment is required")
 	}
 
+	return nil
+}
+
+func ValidateFileLimit(file *multipart.FileHeader) error {
+
+	if file.Size < deltaNode.Config.Common.MinE2EFileSize {
+		return errors.New("file size is less than the minimum file size of " + strconv.Itoa(int(deltaNode.Config.Common.MinE2EFileSize)) + " bytes")
+	}
 	return nil
 }
 
