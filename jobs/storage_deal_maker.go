@@ -667,8 +667,13 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context,
 	var transferParamsBoost boosttypes.HttpRequest
 	json.Unmarshal([]byte(dealProposal.TransferParams), &transferParamsBoost)
 
+	transferUrl := announceAddr.String()
+	if transferParamsBoost.URL != "" {
+		transferUrl = transferParamsBoost.URL
+		fmt.Println("transferUrl", transferUrl)
+	}
 	transferParams, err := json.Marshal(boosttypes.HttpRequest{
-		URL: transferParamsBoost.URL,
+		URL: transferUrl,
 		Headers: map[string]string{
 			"Authorization": httptransport.BasicAuthHeader("", authToken),
 		},
