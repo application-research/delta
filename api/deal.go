@@ -2215,7 +2215,7 @@ func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest, 
 func ValidateFileLimit(file *multipart.FileHeader) error {
 
 	if file.Size < deltaNode.Config.Common.MinE2EFileSize {
-		return errors.New("file size is less than the minimum file size of " + strconv.Itoa(int(deltaNode.Config.Common.MinE2EFileSize)) + " bytes")
+		return errors.New("file size of " + strconv.FormatInt(file.Size, 10) + " bytes is less than the minimum file size of " + strconv.FormatInt(deltaNode.Config.Common.MinE2EFileSize, 10) + " bytes")
 	}
 	return nil
 }

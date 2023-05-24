@@ -5,6 +5,7 @@ Create an online deal for a content by sending a `POST` request to the `/api/v1/
 # Make sure you have a `Delta` node.
 - If you are looking for a running Delta node, you can use [`node.delta.store`](https://node.delta.store/open/node/info).
 - If you want to stand up your own node, you can follow the instructions in [this](./getting-started-run-delta.md) document.
+- 
 
 # Prepare the deal `metadata` request.
 In order to create a successful deal, Delta requires the following information `metadata` request:
@@ -59,8 +60,11 @@ curl --location --request POST 'http://localhost:1414/api/v1/deal/end-to-end' \
 
 A few things to note here:
 - The `data` request is the content to be stored. This can be a file or a directory.
+  - As of 1.0.6 - `end-to-end` deal file are now required to be at least 1GB in size. This is to prevent spamming the network with small files.
+  - This e2e file size can be reconfigured via by specifying in the .env `MIN_E2E_FILE_SIZE`.
 - The `metadata` request is the information required to make the deal. This is a JSON object. At minimum, it should contain the `miner` and `connection_mode` fields. The `miner` field is the miner to store the content. The `connection_mode` field is the connection mode to use to make the deal. This is either `e2e` or `import`.
 - If no `wallet` is specified, Delta will use the default wallet that it generated when it was started.
+- If no `miner` is specified, it'll use the default sp-selection mechanism (https://sp-select.delta.store/api/providers) to select a miner.
 
 ## Response
 The response will look like this:
