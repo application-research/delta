@@ -211,6 +211,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 
 	// set up wallet
 	wallet, err := SetupWallet(repo.DefaultWalletDir)
+
 	walletAddr, err := wallet.GetDefault()
 
 	var walletFromDb model.Wallet
@@ -341,6 +342,10 @@ func SetupWallet(dir string) (*wallet.LocalWallet, error) {
 	fmt.Println("Wallet address is: ", defaddr)
 
 	return wallet, nil
+}
+
+func SetAddressNetwork(n address.Network) {
+	address.CurrentNetwork = n
 }
 
 // GetPublicIP Getting the public IP of the node.

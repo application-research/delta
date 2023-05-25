@@ -9,6 +9,7 @@ import (
 	"github.com/application-research/delta-db/db_models"
 	_ "github.com/application-research/delta-db/db_models"
 	"github.com/application-research/delta-db/messaging"
+	"github.com/filecoin-project/go-address"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
@@ -67,12 +68,25 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Usage: "enable miner throttle or not",
 				Value: false,
 			},
+			&cli.StringFlag{
+				Name:  "network",
+				Usage: "specify if main network or test network",
+				Value: "main",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
 			fmt.Println("OS:", runtime.GOOS)
 			fmt.Println("Architecture:", runtime.GOARCH)
 			fmt.Println("Hostname:", core.GetHostname())
+
+			if c.String("network") == "main" {
+				cfg.Common.Network = "main"
+				core.SetAddressNetwork(address.Mainnet)
+			} else {
+				cfg.Common.Network = "test"
+				core.SetAddressNetwork(address.Testnet)
+			}
 
 			ip, err := core.GetPublicIP()
 			if err != nil {
@@ -113,6 +127,8 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println("mode: ", utils.Purple+cfg.Common.Mode+utils.Reset)
 			fmt.Println("enableWebsocket: ", cfg.Common.EnableWebsocket)
 			fmt.Println("statsCollection: ", cfg.Common.StatsCollection)
+			fmt.Println("network: ", utils.Purple+cfg.Common.Network+utils.Reset)
+			fmt.Println("lotus api: ", utils.Purple+cfg.ExternalApis.LotusApi+utils.Reset)
 
 			// create the node (with whypfs, db, filclient)
 			nodeParams := core.NewLightNodeParams{

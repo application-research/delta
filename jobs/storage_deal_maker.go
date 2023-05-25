@@ -556,7 +556,12 @@ func (i *StorageDealMakerProcessor) GetAssignedMinerForContent(content model.Con
 		return MinerAddress{}, err
 	}
 	if storageMinerAssignment.ID != 0 {
-		address.CurrentNetwork = address.Mainnet
+		address.CurrentNetwork = func() address.Network {
+			if i.LightNode.Config.Common.Network == "main" {
+				return address.Mainnet
+			}
+			return address.Testnet
+		}()
 		a, err := address.NewFromString(storageMinerAssignment.Miner)
 		if err != nil {
 			fmt.Println("error on miner address", err, a)
@@ -624,7 +629,12 @@ func (i *StorageDealMakerProcessor) GetAssignedFilclientForContent(content model
 func (i *StorageDealMakerProcessor) GetStorageProviders() []MinerAddress {
 	var storageProviders []MinerAddress
 	for _, s := range mainnetMinerStrs {
-		address.CurrentNetwork = address.Mainnet
+		address.CurrentNetwork = func() address.Network {
+			if i.LightNode.Config.Common.Network == "main" {
+				return address.Mainnet
+			}
+			return address.Testnet
+		}()
 		a, err := address.NewFromString(s)
 		if err != nil {
 			fmt.Println("error on miner address", err, a)

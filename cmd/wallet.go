@@ -66,6 +66,7 @@ func WalletCmd(cfg *c.DeltaConfig) []*cli.Command {
 				Action: func(context *cli.Context) error {
 					walletDir := context.String("dir")
 					showPrivateKey := context.Bool("show-private-key")
+
 					wallet, err := core.SetupWallet(walletDir)
 					if err != nil {
 						return err

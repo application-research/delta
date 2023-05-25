@@ -37,6 +37,7 @@ type DeltaConfig struct {
 		MaxReplicationFactor int    `env:"MAX_REPLICATION_FACTOR" envDefault:"6"`
 		MaxAutoRetry         int    `env:"MAX_AUTO_RETRY" envDefault:"3"`
 		MinE2EFileSize       int64  `env:"MIN_E2E_FILE_SIZE" envDefault:"1048576000"` // 1GB
+		Network              string `env:"NETWORK" envDefault:"main"`
 	}
 
 	// configurable via env vars
