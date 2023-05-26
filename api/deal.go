@@ -114,6 +114,10 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleEndToEndDeal(c, node)
 	})
 
+	dealMake.POST("/fetch/end-to-end/", func(c echo.Context) error {
+		return handleFetchCidForEndToEndDeal(c, node)
+	})
+
 	dealMake.POST("/import", func(c echo.Context) error {
 		return handleImportDeal(c, node)
 	})
@@ -935,36 +939,62 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 	return nil
 }
-
-func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
+func handleFetchCidForEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
-	// lets record this.
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
-	err := c.Bind(&dealRequest)
+	cidToPick := c.FormValue("cid")              // file
+	sourceToPickFile := c.FormValue("multiaddr") // multiaddr
+
+	meta := c.FormValue("metadata")
+
+	cidToPickCid, err := cid.Decode(cidToPick)
+	if err != nil {
+		return err
+	}
+
+	node.ConnectToDelegates(context.Background(), []string{sourceToPickFile})
+	file, err := node.Node.GetFile(context.Background(), cidToPickCid)
 
 	if err != nil {
-		return errors.New("Error parsing the request, please check the request body if it complies with the spec")
+		return err
+	}
+	fileSize, err := utils.GetFileSize(file)
+	if err != nil {
+		return errors.New("Error getting the file size")
+	}
+	//	validate the meta
+	err = json.Unmarshal([]byte(meta), &dealRequest)
+	if err != nil {
+		return err
 	}
 
 	if dealRequest.ConnectionMode == "import" {
-		return errors.New("Connection mode import is not supported on this import endpoint")
+		return errors.New("Connection mode import is not supported for end-to-end deal endpoint")
 	}
 
+	// fail safe
 	dealRequest.ConnectionMode = "e2e"
+
 	err = ValidateMeta(dealRequest, node)
 
+	// validate the file if it's more than 1mb
+	if fileSize < 1000000 && dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+		return errors.New("File size is too small")
+	}
+
 	if err != nil {
+		// return the error from the validation
 		return err
 	}
 
-	err = ValidatePieceCommitmentMeta(dealRequest.PieceCommitment, node)
-	if err != nil {
-		return err
-	}
+	// process the file
+	//src := file
 
+	// wrap in a transaction so we can rollback if something goes wrong
 	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
+
 		// let's create a commp but only if we have
 		// a cid, a piece_cid, a padded_piece_size, size
 		var pieceCommp model.PieceCommitment
@@ -973,14 +1003,14 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 			(dealRequest.Size != 0) {
 
 			// if commp is there, make sure the piece and size are there. Use default duration.
-			pieceCommp.Cid = dealRequest.Cid
+			pieceCommp.Cid = cidToPickCid.String()
 			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
-			pieceCommp.Size = dealRequest.Size
+			pieceCommp.Size = fileSize
 			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
 			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
 			pieceCommp.CreatedAt = time.Now()
 			pieceCommp.UpdatedAt = time.Now()
-			pieceCommp.Status = utils.COMMP_STATUS_COMITTED
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
 			tx.Create(&pieceCommp)
 
 			dealRequest.PieceCommitment = PieceCommitmentRequest{
@@ -992,13 +1022,13 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 		// save the content to the DB with the piece_commitment_id
 		content := model.Content{
-			Name:              dealRequest.Cid,
-			Size:              dealRequest.Size,
-			Cid:               dealRequest.Cid,
+			Name:              cidToPickCid.String(),
+			Size:              fileSize,
+			Cid:               cidToPickCid.String(),
 			RequestingApiKey:  authParts[1],
 			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
 			AutoRetry:         dealRequest.AutoRetry,
-			Status:            utils.CONTENT_DEAL_MAKING_PROPOSAL,
 			ConnectionMode:    dealRequest.ConnectionMode,
 			CreatedAt:         time.Now(),
 			UpdatedAt:         time.Now(),
@@ -1009,7 +1039,7 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 		//	assign a miner
 		if dealRequest.Miner == "" {
 			minerAssignService := core.NewMinerAssignmentService(*node)
-			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(dealRequest.Size)
+			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(fileSize)
 			if errOnPv != nil {
 				return errOnPv
 			}
@@ -1030,6 +1060,7 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 
 			// get wallet from wallets database
 			var wallet model.Wallet
+
 			if dealRequest.Wallet.Address != "" {
 				tx.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
 			} else if dealRequest.Wallet.Uuid != "" {
@@ -1082,13 +1113,25 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 			}
 			return content.Cid
 		}()
-
 		dealProposalParam.VerifiedDeal = func() bool {
 			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
 				return false
 			}
 			return true
 		}()
+
+		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
+			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+		} else {
+			dealProposalParam.StartEpoch = 0
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		}
+
+		dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
+		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 
 		dealProposalParam.TransferParams = func() string {
 			//authToken, err := httptransport.GenerateAuthToken()
@@ -1104,61 +1147,85 @@ func handleOnlineImportDeal(c echo.Context, node *core.DeltaNode) error {
 				}
 				return "libp2p://" + announceAddr.String()
 			}()
-
 			transferParams := TransferParameters{
 				URL: transferParamsUrl,
 				//Headers: transferParamsHeaders,
 			}
+
 			stringTP, err := json.Marshal(transferParams)
 			if err != nil {
 				return ""
 			}
 			return string(stringTP)
-		}()
 
-		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
-			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
-			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
-			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
-			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
-		} else {
-			dealProposalParam.StartEpoch = 0
-			dealProposalParam.Duration = utils.DEFAULT_DURATION
-		}
-		dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
-		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+		}()
 
 		// deal proposal parameters
 		tx.Create(&dealProposalParam)
+		if dealRequest.Replication == 0 {
+			var dispatchJobs core.IProcessor
+			if pieceCommp.ID != 0 {
+				dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			} else {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			}
 
-		if err != nil {
-			return errors.New("Error parsing the request, please check the request body if it complies with the spec")
+			node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
+
+			err = c.JSON(200, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+			})
+
+		} else {
+			dealReplication := DealReplication{
+				Content:                      content,
+				ContentDealProposalParameter: dealProposalParam,
+				DealRequest:                  dealRequest,
+			}
+
+			// TODO: Improve this, this is a hack to make sure the replication is done before the deal is made
+			contents := ReplicateContent(node, dealReplication, dealRequest, tx)
+			var dispatchJobs core.IProcessor
+			for _, contentRep := range contents {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep.Content) // straight to pieceCommp
+				node.Dispatcher.AddJob(dispatchJobs)
+			}
+			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			node.Dispatcher.AddJob(dispatchJobs)
+
+			node.Dispatcher.Start(len(contents) + 1)
+			err = c.JSON(200, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+				ReplicatedContents: func() []DealResponse {
+					var dealResponses []DealResponse
+					for _, contentRep := range contents {
+						dealResponses = append(dealResponses, contentRep.DealResponse)
+					}
+					return dealResponses
+				}(),
+			})
 		}
 
-		var dispatchJobs core.IProcessor
-		if pieceCommp.ID != 0 {
-			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
-		}
-
-		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
-
-		err = c.JSON(200, DealResponse{
-			Status:                       "success",
-			Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
-			ContentId:                    content.ID,
-			DealRequest:                  dealRequest,
-			DealProposalParameterRequest: dealProposalParam,
-		})
 		if err != nil {
 			return err
 		}
-		//
+
+		// return transaction
 		return nil
 	})
 
 	if errTxn != nil {
-		return errors.New("Error creating the piece-commitment record" + " " + errTxn.Error())
+		return errors.New("Error creating the content record" + " " + errTxn.Error())
 	}
+
 	return nil
 }
 
