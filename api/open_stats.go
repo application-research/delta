@@ -2,6 +2,7 @@ package api
 
 import (
 	"delta/core"
+	"delta/jobs"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
 	"strconv"
@@ -124,6 +125,10 @@ func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitment model.PieceCommitment
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
+	job := core.CreateNewDispatcher()
+	job.AddJob(jobs.NewDealStatusCheck(node, &content))
+	job.Start(1)
+
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
 		"content":          content,
@@ -148,6 +153,10 @@ func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitment model.PieceCommitment
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
+	job := core.CreateNewDispatcher()
+	job.AddJob(jobs.NewDealStatusCheck(node, &content))
+	job.Start(1)
+	
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
 		"content":          content,
@@ -169,6 +178,10 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 
 	var pieceCommitment model.PieceCommitment
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
+
+	job := core.CreateNewDispatcher()
+	job.AddJob(jobs.NewDealStatusCheck(node, &content))
+	job.Start(1)
 
 	return c.JSON(200, map[string]interface{}{
 		"content":          content,
@@ -424,6 +437,11 @@ func handleOpenGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 
 	var contentDealProposalParameters []model.ContentDealProposalParameters
 	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDealProposalParameters)
+
+	// check the deal status async
+	job := core.CreateNewDispatcher()
+	job.AddJob(jobs.NewDealStatusCheck(node, &content))
+	job.Start(1)
 
 	return c.JSON(200, map[string]interface{}{
 		"content":                  content,
