@@ -3,6 +3,7 @@ package api
 import (
 	"delta/core"
 	"delta/jobs"
+	"delta/utils"
 	model "github.com/application-research/delta-db/db_models"
 	"github.com/labstack/echo/v4"
 	"strconv"
@@ -125,9 +126,12 @@ func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitment model.PieceCommitment
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
-	job := core.CreateNewDispatcher()
-	job.AddJob(jobs.NewDealStatusCheck(node, &content))
-	job.Start(1)
+	// check the deal status async
+	if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+		job := core.CreateNewDispatcher()
+		job.AddJob(jobs.NewDealStatusCheck(node, &content))
+		job.Start(1)
+	}
 
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
@@ -153,10 +157,13 @@ func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitment model.PieceCommitment
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
-	job := core.CreateNewDispatcher()
-	job.AddJob(jobs.NewDealStatusCheck(node, &content))
-	job.Start(1)
-	
+	// check the deal status async
+	if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+		job := core.CreateNewDispatcher()
+		job.AddJob(jobs.NewDealStatusCheck(node, &content))
+		job.Start(1)
+	}
+
 	return c.JSON(200, map[string]interface{}{
 		"deal":             contentDeal,
 		"content":          content,
@@ -179,10 +186,12 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 	var pieceCommitment model.PieceCommitment
 	node.DB.Raw("select * from piece_commitments where id = ?", content.PieceCommitmentId).Scan(&pieceCommitment)
 
-	job := core.CreateNewDispatcher()
-	job.AddJob(jobs.NewDealStatusCheck(node, &content))
-	job.Start(1)
-
+	// check the deal status async
+	if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+		job := core.CreateNewDispatcher()
+		job.AddJob(jobs.NewDealStatusCheck(node, &content))
+		job.Start(1)
+	}
 	return c.JSON(200, map[string]interface{}{
 		"content":          content,
 		"piece_commitment": pieceCommitment,
@@ -335,6 +344,13 @@ func handleOpenGetStatsByAllContentsFromBatch(c echo.Context, node *core.DeltaNo
 		var contentDealProposalParameters []model.ContentDealProposalParameters
 		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposalParameters)
 
+		// check the deal status async
+		if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+			job := core.CreateNewDispatcher()
+			job.AddJob(jobs.NewDealStatusCheck(node, &content))
+			job.Start(1)
+		}
+
 		contentResponse = append(contentResponse, map[string]interface{}{
 			"content":                  content,
 			"deals":                    contentDeal,
@@ -370,6 +386,13 @@ func handleOpenGetStatsByAllContents(c echo.Context, node *core.DeltaNode) error
 
 		var contentDealProposalParameters []model.ContentDealProposalParameters
 		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposalParameters)
+
+		// check the deal status async
+		if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+			job := core.CreateNewDispatcher()
+			job.AddJob(jobs.NewDealStatusCheck(node, &content))
+			job.Start(1)
+		}
 
 		contentResponse = append(contentResponse, map[string]interface{}{
 			"content":                  content,
@@ -408,6 +431,13 @@ func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 		var contentDealProposalParameters []model.ContentDealProposalParameters
 		node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", contentId).Scan(&contentDealProposalParameters)
 
+		// check the deal status async
+		if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+			job := core.CreateNewDispatcher()
+			job.AddJob(jobs.NewDealStatusCheck(node, &content))
+			job.Start(1)
+		}
+
 		contentResponse = append(contentResponse, map[string]interface{}{
 			"content":                  content,
 			"deals":                    contentDeal,
@@ -439,9 +469,11 @@ func handleOpenGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	node.DB.Raw("select cdp.* from content_deal_proposal_parameters cdp, contents c where cdp.content = c.id and c.id = ?", c.Param("contentId")).Scan(&contentDealProposalParameters)
 
 	// check the deal status async
-	job := core.CreateNewDispatcher()
-	job.AddJob(jobs.NewDealStatusCheck(node, &content))
-	job.Start(1)
+	if content.Status == utils.DEAL_STATUS_TRANSFER_STARTED || content.Status == utils.CONTENT_DEAL_PROPOSAL_SENT || content.Status == utils.DEAL_STATUS_TRANSFER_FINISHED {
+		job := core.CreateNewDispatcher()
+		job.AddJob(jobs.NewDealStatusCheck(node, &content))
+		job.Start(1)
+	}
 
 	return c.JSON(200, map[string]interface{}{
 		"content":                  content,
