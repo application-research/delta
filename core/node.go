@@ -27,6 +27,9 @@ import (
 	mdagipld "github.com/ipfs/go-ipld-format"
 	"github.com/ipfs/go-path/resolver"
 	"github.com/labstack/gommon/log"
+	"github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
 	trace2 "go.opencensus.io/trace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -287,6 +290,34 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 			DeltaDataReporter: dataTracer,
 		},
 	}, nil
+}
+
+func (ln *DeltaNode) ConnectToDelegates(ctx context.Context, delegates []string) error {
+	peers := make(map[peer.ID][]multiaddr.Multiaddr)
+	for _, d := range delegates {
+		ai, err := peer.AddrInfoFromString(d)
+		if err != nil {
+			return err
+		}
+
+		peers[ai.ID] = append(peers[ai.ID], ai.Addrs...)
+	}
+
+	for p, addrs := range peers {
+		ln.Node.Host.Peerstore().AddAddrs(p, addrs, time.Hour)
+
+		if ln.Node.Host.Network().Connectedness(p) != network.Connected {
+			if err := ln.Node.Host.Connect(ctx, peer.AddrInfo{
+				ID: p,
+			}); err != nil {
+				return err
+			}
+
+			ln.Node.Host.ConnManager().Protect(p, "pinning")
+		}
+	}
+
+	return nil
 }
 
 // LotusConnection It takes a string that contains the Lotus full node API address and returns a `v1api.FullNode` interface, a
