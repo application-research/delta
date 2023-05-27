@@ -8,7 +8,6 @@ import (
 	fc "github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/ipfs/go-cid"
-	"strconv"
 	"time"
 )
 
@@ -50,15 +49,14 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 
 		case datatransfer.TransferFinished, datatransfer.Completed:
 			fmt.Println("Transfer status: ", fst.Status, " for transfer id: ", fst.TransferID, " for db id: ", dbid)
-			transferId, err := strconv.Atoi(fst.TransferID)
-			if err != nil {
-				fmt.Println(err)
-			}
+			//transferId, err := strconv.Atoi(fst.TransferID)
+			//if err != nil {
+			//	fmt.Println(err)
+			//}
 
 			// save the content deal
 			var contentDeal model.ContentDeal
 			i.DB.Model(&model.ContentDeal{}).Where("id = ?", dbid).Find(&contentDeal)
-			contentDeal.DealID = int64(transferId)
 			contentDeal.TransferFinished = time.Now()
 			contentDeal.SealedAt = time.Now()
 			contentDeal.UpdatedAt = time.Now()
@@ -76,6 +74,9 @@ func SetLibp2pManagerSubscribe(i *DeltaNode) {
 
 			// remove from the blockstore
 			cidToDelete, err := cid.Decode(content.Cid)
+			if err != nil {
+				fmt.Println(err)
+			}
 			if i.Config.Node.KeepCopies {
 				fmt.Println("Keeping a copy of the content - not removing from the blockstore - CID: ", cidToDelete, "")
 			} else {
