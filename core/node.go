@@ -259,7 +259,6 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	}
 
 	filclient, err := fc.NewClient(whypfsPeer.Host, api, wallet, walletAddr, whypfsPeer.Blockstore, whypfsPeer.Datastore, whypfsPeer.Config.DatastoreDir.Directory)
-
 	if err != nil {
 		panic(err)
 	}

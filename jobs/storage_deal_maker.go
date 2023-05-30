@@ -135,6 +135,13 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			i.LightNode.DB.Save(&contentToUpdate)
 			return errPrice
 		}
+		_, errLockFunds := filClient.LockMarketFunds(context.Background(), types.FIL(unverifiedDealPrice))
+		if errLockFunds != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errLockFunds.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+		}
 		bigIntBalance, errBalance := i.LightNode.LotusApiNode.WalletBalance(context.Background(), filClient.ClientAddr)
 		if errBalance != nil {
 			contentToUpdate.UpdatedAt = time.Now()

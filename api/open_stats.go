@@ -11,15 +11,51 @@ import (
 
 // ConfigureOpenStatsCheckRouter TODO: OPTIMIZE!!
 // ConfigureOpenStatsCheckRouter It configures the router to handle the following routes:
-//
-// - `GET /stats/miner/:minerId`
-// - `GET /stats/miner/:minerId/deals`
-// - `GET /stats/totals/info`
-//
 // The first two routes are handled by the `handleOpenStatsByMiner` and `handleOpenGetDealsByMiner` functions,
 // respectively. The last route is handled by the `handleOpenGetTotalsInfo` function
 func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
+	e.GET("/status/miner/:minerId", func(c echo.Context) error {
+		return handleOpenStatsByMiner(c, node)
+	})
 
+	e.GET("/status/miner/:minerId/deals", func(c echo.Context) error {
+		return handleOpenGetDealsByMiner(c, node)
+	})
+	e.GET("/status/batch/imports/:batchId", func(c echo.Context) error {
+		return handleOpenGetStatsByAllContentsFromBatch(c, node)
+	})
+
+	e.GET("/status/content/:contentId", func(c echo.Context) error {
+		return handleOpenGetStatsByContent(c, node)
+	})
+	e.GET("/status/all-contents", func(c echo.Context) error {
+		return handleOpenGetStatsByAllContents(c, node)
+	})
+	e.POST("/status/contents", func(c echo.Context) error {
+		return handleOpenGetStatsByContents(c, node)
+	})
+
+	// get all deals with paging
+	e.GET("/status/deals", func(c echo.Context) error {
+		return handleOpenGetDealsWithPaging(c, node)
+	})
+
+	e.GET("/status/totals/info", func(c echo.Context) error {
+		return handleOpenGetTotalsInfo(c, node)
+	})
+
+	e.GET("/status/deal/by-cid/:cid", func(c echo.Context) error {
+		return handleOpenGetDealByCid(c, node)
+	})
+
+	e.GET("/status/deal/by-uuid/:uuid", func(c echo.Context) error {
+		return handleOpenGetDealByUuid(c, node)
+	})
+
+	e.GET("/status/deal/by-deal-id/:dealId", func(c echo.Context) error {
+		return handleOpenGetDealByDealId(c, node)
+	})
+	////////
 	e.GET("/stats/miner/:minerId", func(c echo.Context) error {
 		return handleOpenStatsByMiner(c, node)
 	})

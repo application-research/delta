@@ -80,14 +80,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println("Architecture:", runtime.GOARCH)
 			fmt.Println("Hostname:", core.GetHostname())
 
-			if c.String("network") == "main" {
-				cfg.Common.Network = "main"
-				core.SetAddressNetwork(address.Mainnet)
-			} else {
-				cfg.Common.Network = "test"
-				core.SetAddressNetwork(address.Testnet)
-			}
-
 			ip, err := core.GetPublicIP()
 			if err != nil {
 				fmt.Println("Error getting public IP:", err)
@@ -101,6 +93,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			statsCollection := c.Bool("stats-collection")
 			commpMode := c.String("commp-mode")
 			keepCopies := c.Bool("keep-copies")
+			network := c.String("network")
 
 			if repo == "" {
 				repo = ".whypfs"
@@ -114,6 +107,14 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 				cfg.Common.Mode = "cluster"
 			} else {
 				cfg.Common.Mode = mode
+			}
+
+			if network == "test" {
+				cfg.Common.Network = "test"
+				core.SetAddressNetwork(address.Testnet)
+			} else {
+				cfg.Common.Network = "main"
+				core.SetAddressNetwork(address.Mainnet)
 			}
 
 			cfg.Common.EnableWebsocket = enableWebsocket
