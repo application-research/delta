@@ -42,12 +42,18 @@ func (d DealStatusCheck) Run() error {
 
 	// get the status
 	status, err := d.LightNode.FilClient.DealStatus(context.Background(), miner, cidProp, &dealUuid)
+	if err != nil {
+		return err
+	}
 	contentDeal.DealID = int64(status.DealID)
-	d.Content.Status = storagemarket.DealStates[status.State]
-	d.Content.LastMessage = storagemarket.DealStatesDescriptions[status.State]
-	contentDeal.LastMessage = storagemarket.DealStatesDescriptions[status.State]
-	d.LightNode.DB.Save(&contentDeal)
-	d.LightNode.DB.Save(&d.Content)
+
+	if status.State != storagemarket.StorageDealUnknown {
+		d.Content.Status = storagemarket.DealStates[status.State]
+		d.Content.LastMessage = storagemarket.DealStatesDescriptions[status.State]
+		contentDeal.LastMessage = storagemarket.DealStatesDescriptions[status.State]
+		d.LightNode.DB.Save(&contentDeal)
+		d.LightNode.DB.Save(&d.Content)
+	}
 	return nil
 }
 

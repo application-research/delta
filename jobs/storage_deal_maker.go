@@ -128,6 +128,15 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 	var priceBigInt types.BigInt
 	if !dealProposal.VerifiedDeal {
 		unverifiedDealPrice, errPrice := types.BigFromString(dealProposal.UnverifiedDealMaxPrice)
+		// transfer balance
+		_, err := filClient.LockMarketFunds(context.Background(), types.FIL(unverifiedDealPrice))
+		if err != nil {
+			contentToUpdate.UpdatedAt = time.Now()
+			contentToUpdate.LastMessage = errPrice.Error()
+			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
+			i.LightNode.DB.Save(&contentToUpdate)
+		}
+
 		if errPrice != nil {
 			contentToUpdate.UpdatedAt = time.Now()
 			contentToUpdate.LastMessage = errPrice.Error()
