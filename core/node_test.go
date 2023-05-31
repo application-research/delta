@@ -52,13 +52,13 @@ func TestGetPublicIP(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPublicIP()
+			got, err := GetAnnounceAddrIP()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPublicIP() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetAnnounceAddrIP() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("GetPublicIP() got = %v, want %v", got, tt.want)
+				t.Errorf("GetAnnounceAddrIP() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

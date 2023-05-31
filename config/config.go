@@ -15,11 +15,12 @@ var (
 
 type DeltaConfig struct {
 	Node struct {
-		Name         string `env:"NODE_NAME" envDefault:"delta-deal-maker"`
-		Description  string `env:"NODE_DESCRIPTION" envDefault:"delta-deal-maker"`
-		Type         string `env:"NODE_TYPE" envDefault:"delta-deal-maker"`
-		InstanceUuid string `env:"INSTANCE_UUID"`
-		KeepCopies   bool   `env:"KEEP_COPIES" envDefault:"false"`
+		Name           string `env:"NODE_NAME" envDefault:"delta-deal-maker"`
+		Description    string `env:"NODE_DESCRIPTION" envDefault:"delta-deal-maker"`
+		Type           string `env:"NODE_TYPE" envDefault:"delta-deal-maker"`
+		InstanceUuid   string `env:"INSTANCE_UUID"`
+		KeepCopies     bool   `env:"KEEP_COPIES" envDefault:"false"`
+		AnnounceAddrIP string `env:"ANNOUNCE_ADDR_IP"`
 	}
 
 	Dispatcher struct {

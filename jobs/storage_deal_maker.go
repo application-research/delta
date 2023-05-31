@@ -714,19 +714,19 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context,
 			fc.ProposalV120WithSkipIPNIAnnounce(dealProposal.SkipIPNIAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
 				Type: func() string {
-					// starts with http
-					if strings.Contains(dealProposal.TransferParams, "http") {
-						return "http"
-					}
-					if strings.Contains(dealProposal.TransferParams, "https") {
-						return "https"
-					}
-					if strings.Contains(dealProposal.TransferParams, "ftp") {
-						return "ftp"
-					}
-					if strings.Contains(dealProposal.TransferParams, "ftps") {
-						return "ftps"
-					}
+					//// starts with http
+					//if strings.Contains(dealProposal.TransferParams, "http") {
+					//	return "http"
+					//}
+					//if strings.Contains(dealProposal.TransferParams, "https") {
+					//	return "https"
+					//}
+					//if strings.Contains(dealProposal.TransferParams, "ftp") {
+					//	return "ftp"
+					//}
+					//if strings.Contains(dealProposal.TransferParams, "ftps") {
+					//	return "ftps"
+					//}
 					return "libp2p"
 				}(),
 				ClientID: fmt.Sprintf("%d", dbid),
@@ -742,19 +742,19 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context,
 			fc.ProposalV120WithSkipIPNIAnnounce(dealProposal.SkipIPNIAnnounce),
 			fc.ProposalV120WithTransfer(smtypes.Transfer{
 				Type: func() string {
-					// starts with http
-					if strings.Contains(dealProposal.TransferParams, "http") {
-						return "http"
-					}
-					if strings.Contains(dealProposal.TransferParams, "https") {
-						return "https"
-					}
-					if strings.Contains(dealProposal.TransferParams, "ftp") {
-						return "ftp"
-					}
-					if strings.Contains(dealProposal.TransferParams, "ftps") {
-						return "ftps"
-					}
+					//// starts with http
+					//if strings.Contains(dealProposal.TransferParams, "http") {
+					//	return "http"
+					//}
+					//if strings.Contains(dealProposal.TransferParams, "https") {
+					//	return "https"
+					//}
+					//if strings.Contains(dealProposal.TransferParams, "ftp") {
+					//	return "ftp"
+					//}
+					//if strings.Contains(dealProposal.TransferParams, "ftps") {
+					//	return "ftps"
+					//}
 					return "libp2p"
 				}(),
 				ClientID: fmt.Sprintf("%d", dbid),

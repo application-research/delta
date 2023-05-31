@@ -106,7 +106,7 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			span.SetAttributes(attribute.String("host", c.Request().Host))
 			span.SetAttributes(attribute.String("referer", c.Request().Referer()))
 			span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
-			ip, err := core.GetPublicIP()
+			ip, err := core.GetAnnounceAddrIP(*DeltaNodeConfig)
 			if err != nil {
 				log.Error(err)
 			}
@@ -318,7 +318,7 @@ func ValidateRequestBody() echo.MiddlewareFunc {
 // ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
 
-	ip, errP := core.GetPublicIP()
+	ip, errP := core.GetAnnounceAddrIP(*DeltaNodeConfig)
 	if errP != nil {
 		log.Error(errP)
 	}

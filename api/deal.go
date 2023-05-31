@@ -682,8 +682,8 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 	err = ValidateMeta(dealRequest, node)
 
-	// validate the file if it's more than 1mb
-	if file.Size < 1000000 && dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+	// validate the file if it's more than 1mb (1mb is baked into lotus)
+	if file.Size < (1<<20) && dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
 		return errors.New("File size is too small")
 	}
 
@@ -703,33 +703,33 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		return errors.New("Error pinning the file")
 	}
 
+	// let's create a commp but only if we have
+	// a cid, a piece_cid, a padded_piece_size, size
+	var pieceCommp model.PieceCommitment
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+		(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+		(dealRequest.Size != 0) {
+
+		// if commp is there, make sure the piece and size are there. Use default duration.
+		pieceCommp.Cid = addNode.Cid().String()
+		pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+		pieceCommp.Size = file.Size
+		pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+		pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+		pieceCommp.CreatedAt = time.Now()
+		pieceCommp.UpdatedAt = time.Now()
+		pieceCommp.Status = utils.COMMP_STATUS_OPEN
+		node.DB.Create(&pieceCommp)
+
+		dealRequest.PieceCommitment = PieceCommitmentRequest{
+			Piece:             pieceCommp.Piece,
+			PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+			UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+		}
+	}
+
 	// wrap in a transaction so we can rollback if something goes wrong
 	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
-
-		// let's create a commp but only if we have
-		// a cid, a piece_cid, a padded_piece_size, size
-		var pieceCommp model.PieceCommitment
-		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
-			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
-			(dealRequest.Size != 0) {
-
-			// if commp is there, make sure the piece and size are there. Use default duration.
-			pieceCommp.Cid = addNode.Cid().String()
-			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
-			pieceCommp.Size = file.Size
-			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
-			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
-			pieceCommp.CreatedAt = time.Now()
-			pieceCommp.UpdatedAt = time.Now()
-			pieceCommp.Status = utils.COMMP_STATUS_OPEN
-			tx.Create(&pieceCommp)
-
-			dealRequest.PieceCommitment = PieceCommitmentRequest{
-				Piece:             pieceCommp.Piece,
-				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
-				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
-			}
-		}
 
 		// save the content to the DB with the piece_commitment_id
 		content := model.Content{
@@ -845,7 +845,6 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 
 		dealProposalParam.TransferParams = func() string {
-			//authToken, err := httptransport.GenerateAuthToken()
 			addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
 			announceAddr, err := multiaddr.NewMultiaddr(addrstr)
 			if err != nil {
@@ -1263,31 +1262,32 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		return err
 	}
 
-	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
-		// let's create a commp but only if we have
-		// a cid, a piece_cid, a padded_piece_size, size
-		var pieceCommp model.PieceCommitment
-		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
-			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
-			(dealRequest.Size != 0) {
+	// let's create a commp but only if we have
+	// a cid, a piece_cid, a padded_piece_size, size
+	var pieceCommp model.PieceCommitment
+	if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+		(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+		(dealRequest.Size != 0) {
 
-			// if commp is there, make sure the piece and size are there. Use default duration.
-			pieceCommp.Cid = dealRequest.Cid
-			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
-			pieceCommp.Size = dealRequest.Size
-			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
-			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
-			pieceCommp.CreatedAt = time.Now()
-			pieceCommp.UpdatedAt = time.Now()
-			pieceCommp.Status = utils.COMMP_STATUS_COMITTED
-			tx.Create(&pieceCommp)
+		// if commp is there, make sure the piece and size are there. Use default duration.
+		pieceCommp.Cid = dealRequest.Cid
+		pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+		pieceCommp.Size = dealRequest.Size
+		pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+		pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+		pieceCommp.CreatedAt = time.Now()
+		pieceCommp.UpdatedAt = time.Now()
+		pieceCommp.Status = utils.COMMP_STATUS_COMITTED
+		node.DB.Create(&pieceCommp)
 
-			dealRequest.PieceCommitment = PieceCommitmentRequest{
-				Piece:             pieceCommp.Piece,
-				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
-				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
-			}
+		dealRequest.PieceCommitment = PieceCommitmentRequest{
+			Piece:             pieceCommp.Piece,
+			PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+			UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
 		}
+	}
+
+	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
 
 		// save the content to the DB with the piece_commitment_id
 		content := model.Content{
@@ -2031,7 +2031,7 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 				pieceCommp.CreatedAt = time.Now()
 				pieceCommp.UpdatedAt = time.Now()
 				pieceCommp.Status = utils.COMMP_STATUS_COMITTED
-				tx.Create(&pieceCommp)
+				node.DB.Create(&pieceCommp)
 
 				dealRequest.PieceCommitment = PieceCommitmentRequest{
 					Piece:             pieceCommp.Piece,

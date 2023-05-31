@@ -181,7 +181,13 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	sqldb.SetConnMaxIdleTime(time.Hour)
 	sqldb.SetConnMaxLifetime(time.Hour)
 
-	publicIp, err := GetPublicIP()
+	publicIp, err := GetAnnounceAddrIP(*repo.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	repo.Config.Node.AnnounceAddrIP = publicIp
+
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{
 			"/ip4/0.0.0.0/tcp/6745",
@@ -378,9 +384,14 @@ func SetAddressNetwork(n address.Network) {
 	address.CurrentNetwork = n
 }
 
-// GetPublicIP Getting the public IP of the node.
-// > GetPublicIP() returns the public IP address of the machine it's running on
-func GetPublicIP() (string, error) {
+// GetAnnounceAddrIP Getting the public IP of the node.
+// > GetAnnounceAddrIP() returns the public IP address of the machine it's running on
+func GetAnnounceAddrIP(nodeConfig c.DeltaConfig) (string, error) {
+
+	// use the configured announce addrs, if it's not specified, get the public ip using ifconfig.me
+	if nodeConfig.Node.AnnounceAddrIP != "" {
+		return nodeConfig.Node.AnnounceAddrIP, nil
+	}
 	resp, err := http.Get("https://ifconfig.me") // important to get the public ip if possible.
 	if err != nil {
 		return "", err
@@ -434,7 +445,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	// delete all data from the instance meta table
 	//ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)
 	// re-create
-	ip, err := GetPublicIP()
+	ip, err := GetAnnounceAddrIP(*ln.Config)
 	if err != nil {
 		fmt.Println("Error getting public IP:", err)
 	}
