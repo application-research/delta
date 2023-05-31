@@ -119,8 +119,9 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 
 			ip, err := core.GetAnnounceAddrIP(*cfg)
 			if err != nil {
-				fmt.Println("Error getting public IP:", err)
+				panic(err)
 			}
+			cfg.Node.AnnounceAddrIP = ip
 
 			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)
 			fmt.Println("repo: ", utils.Purple+repo+utils.Reset)

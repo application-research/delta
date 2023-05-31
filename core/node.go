@@ -181,13 +181,7 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	sqldb.SetConnMaxIdleTime(time.Hour)
 	sqldb.SetConnMaxLifetime(time.Hour)
 
-	publicIp, err := GetAnnounceAddrIP(*repo.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	repo.Config.Node.AnnounceAddrIP = publicIp
-
+	publicIp := repo.Config.Node.AnnounceAddrIP
 	newConfig := &whypfs.Config{
 		ListenAddrs: []string{
 			"/ip4/0.0.0.0/tcp/6745",
@@ -445,10 +439,7 @@ func ScanHostComputeResources(ln *DeltaNode, repo string) *model.InstanceMeta {
 	// delete all data from the instance meta table
 	//ln.DB.Model(&model.InstanceMeta{}).Delete(&model.InstanceMeta{}, "id > ?", 0)
 	// re-create
-	ip, err := GetAnnounceAddrIP(*ln.Config)
-	if err != nil {
-		fmt.Println("Error getting public IP:", err)
-	}
+	ip := ln.Config.Node.AnnounceAddrIP
 
 	// if there's already an existing record, update that record
 	var instanceMeta model.InstanceMeta
