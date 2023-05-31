@@ -106,10 +106,8 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			span.SetAttributes(attribute.String("host", c.Request().Host))
 			span.SetAttributes(attribute.String("referer", c.Request().Referer()))
 			span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
-			ip, err := core.GetPublicIP()
-			if err != nil {
-				log.Error(err)
-			}
+			ip := DeltaNodeConfig.Node.AnnounceAddrIP
+
 			fmt.Println("Request: " + c.Request().Method + " " + c.Path() + " " + c.Request().UserAgent() + " " + c.RealIP() + " " + c.Request().Host + " " + c.Request().Referer() + " " + c.Request().RequestURI)
 			s := struct {
 				RemoteIP string `json:"remote_ip"`
@@ -318,10 +316,7 @@ func ValidateRequestBody() echo.MiddlewareFunc {
 // ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
 
-	ip, errP := core.GetPublicIP()
-	if errP != nil {
-		log.Error(errP)
-	}
+	ip := DeltaNodeConfig.Node.AnnounceAddrIP
 
 	// get the request body and log it
 

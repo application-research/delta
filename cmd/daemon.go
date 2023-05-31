@@ -80,11 +80,6 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println("Architecture:", runtime.GOARCH)
 			fmt.Println("Hostname:", core.GetHostname())
 
-			ip, err := core.GetPublicIP()
-			if err != nil {
-				fmt.Println("Error getting public IP:", err)
-			}
-
 			fmt.Println(utils.Blue + "Starting Delta daemon..." + utils.Reset)
 			repo := c.String("repo")
 			walletDir := c.String("wallet-dir")
@@ -122,6 +117,12 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			cfg.Common.CommpMode = commpMode
 			cfg.Node.KeepCopies = keepCopies
 
+			ip, err := core.GetAnnounceAddrIP(*cfg)
+			if err != nil {
+				panic(err)
+			}
+			cfg.Node.AnnounceAddrIP = ip
+
 			fmt.Println(utils.Blue + "Setting up the whypfs node... " + utils.Reset)
 			fmt.Println("repo: ", utils.Purple+repo+utils.Reset)
 			fmt.Println("walletDir: ", utils.Purple+walletDir+utils.Reset)
@@ -130,7 +131,7 @@ func DaemonCmd(cfg *c.DeltaConfig) []*cli.Command {
 			fmt.Println("statsCollection: ", cfg.Common.StatsCollection)
 			fmt.Println("network: ", utils.Purple+cfg.Common.Network+utils.Reset)
 			fmt.Println("lotus api: ", utils.Purple+cfg.ExternalApis.LotusApi+utils.Reset)
-
+			fmt.Println("ip: ", utils.Purple+ip+utils.Reset)
 			// create the node (with whypfs, db, filclient)
 			nodeParams := core.NewLightNodeParams{
 				Repo:             repo,
