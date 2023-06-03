@@ -141,6 +141,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 			contentToUpdate.LastMessage = errLockFunds.Error()
 			contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
 			i.LightNode.DB.Save(&contentToUpdate)
+			return errLockFunds
 		}
 		bigIntBalance, errBalance := i.LightNode.LotusApiNode.WalletBalance(context.Background(), filClient.ClientAddr)
 		if errBalance != nil {
@@ -184,6 +185,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		contentToUpdate.LastMessage = err.Error()
 		contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
 		i.LightNode.DB.Save(&contentToUpdate)
+		return err
 	}
 
 	pieceCid, err := cid.Decode(pieceComm.Piece)
@@ -192,6 +194,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		contentToUpdate.LastMessage = err.Error()
 		contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
 		i.LightNode.DB.Save(&contentToUpdate)
+		return err
 
 	}
 
@@ -202,6 +205,7 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 		contentToUpdate.LastMessage = err.Error()
 		contentToUpdate.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED //"failed"
 		i.LightNode.DB.Save(&contentToUpdate)
+		return err
 	}
 
 	prop, err := filClient.MakeDealWithOptions(i.Context, minerAddress, payloadCid, priceBigInt, duration,

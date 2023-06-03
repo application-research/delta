@@ -16,43 +16,45 @@ type DealStatusCheck struct {
 }
 
 func (d DealStatusCheck) Run() error {
-	var contentDeal model.ContentDeal
+	var contentDeals []model.ContentDeal
 	// get the latest content deal of the content
-	// select * from content_deals where content = content.id order by created_at desc limit 1
-	d.LightNode.DB.Raw("select * from content_deals where content = ? order by created_at desc limit 1", d.Content.ID).Scan(&contentDeal)
+	d.LightNode.DB.Where("content = ?", d.Content.ID).Order("created_at desc").Find(&contentDeals)
 
-	if contentDeal.DealUUID == "" {
-		return nil
-	}
+	for _, contentDeal := range contentDeals {
 
-	miner, err := address.NewFromString(contentDeal.Miner)
-	if err != nil {
-		return err
-	}
+		if contentDeal.DealUUID == "" {
+			return nil
+		}
 
-	cidProp, err := cid.Decode(contentDeal.PropCid)
-	if err != nil {
-		return err
+		miner, err := address.NewFromString(contentDeal.Miner)
+		if err != nil {
+			return err
+		}
 
-	}
-	dealUuid, err := uuid.Parse(contentDeal.DealUUID)
-	if err != nil {
-		return err
-	}
+		cidProp, err := cid.Decode(contentDeal.PropCid)
+		if err != nil {
+			return err
 
-	// get the status
-	status, err := d.LightNode.FilClient.DealStatus(context.Background(), miner, cidProp, &dealUuid)
-	if err != nil {
-		return err
-	}
-	contentDeal.DealID = int64(status.DealID)
+		}
+		dealUuid, err := uuid.Parse(contentDeal.DealUUID)
+		if err != nil {
+			return err
+		}
 
-	if status.State != storagemarket.StorageDealUnknown {
-		d.Content.Status = storagemarket.DealStates[status.State]
-		d.Content.LastMessage = storagemarket.DealStatesDescriptions[status.State]
-		contentDeal.LastMessage = storagemarket.DealStatesDescriptions[status.State]
-		d.LightNode.DB.Save(&contentDeal)
-		d.LightNode.DB.Save(&d.Content)
+		// get the status
+		status, err := d.LightNode.FilClient.DealStatus(context.Background(), miner, cidProp, &dealUuid)
+		if err != nil {
+			return err
+		}
+		contentDeal.DealID = int64(status.DealID)
+
+		if status.State != storagemarket.StorageDealUnknown {
+			d.Content.Status = storagemarket.DealStates[status.State]
+			d.Content.LastMessage = storagemarket.DealStatesDescriptions[status.State]
+			contentDeal.LastMessage = storagemarket.DealStatesDescriptions[status.State]
+			d.LightNode.DB.Save(&contentDeal)
+			d.LightNode.DB.Save(&d.Content)
+		}
 	}
 	return nil
 }
