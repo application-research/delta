@@ -1,12 +1,11 @@
 package metrics
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
 	"io"
 	"net/http"
-	httpprof "net/http/pprof"
 	"runtime"
+
+	"github.com/labstack/gommon/log"
 
 	//#nosec G108 - exposing the profiling endpoint is expected
 	_ "net/http/pprof"
@@ -34,13 +33,6 @@ func Exporter() http.Handler {
 	}
 
 	return exporter
-}
-
-// It takes a URL parameter, and then serves the corresponding profile
-// It takes a URL parameter, and if it's one of the supported profiling types, it serves the profile data
-func ServeProfile(c echo.Context) error {
-	httpprof.Handler(c.Param("prof")).ServeHTTP(c.Response().Writer, c.Request())
-	return nil
 }
 
 // It writes the stack traces of all goroutines to the given writer
