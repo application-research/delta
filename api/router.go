@@ -7,6 +7,13 @@ import (
 	"delta/utils"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
 	"github.com/application-research/delta-db/messaging"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
@@ -14,12 +21,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
-	"net/http"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
 )
 
 var (
@@ -158,6 +159,10 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 
 	// health check api group
 	healthCheckApiGroup := e.Group("/health")
+
+	// debug profiler group
+	debugGroup := e.Group("/debug")
+	ConfigureDebugProfileRouter(debugGroup, ln)
 
 	// Authentication
 	apiGroup.Use(Authenticate(config))
