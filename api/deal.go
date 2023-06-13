@@ -1450,6 +1450,8 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 		var dispatchJobs core.IProcessor
 		if pieceCommp.ID != 0 {
 			dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+		} else {
+			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
 		}
 
 		node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
@@ -2199,6 +2201,8 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 			var dispatchJobs core.IProcessor
 			if pieceCommp.ID != 0 {
 				dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			} else {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
 			}
 
 			node.Dispatcher.AddJob(dispatchJobs)
