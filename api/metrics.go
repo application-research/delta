@@ -35,6 +35,4 @@ func ConfigMetricsRouter(e *echo.Group) {
 		}
 		return err
 	})
-
-	e.GET("/debug/pprof/:prof", metrics.ServeProfile) // Upload for testing
 }
