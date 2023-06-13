@@ -950,11 +950,17 @@ func handlePullFileFromUrlForEndToEndDeal(c echo.Context, node *core.DeltaNode) 
 
 	authorizationString := c.Request().Header.Get("Authorization")
 	authParts := strings.Split(authorizationString, " ")
-	urlToPull := c.FormValue("url") // file
+	edgeUrlSource := c.FormValue("url")
+	cidToPull := c.FormValue("cid")
 	meta := c.FormValue("metadata")
 
-	// download the file from the url
-	resp, err := http.Get(urlToPull)
+	if edgeUrlSource == "" {
+		return errors.New("No url provided")
+	}
+	if cidToPull == "" {
+		return errors.New("No cid provided")
+	}
+	resp, err := http.Get(edgeUrlSource + "/gw/" + cidToPull)
 	if err != nil {
 		return errors.New("Error downloading the file from the url")
 	}
