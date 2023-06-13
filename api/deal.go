@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"delta/core"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -114,7 +116,11 @@ func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleEndToEndDeal(c, node)
 	})
 
-	dealMake.POST("/fetch/end-to-end/", func(c echo.Context) error {
+	dealMake.POST("/end-to-end/pull-from-url", func(c echo.Context) error {
+		return handlePullFileFromUrlForEndToEndDeal(c, node)
+	})
+
+	dealMake.POST("/end-to-end/pull-from-bs", func(c echo.Context) error {
 		return handleFetchCidForEndToEndDeal(c, node)
 	})
 
@@ -845,6 +851,304 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
 
 		dealProposalParam.TransferParams = func() string {
+			addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
+			announceAddr, err := multiaddr.NewMultiaddr(addrstr)
+			if err != nil {
+				return ""
+			}
+
+			transferParamsUrl := func() string {
+				if dealRequest.TransferParameters.URL != "" {
+					return dealRequest.TransferParameters.URL
+				}
+				return "libp2p://" + announceAddr.String()
+			}()
+			transferParams := TransferParameters{
+				URL: transferParamsUrl,
+				//Headers: transferParamsHeaders,
+			}
+
+			stringTP, err := json.Marshal(transferParams)
+			if err != nil {
+				return ""
+			}
+			return string(stringTP)
+
+		}()
+
+		// deal proposal parameters
+		tx.Create(&dealProposalParam)
+		if dealRequest.Replication == 0 {
+			var dispatchJobs core.IProcessor
+			if pieceCommp.ID != 0 {
+				dispatchJobs = jobs.NewStorageDealMakerProcessor(node, content, pieceCommp) // straight to storage deal making
+			} else {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			}
+
+			node.Dispatcher.AddJobAndDispatch(dispatchJobs, 1)
+
+			err = c.JSON(200, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+			})
+
+		} else {
+			dealReplication := DealReplication{
+				Content:                      content,
+				ContentDealProposalParameter: dealProposalParam,
+				DealRequest:                  dealRequest,
+			}
+
+			// TODO: Improve this, this is a hack to make sure the replication is done before the deal is made
+			contents := ReplicateContent(node, dealReplication, dealRequest, tx)
+			var dispatchJobs core.IProcessor
+			for _, contentRep := range contents {
+				dispatchJobs = jobs.NewPieceCommpProcessor(node, contentRep.Content) // straight to pieceCommp
+				node.Dispatcher.AddJob(dispatchJobs)
+			}
+			dispatchJobs = jobs.NewPieceCommpProcessor(node, content) // straight to pieceCommp
+			node.Dispatcher.AddJob(dispatchJobs)
+
+			node.Dispatcher.Start(len(contents) + 1)
+			err = c.JSON(200, DealResponse{
+				Status:                       "success",
+				Message:                      "Deal request received. Please take note of the content_id. You can use the content_id to check the status of the deal.",
+				ContentId:                    content.ID,
+				DealRequest:                  dealRequest,
+				DealProposalParameterRequest: dealProposalParam,
+				ReplicatedContents: func() []DealResponse {
+					var dealResponses []DealResponse
+					for _, contentRep := range contents {
+						dealResponses = append(dealResponses, contentRep.DealResponse)
+					}
+					return dealResponses
+				}(),
+			})
+		}
+
+		if err != nil {
+			return err
+		}
+
+		// return transaction
+		return nil
+	})
+
+	if errTxn != nil {
+		return errors.New("Error creating the content record" + " " + errTxn.Error())
+	}
+
+	return nil
+}
+
+func handlePullFileFromUrlForEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
+	var dealRequest DealRequest
+
+	authorizationString := c.Request().Header.Get("Authorization")
+	authParts := strings.Split(authorizationString, " ")
+	urlToPull := c.FormValue("url") // file
+	meta := c.FormValue("metadata")
+
+	// download the file from the url
+	resp, err := http.Get(urlToPull)
+	if err != nil {
+		return errors.New("Error downloading the file from the url")
+	}
+	defer resp.Body.Close()
+
+	fileBytes := &bytes.Buffer{}
+	//fileBytesR := &bytes.Buffer{}
+	_, errCopy := io.Copy(fileBytes, resp.Body)
+	//fileBytesR = fileBytes
+	if errCopy != nil {
+		return errors.New("Error copying the file from the url")
+	}
+
+	addNode, err := node.Node.AddPinFile(c.Request().Context(), fileBytes, nil)
+	file, err := node.Node.GetFile(context.Background(), addNode.Cid())
+
+	if err != nil {
+		return err
+	}
+	fileSize, err := utils.GetFileSize(file)
+	if err != nil {
+		return errors.New("Error getting the file size")
+	}
+	//	validate the meta
+	err = json.Unmarshal([]byte(meta), &dealRequest)
+	if err != nil {
+		return err
+	}
+
+	if dealRequest.ConnectionMode == "import" {
+		return errors.New("Connection mode import is not supported for end-to-end deal endpoint")
+	}
+
+	// fail safe
+	dealRequest.ConnectionMode = "e2e"
+
+	err = ValidateMeta(dealRequest, node)
+
+	// validate the file if it's more than 1mb
+	if fileSize < 1000000 && dealRequest.DealVerifyState == utils.DEAL_VERIFIED {
+		return errors.New("File size is too small")
+	}
+
+	if err != nil {
+		// return the error from the validation
+		return err
+	}
+
+	// process the file
+	//src := file
+
+	// wrap in a transaction so we can rollback if something goes wrong
+	errTxn := node.DB.Transaction(func(tx *gorm.DB) error {
+
+		// let's create a commp but only if we have
+		// a cid, a piece_cid, a padded_piece_size, size
+		var pieceCommp model.PieceCommitment
+		if (PieceCommitmentRequest{} != dealRequest.PieceCommitment && dealRequest.PieceCommitment.Piece != "") &&
+			(dealRequest.PieceCommitment.PaddedPieceSize != 0) &&
+			(dealRequest.Size != 0) {
+
+			// if commp is there, make sure the piece and size are there. Use default duration.
+			pieceCommp.Cid = addNode.Cid().String()
+			pieceCommp.Piece = dealRequest.PieceCommitment.Piece
+			pieceCommp.Size = fileSize
+			pieceCommp.UnPaddedPieceSize = dealRequest.PieceCommitment.UnPaddedPieceSize
+			pieceCommp.PaddedPieceSize = dealRequest.PieceCommitment.PaddedPieceSize
+			pieceCommp.CreatedAt = time.Now()
+			pieceCommp.UpdatedAt = time.Now()
+			pieceCommp.Status = utils.COMMP_STATUS_OPEN
+			tx.Create(&pieceCommp)
+
+			dealRequest.PieceCommitment = PieceCommitmentRequest{
+				Piece:             pieceCommp.Piece,
+				PaddedPieceSize:   pieceCommp.PaddedPieceSize,
+				UnPaddedPieceSize: pieceCommp.UnPaddedPieceSize,
+			}
+		}
+
+		// save the content to the DB with the piece_commitment_id
+		content := model.Content{
+			Name:              addNode.Cid().String(),
+			Size:              fileSize,
+			Cid:               addNode.Cid().String(),
+			RequestingApiKey:  authParts[1],
+			PieceCommitmentId: pieceCommp.ID,
+			Status:            utils.CONTENT_PINNED,
+			AutoRetry:         dealRequest.AutoRetry,
+			ConnectionMode:    dealRequest.ConnectionMode,
+			CreatedAt:         time.Now(),
+			UpdatedAt:         time.Now(),
+		}
+		tx.Create(&content)
+		dealRequest.Cid = content.Cid
+
+		//	assign a miner
+		if dealRequest.Miner == "" {
+			minerAssignService := core.NewMinerAssignmentService(*node)
+			provider, errOnPv := minerAssignService.GetSPWithGivenBytes(fileSize)
+			if errOnPv != nil {
+				return errOnPv
+			}
+			dealRequest.Miner = provider.Address
+		}
+		if dealRequest.Miner != "" {
+			contentMinerAssignment := model.ContentMiner{
+				Miner:     dealRequest.Miner,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			tx.Create(&contentMinerAssignment)
+			dealRequest.Miner = contentMinerAssignment.Miner
+		}
+
+		if (WalletRequest{} != dealRequest.Wallet) {
+
+			// get wallet from wallets database
+			var wallet model.Wallet
+
+			if dealRequest.Wallet.Address != "" {
+				tx.Where("addr = ? and owner = ?", dealRequest.Wallet.Address, authParts[1]).First(&wallet)
+			} else if dealRequest.Wallet.Uuid != "" {
+				tx.Where("uuid = ? and owner = ?", dealRequest.Wallet.Uuid, authParts[1]).First(&wallet)
+			} else {
+				tx.Where("id = ? and owner = ?", dealRequest.Wallet.Id, authParts[1]).First(&wallet)
+			}
+
+			if wallet.ID == 0 {
+				return errors.New("Wallet not found, please make sure the wallet is registered")
+			}
+
+			// create the wallet request object
+			var hexedWallet WalletRequest
+			hexedWallet.KeyType = wallet.KeyType
+			hexedWallet.PrivateKey = wallet.PrivateKey
+
+			if err != nil {
+				return errors.New("Error encoding the wallet")
+			}
+
+			// assign the wallet to the content
+			contentWalletAssignment := model.ContentWallet{
+				WalletId:  wallet.ID,
+				Content:   content.ID,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+			tx.Create(&contentWalletAssignment)
+
+			dealRequest.Wallet = WalletRequest{
+				Id:      dealRequest.Wallet.Id,
+				Address: wallet.Addr,
+			}
+		}
+
+		var dealProposalParam model.ContentDealProposalParameters
+		dealProposalParam.CreatedAt = time.Now()
+		dealProposalParam.UpdatedAt = time.Now()
+		dealProposalParam.Content = content.ID
+		dealProposalParam.UnverifiedDealMaxPrice = func() string {
+			if dealRequest.UnverifiedDealMaxPrice != "" {
+				return dealRequest.UnverifiedDealMaxPrice
+			}
+			return "0"
+		}()
+		dealProposalParam.Label = func() string {
+			if dealRequest.Label != "" {
+				return dealRequest.Label
+			}
+			return content.Cid
+		}()
+		dealProposalParam.VerifiedDeal = func() bool {
+			if dealRequest.DealVerifyState == utils.DEAL_UNVERIFIED {
+				return false
+			}
+			return true
+		}()
+
+		if dealRequest.StartEpochInDays != 0 && dealRequest.DurationInDays != 0 {
+			startEpochTime := time.Now().AddDate(0, 0, int(dealRequest.StartEpochInDays))
+			dealProposalParam.StartEpoch = utils.DateToHeight(startEpochTime)
+			dealProposalParam.EndEpoch = dealProposalParam.StartEpoch + (utils.EPOCH_PER_DAY * (dealRequest.DurationInDays - dealRequest.StartEpochInDays))
+			dealProposalParam.Duration = dealProposalParam.EndEpoch - dealProposalParam.StartEpoch
+		} else {
+			dealProposalParam.StartEpoch = 0
+			dealProposalParam.Duration = utils.DEFAULT_DURATION
+		}
+
+		dealProposalParam.RemoveUnsealedCopy = dealRequest.RemoveUnsealedCopy
+		dealProposalParam.SkipIPNIAnnounce = dealRequest.SkipIPNIAnnounce
+
+		dealProposalParam.TransferParams = func() string {
+			//authToken, err := httptransport.GenerateAuthToken()
 			addrstr := node.Node.Config.AnnounceAddrs[1] + "/p2p/" + node.Node.Host.ID().String()
 			announceAddr, err := multiaddr.NewMultiaddr(addrstr)
 			if err != nil {
