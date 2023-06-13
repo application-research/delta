@@ -23,6 +23,10 @@ clean:
 install:
 	install -C -m 0755 delta /usr/local/bin
 
+.PHONY: generate-swagger
+generate-swagger:
+	scripts/swagger/swag.sh
+
 .PHONY: docker-compose-build
 docker-compose-build:
 	BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
