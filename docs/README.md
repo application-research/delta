@@ -36,6 +36,7 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 - To learn about the content lifecycle and check status of the deals, go to the [content lifecycle and deal status](content-deal-status.md) **[WIP]**
 - To learn about the piece commitment computation process flow, go to the [piece commitment computation process flow](process-flow-piece-commitment-compute.md) 
 - To learn about the storage deal process flow, go to the [storage deal process flow](process-flow-storage-deal.md) 
+- To generate new swagger documentation for the API, go to [generate swagger documentation](generate-swagger.md)
 
 # Author
 Protocol Labs Outercore Engineering.
