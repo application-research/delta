@@ -14,10 +14,12 @@ import (
 	"syscall"
 	"time"
 
+	_ "delta/docs/swagger"
 	"github.com/application-research/delta-db/messaging"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
@@ -67,7 +69,7 @@ type AuthResponse struct {
 
 // @license.name Apache 2.0 Apache-2.0 OR MIT
 
-// @host node.delta.store
+// @host localhost:1414
 // @BasePath  /
 // @securityDefinitions.Bearer
 // @securityDefinitions.Bearer.type apiKey
@@ -197,6 +199,9 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 		go ws.HandleContentMessages()
 		ConfigureWebsocketRouter(openApiGroup, ln)
 	}
+
+	// swagger
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// Start server
 	e.Logger.Fatal(e.Start("0.0.0.0:1414")) // configuration

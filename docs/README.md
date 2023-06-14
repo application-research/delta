@@ -22,6 +22,7 @@ Generic DealMaking MicroService using whypfs + filclient + estuary_auth
 
 ## Getting Started
 - To get started on running delta, go to the [getting started to run delta](getting-started-run-delta.md)
+- To get started on running delta on calibnet, go to the [getting started to run delta on calibnet](getting-started-run-delta-on-calibnet.md)
 - To get started on using a live delta instance, go to the [getting started to use delta](getting-started-use-delta.md)
 - To learn more about `delta cli` go to the [delta cli](cli.md)
 - To learn more about running delta using docker, go to the [run delta using docker](running-delta-docker.md)

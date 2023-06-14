@@ -38,6 +38,8 @@ git clone github.com/application-research/delta
 
 # Prepare the .env file.
 Copy the `.env.example` file to `.env` and update the values as needed.
+*Note of the LOTUS_API variable. It needs to point to calibration network*
+
 ```
 # Node info
 NODE_NAME=delta-node
@@ -51,6 +53,10 @@ DELTA_AUTH=[NODE_API_KEY_HERE]
 
 # Frequencies
 MAX_CLEANUP_WORKERS=1500
+
+# APIs
+LOTUS_API=http://api.calibration.node.glif.io
+
 ```
 Here are the fields in the `.env` file:
 
@@ -70,19 +76,19 @@ Put the `.env` file in the same location as the binary/executable.
 ## Using `make` lang
 ```
 make all
-./delta daemon --repo=/path/to/blockstore --wallet-dir=<walletdir>
+./delta daemon --network=test
 ```
 
 ## Run the node with a custom blockstore location
 ```
-./delta daemon --repo=/path/to/blockstore
+./delta daemon --repo=/path/to/blockstore --network=test
 ``` 
 
 ## Run the node with a custom wallet
 A delta node being a deal-making service, needs a wallet to make deals. You can specify a custom wallet location using the `--wallet-dir` flag. 
 Note that this is a directory and not a file. The wallet file(s) is expected to be in this directory. 
 ```
-./delta daemon --wallet-dir=/path/to/wallet
+./delta daemon --wallet-dir=/path/to/wallet --network=test
 ```
 Note: You can register a new wallet later using the `/admin/wallet/register` endpoint.
 
@@ -90,7 +96,7 @@ Note: You can register a new wallet later using the `/admin/wallet/register` end
 You can also build and run the delta node using docker. To do so, you need to have docker installed on your machine.
 ```
 docker build -t delta .
-docker run -it --rm -p 1414:1414 delta --repo=/path/to/blockstore --wallet-dir=<walletdir>
+docker run -it --rm -p 1414:1414 delta --repo=/path/to/blockstore --wallet-dir=<walletdir> --network=test
 ```
 
 # Running the node the first time will do the following:
@@ -105,11 +111,9 @@ docker run -it --rm -p 1414:1414 delta --repo=/path/to/blockstore --wallet-dir=<
 # Console output 
 The console output will look something like this:
 ```
-Delta version: v0.0.1
 OS: darwin
 Architecture: arm64
-Hostname: Alvins-MacBook-Pro.local
-2023/03/21 13:49:59 INF    1 (145.40.77.207:4150) connecting to nsqd
+Hostname: Alvins-MBP
 Starting Delta daemon...
 Setting up the whypfs node... 
 repo:  .whypfs
@@ -117,14 +121,18 @@ walletDir:  ./wallet_estuary
 mode:  cluster
 enableWebsocket:  false
 statsCollection:  true
-Wallet address is:  f1jxx7uendecy62l2m7w7tyo5d7wszysp467xztfy
+network:  test
+lotus api:  http://api.calibration.node.glif.io
+ip:  142.189.91.167
+Wallet address is:  t1aj6k36cyhndhscw7yy67f5ttbezzpsl6l7zu6iy
+2023/06/13 13:17:36 INF    2 (145.40.77.207:4150) connecting to nsqd
 Setting up the whypfs node... DONE
 Computing the OS resources to use
-Total memory: 151526048 bytes
-Total system memory: 219757864 bytes
-Total heap memory: 173735936 bytes
-Heap in use: 165814272 bytes
-Stack in use: 27590656 bytes
+Total memory: 108663640 bytes
+Total system memory: 256330040 bytes
+Total heap memory: 208633856 bytes
+Heap in use: 177881088 bytes
+Stack in use: 26247168 bytes
 Total number of CPUs: 10
 Number of CPUs that this Delta will use: 10
 Note: Delta instance proactively recalculate resources to use based on the current load.
@@ -136,9 +144,9 @@ Subscribing the event listeners
 Subscribing to transfer channel states...
 Subscribing to transfer channel events...
 Subscribing the event listeners... DONE
-Running the atomatic cron jobs
+Running the atomic cron jobs
 Scheduling dispatchers and scanners...
-Running the atomatic cron jobs... DONE
+Running the atomic cron jobs... DONE
 Starting Delta.
 
 
@@ -155,9 +163,13 @@ Starting Delta.
 (ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)(ᵔᴥᵔ)
 
 By: Protocol Labs - Outercore Engineering
-version: v0.0.1
+version: v1.0.6-37-g9524cb4-dirty
+Reporting Delta startup logs
+2023/06/13 13:17:36 INF    1 (145.40.77.207:4150) connecting to nsqd
+Reporting Delta startup logs... DONE
 ----------------------------------
 Welcome! Delta daemon is running...
+You can check the documentation at: https://github.com/application-research/delta/tree/main/docs
 ----------------------------------
 
    ____    __
@@ -170,6 +182,15 @@ ____________________________________O/_______
                                     O\
 ⇨ http server started on [::]:1414
 ```
+
+## Get Fil+ using Calibnet faucet
+In order to make verified storage deals, we need to add FIL+ to the wallet.
+- First, take note of the Wallet address above (`t1aj6k36cyhndhscw7yy67f5ttbezzpsl6l7zu6iy`)
+- Go to [https://faucet.calibration.fildev.network/](https://faucet.calibration.fildev.network/) 
+- Click on "Grant Datacap"
+- Paste the wallet address in the input field and click on "Grant Datacap"
+- It'll take a few minutes for the FIL+ to show up in the wallet. You can check the balance using the `http://localhost:1414/open/info/wallet/balance/<address>` endpoint.
+- You'll see the verified balance (`verified_client_balance`) set to a non-zero value. 
 
 # Next
 Now that you have the node running, you can start making deals. 
