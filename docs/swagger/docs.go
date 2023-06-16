@@ -69,6 +69,126 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/wallet/create": {
+            "post": {
+                "description": "It creates a new wallet and saves it to the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "It creates a new wallet and saves it to the database",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "address",
+                        "name": "address",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key_type",
+                        "name": "key_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "private_key",
+                        "name": "private_key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.AddWalletRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/list": {
+            "get": {
+                "description": "It creates a new wallet and saves it to the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "It creates a new wallet and saves it to the database",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "address",
+                        "name": "address",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "key_type",
+                        "name": "key_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "private_key",
+                        "name": "private_key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.AddWalletRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/admin/wallet/register": {
             "post": {
                 "description": "It creates a new wallet and saves it to the database",
@@ -170,6 +290,60 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/api.AddWalletRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/deal/end-to-end": {
+            "post": {
+                "description": "Handle end-to-end deal request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Deals"
+                ],
+                "summary": "Handle end-to-end deal request",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to be uploaded",
+                        "name": "data",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Metadata of the file",
+                        "name": "metadata",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {

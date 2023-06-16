@@ -93,10 +93,7 @@ var statsService *core.StatsService
 
 //var replicationService *core.ReplicationService
 
-// ConfigureDealRouter It's a function that takes a pointer to an echo.Group and a pointer to a DeltaNode, and then it adds a bunch of routes
-// to the echo.Group
-// `ConfigureDealRouter` is a function that takes a `Group` and a `DeltaNode` and configures the `Group` to handle the
-// `DeltaNode`'s deal-making functionality
+// ConfigureDealRouter It configures the deal router
 func ConfigureDealRouter(e *echo.Group, node *core.DeltaNode) {
 
 	deltaNode = node
@@ -657,6 +654,18 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
+// handleEndToEndDeal handles the end-to-end deal request
+// @Summary Handle end-to-end deal request
+// @Description Handle end-to-end deal request
+// @Tags Deals
+// @Accept  json
+// @Produce  json
+// @Param data formData file true "File to be uploaded"
+// @Param metadata formData string true "Metadata of the file"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /deal/end-to-end [post]
 func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 

@@ -51,6 +51,88 @@ paths:
       summary: It creates a new wallet and saves it to the database
       tags:
         - Admin
+  /admin/wallet/create:
+    post:
+      consumes:
+        - application/json
+      description: It creates a new wallet and saves it to the database
+      parameters:
+        - description: address
+          in: path
+          name: address
+          required: true
+          type: string
+        - description: key_type
+          in: path
+          name: key_type
+          required: true
+          type: string
+        - description: private_key
+          in: path
+          name: private_key
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.AddWalletRequest'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: It creates a new wallet and saves it to the database
+      tags:
+        - Admin
+  /admin/wallet/list:
+    get:
+      consumes:
+        - application/json
+      description: It creates a new wallet and saves it to the database
+      parameters:
+        - description: address
+          in: path
+          name: address
+          required: true
+          type: string
+        - description: key_type
+          in: path
+          name: key_type
+          required: true
+          type: string
+        - description: private_key
+          in: path
+          name: private_key
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.AddWalletRequest'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: It creates a new wallet and saves it to the database
+      tags:
+        - Admin
   /admin/wallet/register:
     post:
       consumes:
@@ -133,6 +215,43 @@ paths:
       summary: It creates a new wallet and saves it to the database
       tags:
         - Admin
+  /deal/end-to-end:
+    post:
+      consumes:
+        - application/json
+      description: Handle end-to-end deal request
+      parameters:
+        - description: File to be uploaded
+          in: formData
+          name: data
+          required: true
+          type: file
+        - description: Metadata of the file
+          in: formData
+          name: metadata
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Handle end-to-end deal request
+      tags:
+        - Deals
 swagger: "2.0"
 securityDefinitions:
   bearerAuth:
