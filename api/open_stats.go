@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+//TODO: DK to review Swagger UI Annotations with Alvin 
 // ConfigureOpenStatsCheckRouter TODO: OPTIMIZE!!
 // ConfigureOpenStatsCheckRouter It configures the router to handle the following routes:
 // The first two routes are handled by the `handleOpenStatsByMiner` and `handleOpenGetDealsByMiner` functions,
@@ -98,6 +99,18 @@ func ConfigureOpenStatsCheckRouter(e *echo.Group, node *core.DeltaNode) {
 		return handleOpenGetDealByDealId(c, node)
 	})
 }
+// get all deals with paging
+// @Summary 	get all deals with paging
+// @Description get all deals with paging
+// @Tags 		deals
+// @Accept 		json
+// @Produce 	json
+// @Param 		page 	  query int false "Page number"
+// @Param 		page_size query int false "Page size"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/status/deals [get]
 
 func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
@@ -147,6 +160,16 @@ func handleOpenGetDealsWithPaging(c echo.Context, node *core.DeltaNode) error {
 
 // It gets the content deal, content, content deal proposal, and piece commitment from the database and returns them as
 // JSON
+// @Summary 	Gets the content deal, content, content deal proposal and piece commitment
+// @Description Gets the content deal, content, content deal proposal and piece commitment and returns them as json
+// @Tags 		deal
+// @Accept 		json
+// @Produce 	json
+// @Param 		cid <"in"> string true "The Content ID"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/stats/deal/by-cid/:cid [get]
 func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
 
 	var content model.Content
@@ -179,6 +202,17 @@ func handleOpenGetDealByCid(c echo.Context, node *core.DeltaNode) error {
 
 // It gets the content deal, content, content deal proposal, and piece commitment from the database and returns them as
 // JSON
+// @Summary 	Gets the content deal, content, content deal proposal, and piece commitment for a given deal id
+// @Description Gets the content deal, content, content deal proposal, and piece commitment for a given deal id
+// @Tags 		deal
+// @Accept 		json
+// @Produce 	json
+// @Param 		dealId <"in"> string true "The deal id"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/stats/deal/by-deal-id/:dealId [get]
+
 func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 	var contentDeal model.ContentDeal
 	node.DB.Raw("select * from content_deals where deal_id = ?", c.Param("dealId")).Scan(&contentDeal)
@@ -207,7 +241,17 @@ func handleOpenGetDealByDealId(c echo.Context, node *core.DeltaNode) error {
 		"piece_commitment": pieceCommitment,
 	})
 }
-
+//TODO: DK to find out what is uuid?
+// @Summary 	Get all deals for a given uuid
+// @Description Get all deals for a given uuid
+// @Tags 		deal
+// @Accept 		json
+// @Produce 	json
+// @Param 		uuid <type> <required> <description>
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/status/deal/by-uuid/:uuid [get]
 func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 	var contentDeal model.ContentDeal
 	node.DB.Raw("select * from content_deals where deal_uuid = ?", c.Param("uuid")).Scan(&contentDeal)
@@ -238,6 +282,16 @@ func handleOpenGetDealByUuid(c echo.Context, node *core.DeltaNode) error {
 
 // Getting the content consumed by a miner, the content deals by a miner, the piece commitments by a miner, and the content
 // deal proposals by a miner.
+// @Summary 	Gets content related stats by miner
+// @Description Gets content consumed by a miner as well as content deals, piece commitments, and content deal proposals.
+// @Tags 		stats
+// @Accept 		json
+// @Produce 	json
+// @Param 		minerId <"in"> string true "Miner ID"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 		/stats/miner/:minerId [get]
 func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 
 	// get content consumed by miner
@@ -271,6 +325,16 @@ func handleOpenStatsByMiner(c echo.Context, node *core.DeltaNode) error {
 }
 
 // function to get all deals of a given miner
+// @Summary 	Gets all the deals of a given miner
+// @Description Gets all the deals of a given miner
+// @Tags 		stats
+// @Accept 		json
+// @Produce 	json
+// @Param 		minerId <"in"> string true "Miner ID"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/stats/miner/:minerId/deals [get]
 func handleOpenGetDealsByMiner(c echo.Context, node *core.DeltaNode) error {
 
 	var contentDeal []model.ContentDeal
@@ -283,6 +347,30 @@ func handleOpenGetDealsByMiner(c echo.Context, node *core.DeltaNode) error {
 }
 
 // function to get all totals info
+// @Summary Get totals for actions such as content consumed, proposal made, and storage allocated
+// @Description Get totals for actions such as content consumed, proposal made, and storage allocated
+// @Tags 	totals
+// @Accept 	json
+// @Produce json
+// @Param 	total_content_consumed 		query int false "Total content consumed"
+// @Param 	total_transfer_started 		query int false "Total transfer started"
+// @Param 	total_transfer_finished 	query int false "Total transfer finished"
+// @Param 	total_piece_commitment_made query int false "Total piece commitment made"
+// @Param 	total_piece_committed 		query int false "Total piece committed"
+// @Param 	total_miners 				query int false "Total miners"
+// @Param 	total_storage_allocated 	query int false "Total storage allocated"
+// @Param 	total_proposal_made 		query int false "Total proposal made"
+// @Param 	total_proposal_sent 		query int false "Total proposal sent"
+// @Param 	total_sealed_deal_in_bytes 	query int false "Total sealed deal in bytes"
+// @Param 	total_import_deals 			query int false "Total import deals"
+// @Param 	total_e2e_deals 			query int false "Total E2E deals"
+// @Param 	total_e2e_deals_in_bytes 	query int false "Total E2E deals in bytes"
+// @Param 	total_import_deals_in_bytes query int false "Total import deals in bytes"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router  /stats/totals/info [get]
+
 func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 
 	var totalContentConsumed int64
@@ -354,6 +442,17 @@ func handleOpenGetTotalsInfo(c echo.Context, node *core.DeltaNode) error {
 	})
 	return nil
 }
+//Retrieves statistics for content, deals, piece commitments, deal proposals, and proposal parameters for contents within a batch
+// @Summary 	Retrieves statistics for multiple contents within a batch
+// @Description Retrieves statistics for content, deals, piece commitments, deal proposals, and proposal parameters for contents within a batch
+// @Tags 		stats
+// @Accept 		json
+// @Produce 	json
+// @Param 		batchID <"in"> string true "Batch ID"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/status/batch/imports/:batchId [get]
 
 func handleOpenGetStatsByAllContentsFromBatch(c echo.Context, node *core.DeltaNode) error {
 
@@ -443,6 +542,17 @@ func handleOpenGetStatsByAllContents(c echo.Context, node *core.DeltaNode) error
 }
 
 // A function that is called when a GET request is made to the /open/get_stats_by_contents endpoint.
+// @Summary 	Handles GET request to the /open/get_stats_by_contents endpoint
+// @Description Handles GET request to the /open/get_stats_by_contents endpoint
+// @Tags 		stats
+// @Accept 		json
+// @Produce 	json
+// @Param 		contentIds <"in"> string true "Content IDs"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/status/contents [post]
+
 func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 
 	var contentIds []int64
@@ -487,6 +597,16 @@ func handleOpenGetStatsByContents(c echo.Context, node *core.DeltaNode) error {
 }
 
 // function to get all stats given a content id and user api key
+// @Summary 	Gets all stats given a content id and user api key
+// @Description Gets all stats given a content id and user api key
+// @Tags 		stats
+// @Accept 		json
+// @Produce 	json
+// @Param 		contentId <"in"> string true "The content ID"
+// @Success     200 {object} map[string]interface{}
+// @Failure     400 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router 		/status/content/:contentId [get]
 func handleOpenGetStatsByContent(c echo.Context, node *core.DeltaNode) error {
 	var content model.Content
 	node.DB.Raw("select c.* from contents c where c.id = ?", c.Param("contentId")).Scan(&content)
