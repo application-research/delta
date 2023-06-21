@@ -232,13 +232,19 @@ func checkResourceLimits(next echo.HandlerFunc) func(c echo.Context) error {
 		return next(c)
 	}
 }
-
+//TODO: DK to ask Alvin about Authorization and why it isn't a param in his example, verify dealRequests param is correct
+//TODO: DK to figure out Router part
 // handleExistingContentsAdd handles the request to add existing content to the network
-// @Summary Add existing content to the network
-// @Description Add existing content to the network
-// @Tags deal
-// @Accept  json
-// @Produce  json
+// @Summary 	handles the request to add existing content to the network
+// @Description handles the request to add existing content to the network
+// @Tags 		Content
+// @Accept 		json
+// @Produce 	json
+// @Param 		dealRequests <"in"> interface true "Content and deal request parameters" 
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 		
 func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -443,13 +449,19 @@ func handleExistingContentsAdd(c echo.Context, node *core.DeltaNode) error {
 	}
 	return nil
 }
-
+//TODO: clarify "in" for Param (body? path? formData? --> DK to ask Alvin)
+//TODO: DK to figure out where to find Router info for this one
 // handleExistingContentAdd handles the request to add content to the network
-// @Summary Add content to the network
-// @Description Add content to the network
-// @Tags Content
-// @Accept  json
-// @Produce  json
+// @Summary 	Add content to the network
+// @Description Handles the request to add content to the network & initiate a deal process
+// @Tags 		Deals
+// @Accept 		json
+// @Produce 	json
+// @Param		dealRequest <"in"> interface true "Content and deal request parameters"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 		
 func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 
 	// TODO: this needs a source
@@ -655,17 +667,17 @@ func handleExistingContentAdd(c echo.Context, node *core.DeltaNode) error {
 }
 
 // handleEndToEndDeal handles the end-to-end deal request
-// @Summary Handle end-to-end deal request
+// @Summary 	Handle end-to-end deal request
 // @Description Handle end-to-end deal request
-// @Tags Deals
-// @Accept  json
-// @Produce  json
-// @Param data formData file true "File to be uploaded"
-// @Param metadata formData string true "Metadata of the file"
-// @Success 200 {object} map[string]interface{}
-// @Failure 400 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /deal/end-to-end [post]
+// @Tags 		Deals
+// @Accept  	json
+// @Produce  	json
+// @Param 		data 	 formData file 	 true "File to be uploaded"
+// @Param 		metadata formData string true "Metadata of the file"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 		/deal/end-to-end [post]
 func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -953,7 +965,21 @@ func handleEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 	return nil
 }
-
+//TODO: DK to verify with Alvin --> determining type for params
+//TODO: DK to verify with Alvin --> safe to assume params all required?
+//handlePullFileFromUrlForEndToEndDeal handles the API endpoint for pulling a file from a URL and processing it for an end-to-end deal.
+// @Summary 	pulls a file from a URL and processes it for an end-to-end deal
+// @Description pulls a file from a URL and processes it for an end-to-end deal
+// @Tags 		Deals
+// @Accept  	json
+// @Produce  	json
+// @Param 		url 	 formData string true "URL for the file" 
+// @Param 		cid 	 formData string true "CID for the file"
+// @Param 		metadata formData string true "Metadata of the file"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router		/deal/end-to-end/pull-from-url [post]
 func handlePullFileFromUrlForEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -1257,6 +1283,20 @@ func handlePullFileFromUrlForEndToEndDeal(c echo.Context, node *core.DeltaNode) 
 
 	return nil
 }
+
+//handleFetchCidForEndToEndDeal: Fetch CID for End-to-End Deal
+// @Summary 	Fetch CID for End-to-End Deal
+// @Description Fetches the CID for an end-to-end deal
+// @Tags 		Deals
+// @Accept  	json
+// @Produce  	json
+// @Param		cid 	 	formData true "CID for the file"
+// @Param		multiaddr 	formData true "The multiaddress of the file source"
+// @Param		metadata 	formData true "Metadata associated with the deal"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 		/deal/end-to-end/pull-from-bs [post]
 func handleFetchCidForEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -1546,13 +1586,18 @@ func handleFetchCidForEndToEndDeal(c echo.Context, node *core.DeltaNode) error {
 
 	return nil
 }
-
+//TODO: DK to verify params and router with Alvin
 // handleImportDeal handles the request to add a commp record.
-// @Summary Add a commp record
+// @Summary 	Add a commp record
 // @Description Add a commp record
-// @Tags deals
-// @Accept  json
-// @Produce  json
+// @Tags 		deals
+// @Accept  	json
+// @Produce  	json
+// @Param		dealRequest <"in"> interface true "Content and deal request parameters"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router /deal/import [post]
 func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 	var dealRequest DealRequest
 
@@ -1794,7 +1839,18 @@ func handleImportDeal(c echo.Context, node *core.DeltaNode) error {
 	}
 	return nil
 }
-
+//TODO: DK verify params and routing with Alvin
+//handleMultipleOnlineImportDeals handles multiple online import deals
+// @Summary Handle multiple online import deals
+// @Description Handles multiple online import deals and returns deal responses
+// @Tags deals
+// @Accept  json
+// @Produce  json
+// @Param dealRequests <"in"> <type> <required> <description>
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router
 func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -2026,7 +2082,18 @@ func handleMultipleOnlineImportDeals(c echo.Context, node *core.DeltaNode) error
 	}
 	return nil
 }
-
+//TODO: DK to verify params with Alvin
+//handleMultipleBatchImportDeals handles multiple batch import deals
+// @Summary 	handles multiple batch import deals
+// @Description handles multiple batch import deals
+// @Tags 		Deals
+// @Accept  	json
+// @Produce  	json
+// @Param 		dealRequests <"in"> interface true "Content and deal request parameters" 
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router /deal/batch/imports [post]
 func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -2297,13 +2364,18 @@ func handleMultipleBatchImportDeals(c echo.Context, node *core.DeltaNode) error 
 		BatchImportID: batchImport.ID,
 	})
 }
-
+//TODO: DK to verify param info
 // handleMultipleImportDeals handles the request to add a commp record.
-// @Summary Add a commp record
+// @Summary 	Add a commp record
 // @Description Add a commp record
-// @Tags CommP
-// @Accept  json
-// @Produce  json
+// @Tags 		CommP
+// @Accept  	json
+// @Produce  	json
+// @Param		dealRequest <"in"> interface true "Content and deal request parameters"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router /deal/imports [post]
 func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 	var dealRequests []DealRequest
 
@@ -2549,7 +2621,18 @@ func handleMultipleImportDeals(c echo.Context, node *core.DeltaNode) error {
 	return nil
 }
 
+//TODO: DK to verify param with Alvin
 // It takes a contentId as a parameter, looks up the status of the content, and returns the status as JSON
+// @Summary 	Returns status of content for a given content id
+// @Description Uses a contentId to look up the status of the content and return that status as JSON
+// @Tags 		content
+// @Accept  	json
+// @Produce  	json
+// @Param 		contentID <"in"> string true "The content id for the content requiring a status"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 		deals/content/:contentId [post]
 func handleContentStats(c echo.Context, statsService core.StatsService) error {
 	contentIdParam := c.Param("contentId")
 	contentId, err := strconv.Atoi(contentIdParam)
@@ -2568,8 +2651,18 @@ func handleContentStats(c echo.Context, statsService core.StatsService) error {
 
 	return c.JSON(200, status)
 }
-
+//TODO: DK to verify with Alvin: param & tag
 // It takes a piece commitment ID, looks up the status of the piece commitment, and returns the status
+// @Summary 	Look up and return piece commitment by piece commitment ID
+// @Description Uses a piece commitment ID to look up and return the status of the piece commitment
+// @Tags 		stats
+// @Accept  	json
+// @Produce  	json
+// @Param		piece-commitmentId <"in"> string true "The piece commitment ID" 
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router /piece-commitment/:piece-commitmentId [post]
 func handleCommitmentPieceStats(c echo.Context, statsService core.StatsService) error {
 	pieceCommitmentIdParam := c.Param("piece-commitmentId")
 	pieceCommitmentId, err := strconv.Atoi(pieceCommitmentIdParam)
@@ -2594,6 +2687,7 @@ type ValidateMetaResult struct {
 }
 
 // ValidatePieceCommitmentMeta `ValidateMeta` validates the `DealRequest` struct and returns an error if the request is invalid
+
 func ValidatePieceCommitmentMeta(pieceCommitmentRequest PieceCommitmentRequest, node *core.DeltaNode) error {
 	if (PieceCommitmentRequest{} == pieceCommitmentRequest) {
 		return errors.New("invalid piece_commitment request. piece_commitment is required")
@@ -2610,7 +2704,18 @@ func ValidateFileLimit(file *multipart.FileHeader) error {
 	return nil
 }
 
+//TODO: DK to verify params, tag, and routing with Alvin
 // It validates the deal request and returns an error if the request is invalid
+// @Summary Validate deal request metadata
+// @Description Validates the deal request metadata
+// @Tags deals
+// @Accept  json
+// @Produce  json
+// @Param dealRequest <"in"> interface true "Content and deal request parameters"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router
 func ValidateMeta(dealRequest DealRequest, node *core.DeltaNode) error {
 
 	if (DealRequest{} == dealRequest) {
@@ -2730,7 +2835,21 @@ type ReplicatedContent struct {
 	DealRequest  DealRequest
 	DealResponse DealResponse
 }
-
+//TODO: DK to verify params, routing, tags with Alvin (these params are chat gpt so need checked out)
+//ReplicateContent Replicates content based on the provided parameters
+// @Summary Replicate content
+// @Description Replicates content based on the provided parameters
+// @Tags content
+// @Accept json
+// @Produce json
+// @Param node query string true "Node information"
+// @Param contentSource <"in"> DealReplication true "Content replication source"
+// @Param dealRequest <"in"> DealRequest true "Deal Request object"
+// @Param txn <"in"> gorm.DB true "Database transaction"
+// @Success 	200 {object} map[string]interface{}
+// @Failure 	400 {object} map[string]interface{}
+// @Failure 	500 {object} map[string]interface{}
+// @Router 
 func ReplicateContent(node *core.DeltaNode, contentSource DealReplication, dealRequest DealRequest, txn *gorm.DB) []ReplicatedContent {
 	var replicatedContents []ReplicatedContent
 	for i := 0; i < dealRequest.Replication; i++ {
