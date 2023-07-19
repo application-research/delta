@@ -272,6 +272,11 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 				// and dispatch the job again
 				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
+			} else {
+				content.Status = utils.CONTENT_DEAL_PROPOSAL_FAILED
+				content.LastMessage = err.Error()
+				content.UpdatedAt = time.Now()
+				i.LightNode.DB.Save(&content)
 			}
 		default:
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
@@ -365,6 +370,12 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 				// and dispatch the job again
 				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
+			} else {
+				i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+					LastMessage: err.Error(),
+					UpdatedAt:   time.Now(),
+				})
 			}
 		default:
 			i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
@@ -481,6 +492,12 @@ func (i *StorageDealMakerProcessor) makeStorageDeal(content *model.Content, piec
 
 				// and dispatch the job again
 				i.LightNode.Dispatcher.AddJobAndDispatch(NewStorageDealMakerProcessor(i.LightNode, *content, *pieceComm), 1)
+			} else {
+				i.LightNode.DB.Model(&content).Where("id = ?", content.ID).Updates(model.Content{
+					Status:      utils.CONTENT_DEAL_PROPOSAL_FAILED, //"failed",
+					LastMessage: errProp.Error(),
+					UpdatedAt:   time.Now(),
+				})
 			}
 			return errProp
 		default:
