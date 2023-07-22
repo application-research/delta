@@ -18,4 +18,3 @@ services:
       - MODE=${MODE:-"cluster"}
       - DB_DSN=${DB_DSN:-"delta.db"}
       - DELTA_AUTH=${DELTA_AUTH:-""}
-      - MAX_CLEANUP_WORKERS=${MAX_CLEANUP_WORKERS:-"1"}
