@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"delta/config"
 	"delta/core"
 	"delta/utils"
@@ -20,8 +19,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoSwagger "github.com/swaggo/echo-swagger"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/xerrors"
 )
 
@@ -85,11 +82,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 
 	// Middleware
 	e.Use(middleware.Logger())
-	e.Use(middleware.RateLimiter(
-		middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
-			Rate: 50, Burst: 200, ExpiresIn: 5 * time.Minute,
-		}),
-	))
 	e.Use(middleware.SecureWithConfig(
 		middleware.SecureConfig{
 			XSSProtection:         "1; mode=block",
@@ -97,56 +89,6 @@ func InitializeEchoRouterConfig(ln *core.DeltaNode, config config.DeltaConfig) {
 			ContentSecurityPolicy: "default-src 'self'",
 		}),
 	)
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			_, span := otel.Tracer("GlobalRouterRequest").Start(context.Background(), "GlobalRouterRequest")
-			defer span.End()
-			span.SetName("Request: " + c.Request().Method + " " + c.Path())
-			span.SetAttributes(attribute.String("user-agent", c.Request().UserAgent()))
-			span.SetAttributes(attribute.String("path", c.Path()))
-			span.SetAttributes(attribute.String("method", c.Request().Method))
-			span.SetAttributes(attribute.String("remote_ip", c.RealIP()))
-			span.SetAttributes(attribute.String("host", c.Request().Host))
-			span.SetAttributes(attribute.String("referer", c.Request().Referer()))
-			span.SetAttributes(attribute.String("request_uri", c.Request().RequestURI))
-			ip := DeltaNodeConfig.Node.AnnounceAddrIP
-
-			fmt.Println("Request: " + c.Request().Method + " " + c.Path() + " " + c.Request().UserAgent() + " " + c.RealIP() + " " + c.Request().Host + " " + c.Request().Referer() + " " + c.Request().RequestURI)
-			s := struct {
-				RemoteIP string `json:"remote_ip"`
-				PublicIP string `json:"public_ip"`
-				Host     string `json:"host"`
-				Referer  string `json:"referer"`
-				Request  string `json:"request"`
-				Path     string `json:"path"`
-			}{
-				RemoteIP: c.RealIP(),
-				PublicIP: ip,
-				Host:     c.Request().Host,
-				Referer:  c.Request().Referer(),
-				Request:  c.Request().RequestURI,
-				Path:     c.Path(),
-			}
-			b, err := json.Marshal(s)
-			if err != nil {
-				log.Error(err)
-			}
-
-			// log all errors so we can pre-emptively fix them
-			utils.GlobalDeltaDataReporter.TraceLog(
-				messaging.LogEvent{
-					LogEventType:   "Route: " + core.GetHostname() + " " + c.Request().Method + " " + c.Path(),
-					SourceHost:     core.GetHostname(),
-					SourceIP:       ip,
-					LogEventObject: b,
-					LogEvent:       c.Path(),
-					DeltaUuid:      config.Node.InstanceUuid,
-					CreatedAt:      time.Now(),
-					UpdatedAt:      time.Now(),
-				})
-			return next(c)
-		}
-	})
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
