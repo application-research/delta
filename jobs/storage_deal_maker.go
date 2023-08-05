@@ -711,7 +711,7 @@ func (i *StorageDealMakerProcessor) sendProposalV120(ctx context.Context,
 		fmt.Println("transferUrl", transferUrl)
 	}
 	transferParams, err := json.Marshal(boosttypes.HttpRequest{
-		URL: "libp2p://" + announceAddr.String(),
+		URL: transferUrl,
 		Headers: map[string]string{
 			"Authorization": httptransport.BasicAuthHeader("", authToken),
 		},
