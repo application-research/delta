@@ -3,12 +3,11 @@ package core
 import (
 	"context"
 	c "delta/config"
+	model "delta/models"
 	"delta/utils"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
-	"github.com/application-research/delta-db/messaging"
 	fc "github.com/application-research/filclient"
 	"github.com/application-research/filclient/keystore"
 	"github.com/application-research/whypfs-core"
@@ -30,7 +29,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	trace2 "go.opencensus.io/trace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"gorm.io/gorm"
@@ -75,17 +73,11 @@ type DeltaNode struct {
 	Dispatcher   *Dispatcher
 	MetaInfo     *model.InstanceMeta
 
-	DeltaEventEmitter  *DeltaEventEmitter
-	DeltaMetricsTracer *DeltaMetricsTracer
+	DeltaEventEmitter *DeltaEventEmitter
 }
 
 type DeltaEventEmitter struct {
 	WebsocketBroadcast WebsocketBroadcast
-}
-
-type DeltaMetricsTracer struct {
-	Tracer            trace2.Tracer
-	DeltaDataReporter *messaging.DeltaMetricsTracer
 }
 
 // WebsocketBroadcast `WebsocketBroadcast` is a struct that contains three channels, one for each type of message that can be broadcasted.
@@ -266,9 +258,6 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 	// job dispatcher
 	dispatcher := CreateNewDispatcher()
 
-	// delta metrics tracer
-	dataTracer := messaging.NewDeltaMetricsTracer()
-
 	openTelemetryTracerProvider := trace.NewTracerProvider(trace.WithSampler(trace.AlwaysSample()))
 	defer openTelemetryTracerProvider.Shutdown(context.Background())
 
@@ -285,9 +274,6 @@ func NewLightNode(repo NewLightNodeParams) (*DeltaNode, error) {
 		Dispatcher:   dispatcher,
 		LotusApiNode: api,
 		Config:       repo.Config,
-		DeltaMetricsTracer: &DeltaMetricsTracer{
-			DeltaDataReporter: dataTracer,
-		},
 	}, nil
 }
 

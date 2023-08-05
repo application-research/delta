@@ -4,7 +4,7 @@ import (
 	"context"
 	"delta/utils"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	fc "github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 	"github.com/ipfs/go-cid"

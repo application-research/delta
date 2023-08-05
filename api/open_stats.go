@@ -4,7 +4,7 @@ import (
 	"delta/core"
 	"delta/jobs"
 	"delta/utils"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"github.com/labstack/echo/v4"
 	"strconv"
 )

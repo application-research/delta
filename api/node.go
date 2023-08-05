@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"delta/core"
-	"github.com/application-research/delta-db/db_models"
+	"delta/models"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

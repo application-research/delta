@@ -4,7 +4,7 @@ import (
 	"context"
 	"delta/core"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"github.com/ipfs/go-cid"
 )
 
