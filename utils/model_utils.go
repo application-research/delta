@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"github.com/application-research/delta-db/db_models"
+	"delta/models"
 	"github.com/application-research/filclient"
 	datatransfer "github.com/filecoin-project/go-data-transfer"
 )

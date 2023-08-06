@@ -4,16 +4,13 @@ import (
 	"delta/api"
 	c "delta/config"
 	"delta/core"
+	_ "delta/models"
 	"delta/utils"
 	"fmt"
-	"github.com/application-research/delta-db/db_models"
-	_ "github.com/application-research/delta-db/db_models"
-	"github.com/application-research/delta-db/messaging"
 	"github.com/filecoin-project/go-address"
 	"github.com/jasonlvhit/gocron"
 	"github.com/urfave/cli/v2"
 	"runtime"
-	"time"
 )
 
 // DaemonCmd Creating a new command called `daemon` that will run the API node.
@@ -186,17 +183,6 @@ By: Protocol Labs - Outercore Engineering
 ` + utils.Reset + utils.Red + "version: " + cfg.Common.Version + utils.Reset)
 
 			fmt.Println(utils.Blue + "Reporting Delta startup logs" + utils.Reset)
-			utils.GlobalDeltaDataReporter.Trace(messaging.DeltaMetricsBaseMessage{
-				ObjectType: "DeltaStartupLogs",
-				Object: db_models.DeltaStartupLogs{
-					NodeInfo:      core.GetHostname(),
-					OSDetails:     runtime.GOARCH + " " + runtime.GOOS,
-					IPAddress:     ip,
-					DeltaNodeUuid: cfg.Node.InstanceUuid,
-					CreatedAt:     time.Now(),
-					UpdatedAt:     time.Now(),
-				},
-			})
 			fmt.Println(utils.Blue + "Reporting Delta startup logs... DONE" + utils.Reset)
 			fmt.Println("----------------------------------")
 			fmt.Println(utils.Green + "Welcome! Delta daemon is running..." + utils.Reset)

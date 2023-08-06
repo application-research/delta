@@ -7,7 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	fc "github.com/application-research/filclient"
 	smtypes "github.com/filecoin-project/boost/storagemarket/types"
 	"github.com/filecoin-project/boost/transport/httptransport"

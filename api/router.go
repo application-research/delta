@@ -3,7 +3,7 @@ package api
 import (
 	"delta/config"
 	"delta/core"
-	"delta/utils"
+	_ "delta/docs/swagger"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,10 +11,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
-	_ "delta/docs/swagger"
-	"github.com/application-research/delta-db/messaging"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -267,46 +264,6 @@ func ValidateRequestBody() echo.MiddlewareFunc {
 
 // ErrorHandler It's a function that is called when an error occurs.
 func ErrorHandler(err error, c echo.Context) {
-
-	ip := DeltaNodeConfig.Node.AnnounceAddrIP
-
-	// get the request body and log it
-
-	s := struct {
-		RemoteIP     string `json:"remote_ip"`
-		PublicIP     string `json:"public_ip"`
-		Host         string `json:"host"`
-		Referer      string `json:"referer"`
-		Request      string `json:"request"`
-		Path         string `json:"path"`
-		ErrorDetails string `json:"details"`
-	}{
-		RemoteIP:     c.RealIP(),
-		PublicIP:     ip,
-		Host:         c.Request().Host,
-		Referer:      c.Request().Referer(),
-		Request:      c.Request().RequestURI,
-		Path:         c.Path(),
-		ErrorDetails: err.Error(),
-	}
-
-	b, errM := json.Marshal(s)
-	if errM != nil {
-		log.Error(errM)
-	}
-
-	// It's sending the error to the log server.
-	utils.GlobalDeltaDataReporter.TraceLog(
-		messaging.LogEvent{
-			LogEventType:   "Error: " + core.GetHostname() + " " + c.Request().Method + " " + c.Path(),
-			SourceHost:     core.GetHostname(),
-			SourceIP:       ip,
-			LogEventObject: b,
-			LogEvent:       c.Path(),
-			DeltaUuid:      DeltaNodeConfig.Node.InstanceUuid,
-			CreatedAt:      time.Now(),
-			UpdatedAt:      time.Now(),
-		})
 
 	var httpRespErr *HttpError
 	if xerrors.As(err, &httpRespErr) {

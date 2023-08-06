@@ -1,6 +1,6 @@
 package core
 
-import model "github.com/application-research/delta-db/db_models"
+import model "delta/models"
 
 type StatsService struct {
 	DeltaNode *DeltaNode

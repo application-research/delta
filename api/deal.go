@@ -9,7 +9,7 @@ import (
 	"delta/utils"
 	"encoding/json"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multiaddr"
