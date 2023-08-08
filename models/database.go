@@ -18,10 +18,6 @@ type DeltaMetricsBaseMessage struct {
 	Object     interface{} `json:"object"`
 }
 
-func init() {
-	producer = messaging.NewDeltaMetricsMessageProducer()
-}
-
 func OpenDatabase(dbDsn string) (*gorm.DB, error) {
 	// use postgres
 	var DB *gorm.DB
