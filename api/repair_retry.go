@@ -5,7 +5,7 @@ import (
 	"delta/jobs"
 	"delta/utils"
 	"encoding/json"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"github.com/labstack/echo/v4"
 	"strings"
 	"time"

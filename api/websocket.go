@@ -3,7 +3,7 @@ package api
 import (
 	"delta/core"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"sync"

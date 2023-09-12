@@ -3,9 +3,9 @@ package jobs
 import (
 	"context"
 	"delta/core"
+	model "delta/models"
 	"encoding/base64"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
 	fc "github.com/application-research/filclient"
 	"github.com/filecoin-project/go-address"
 	"github.com/filecoin-project/go-fil-markets/storagemarket"

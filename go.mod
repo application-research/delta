@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.2
-	github.com/application-research/delta-db v0.0.2-0.20230504034024-a5e4190148d6
+	github.com/application-research/delta-db v0.0.1
 	github.com/application-research/filclient v0.5.0-rc1.0.20230331195738-9826f79f0648
 	github.com/application-research/whypfs-core v0.1.1
 	github.com/caarlos0/env/v6 v6.10.1
@@ -49,10 +49,11 @@ require (
 	github.com/swaggo/echo-swagger v1.4.0
 	github.com/swaggo/swag v1.16.1
 	github.com/urfave/cli/v2 v2.24.4
-	go.opencensus.io v0.24.0
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/sdk v1.14.0
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
+	gorm.io/driver/postgres v1.4.8
+	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.5
 )
 
@@ -287,6 +288,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/zondax/hid v0.9.1 // indirect
 	github.com/zondax/ledger-go v0.12.1 // indirect
+	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/dig v1.16.1 // indirect
@@ -309,8 +311,6 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/postgres v1.4.8 // indirect
-	gorm.io/driver/sqlite v1.4.4 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )

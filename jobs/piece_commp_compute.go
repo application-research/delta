@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"github.com/application-research/filclient"
 	"github.com/filecoin-project/go-state-types/abi"
 	"github.com/ipfs/go-cid"

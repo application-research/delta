@@ -6,20 +6,6 @@ Filecoin Storage Deal Making Service
 
 Delta is a deal-making service that enables users to make deals with Storage Providers. It is an application that allows users to upload files to the Filecoin network and get them stored by Storage Providers.
 
-*Delta is in active development and is not ready for production use.*
-
-<div align="center">
-
-## Quick stats
-[![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20successful%20deals%20made&color=brightgreen&query=total_deals_succeeded&url=https%3A%2F%2Fglobal.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
-[![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20successful%20end-to-end%20deals&query=total_e2e_succeeded&color=brightgreen&url=https%3A%2F%2Fglobal.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
-[![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20successful%20import%20deals&color=brightgreen&query=total_import_succeeded&url=https%3A%2F%2Fglobal.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
-[![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Number%20of%20SPs%20we%20work%20with&color=brightgreen&query=total_number_of_sps_worked_with&url=https%3A%2F%2Fglobal.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
-[![](https://img.shields.io/badge/dynamic/json?style=for-the-badge&label=Total%20no.%20of%20unique%20delta%20nodes&color=brightgreen&query=total_number_of_unique_delta_nodes&url=https%3A%2F%2Fglobal.delta.store%2Fopen%2Fstats%2Ftotals%2Finfo)]()
-
-
-</div>
-
 ---
 
 ![image](https://user-images.githubusercontent.com/4479171/226853191-e19e8fa4-abc1-4652-970f-d3d6cea0df13.png)

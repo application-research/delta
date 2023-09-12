@@ -2,7 +2,7 @@ package core
 
 import (
 	"context"
-	"github.com/application-research/delta-db/db_models"
+	"delta/models"
 	"reflect"
 	"testing"
 )

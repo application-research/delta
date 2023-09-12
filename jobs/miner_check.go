@@ -4,7 +4,7 @@ import (
 	"delta/core"
 	"encoding/json"
 	"fmt"
-	model "github.com/application-research/delta-db/db_models"
+	model "delta/models"
 	"gorm.io/gorm"
 	"net/http"
 )
